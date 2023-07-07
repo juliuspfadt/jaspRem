@@ -1,7 +1,7 @@
-Package: jaspModule
+Package: jaspRem
 Type: Package
-Title: A module for JASP
-Version: 0.1.0
+Title: REM
+Version: 0.17.2
 Date: 2020-10-15
 Author: JASP Team
 Website: jasp-stats.org
@@ -16,4 +16,9 @@ Suggests:
   testthat
 Remotes:
   jasp-stats/jaspBase,
-  jasp-stats/jaspGraphs
+  jasp-stats/jaspGraphs,
+  TilburgNetworkGroup/remify,
+  TilburgNetworkGroup/remstats,
+  TilburgNetworkGroup/remstimate
+
+

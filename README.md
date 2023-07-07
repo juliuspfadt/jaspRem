@@ -1,1 +1,1 @@
-# jaspModuleTemplate
+# A module for relational event modeling
