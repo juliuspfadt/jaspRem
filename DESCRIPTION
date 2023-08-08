@@ -1,7 +1,7 @@
 Package: jaspRem
 Type: Package
 Title: REM
-Version: 0.17.2
+Version: 0.17.3
 Date: 2020-10-15
 Author: JASP Team
 Website: jasp-stats.org
@@ -11,7 +11,10 @@ License: GPL (>= 2)
 Encoding: UTF-8
 Imports:
   jaspBase,
-  jaspGraphs
+  jaspGraphs,
+  remify,
+  remstats,
+  remstimate
 Suggests:
   testthat
 Remotes:
@@ -20,5 +23,3 @@ Remotes:
   TilburgNetworkGroup/remify,
   TilburgNetworkGroup/remstats,
   TilburgNetworkGroup/remstimate
-
-
