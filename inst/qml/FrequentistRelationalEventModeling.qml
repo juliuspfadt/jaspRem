@@ -8,11 +8,14 @@ Form
 
 	VariablesForm
 	{
-		preferredHeight: 200 * preferencesModel.uiScale
+		preferredHeight: 300 * preferencesModel.uiScale
 		AvailableVariablesList{	name:	"allVariables"; id: allVariables}
 		AssignedVariablesList	{	name:	"timeVariable";			title: qsTr("Time Variable");		suggestedColumns: ["scale"];	singleVariable: true	; id: assignedVariableTime}
 		AssignedVariablesList	{	name:	"actorVariables";		title: qsTr("Actor Variables");	suggestedColumns: ["scale","ordinal", "nominal"]; singleVariable: false; height: 75 * preferencesModel.uiScale}
 		AssignedVariablesList	{	name:	"weightVariable";		title: qsTr("Weight Variable");	suggestedColumns: ["scale"];	singleVariable: true	}
+		
+		// AssignedVariablesList	{	name:	"covariates";				title: qsTr("Covariates");		suggestedColumns: ["scale","ordinal", "nominal"];	singleVariable: false	; height: 115 * preferencesModel.uiScale; id: covariates}
+
 	}
 
 // // in order to have access to all variables in the data set even though they might not be assigned, 
@@ -211,7 +214,9 @@ Form
 			columnNames			: [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")]
 			isFirstColEditable	: true
 			itemType			: JASP.Integer
-			source: [{name: "allVariables", discard: [{values: ["name", "time_y"]}] }]
+			// source: [{["allVariables", "covariates"], discard: [{values: ["name", "time_y"]}] }]
+			source: [{name: "allVariables", discard: [{values: ["name", "time_y"]}]}]
+
 			function getDefaultValue(columnIndex, rowIndex)				{ return 0	}
 		}
 
@@ -652,6 +657,13 @@ Form
 	Section
 	{
 		title: qsTr("Estimation Options")
+
+		RadioButtonGroup {
+			title: qsTr("Estimation method")
+			name: "method"
+			RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
+			RadioButton { value: "GDADAMAX" ; label: qsTr("Adaptive gradient descent"); checked: false}
+		}
 	}
 
 		Section

@@ -1,4 +1,13 @@
-#
+#' TODO:
+#' - separate the daydic data from the covariates data for now
+#' - lots of qml conditioning? how to change the rows of the componentlist depending on the effect? even possible?
+#' - state things,
+#'  - retrigger exoEffects feedback somehow
+#' - other model types in qml... undirected, riskset, etc.
+
+
+
+
 # Copyright (C) 2013-2022 University of Amsterdam
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,7 +22,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-#
+
 
 # Main function ----
 
@@ -38,11 +47,11 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   .remMainContainer(jaspResults)
   .remRemify(jaspResults, dataset, options)
 
-  saveRDS(options, file = "~/Downloads/options.rds")
-
   .remRemstats(jaspResults, dataset, options)
+  .remRemstimate(jaspResults, dataset, options)
 
-
+  .remModelFitTable(jaspResults, options)
+  .remCoefficientsTable(jaspResults, options)
 
   return()
 }
@@ -95,7 +104,6 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   dataset <- .readDataSetToEnd(columns = variables)
-
   return(dataset)
 }
 
@@ -141,41 +149,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
-# Leave this for now unless the same exo effect should be specified with different scaling
-# .feedbackInterEffectsWindow <- function(jaspResults, options) {
-#   ###########################################################################
-#   ### this still needs some work regarding the option to exit at the beginning
-#   ###########################################################################
-#   if (length(options$exoEffects) <= 1)
-#     return()
-#   # || !is.null(jaspResults[["sourceTopics"]])) return()
-#
-#   # exogenous effects
-#   exoIndex <- grep("specifiedExoEffects", names(options))
-#   if (!is.null(options[[exoIndex]])) {
-#     exoEffects <- sapply(options[[exoIndex]], function(x) x[["value"]])
-#     exoScaling <- sapply(options[[exoIndex]], function(x) x[["exoEffectsScaling"]])
-#     exoEffects <- paste0(exoEffects, ", scaling = '", exoScaling, "', absolute = ", exoAbsolute, ")")
-#   }
-#
-#
-#   # jaspResults[["specifiedEffectsFromR"]] <- createJaspQmlSource("specifiedEffectsFromR", outExoList)
-#
-#
-#   endoIndex <- grep("specifiedEndogenousEffects", names(options))
-#   outEndoList <- list()
-#   for (ii in seq_len(length(options[[endoIndex]]))) {
-#     outEndoList <- append(outEndoList,
-#                           paste0(options[[endoIndex]][[ii]][["variable"]], " (", options[[endoIndex]][[ii]][["endogenousEffectScaling"]], ")"))
-#   }
-#
-#   interTmp <- combn(c(unlist(outExoList), unlist(outEndoList)), m = 2)
-#   inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
-#
-#   jaspResults[["possibleInteractionEffectsFromR"]] <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
-#
-#   return()
-# }
+
 
 
 .remErrorHandling <- function(dataset, options) {
@@ -215,18 +189,19 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
     dt <- dataset[, 1:3]
   }
 
+  # is there any other naAction even possible?
   if (anyNA(dataset) & options$naAction == "listwise") {
     dt <- dt[complete.cases(dt), ]
   }
 
-  remifyResult <- remify::remify(edgelist = dt,
-                                 directed = options[["eventDirection"]] == "directed",
-                                 ordinal = options[["eventSequence"]] == "orderOnly",
-                                 model = options[["modelOrientation"]],
-                                 actors = options[["actorVariables"]],
-                                 riskset = options[["riskset"]])
+  rehObject <- remify::remify(edgelist = dt,
+                               directed = options[["eventDirection"]] == "directed",
+                               ordinal = options[["eventSequence"]] == "orderOnly",
+                               model = options[["modelOrientation"]],
+                               riskset = options[["riskset"]])
 
-  remifyResultState <- createJaspState(remifyResult)
+
+  remifyResultState <- createJaspState(rehObject)
   remifyResultState$dependOn(c("eventDirection", "eventSequence",
                                "modelOrientation", "riskset", "naAction"))
 
@@ -244,14 +219,176 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
 
   effects <- .translateEffects(options)
 
+  effectsText <- Reduce(paste, deparse(effects))
+  effectsText <- gsub("+", "+\n", effectsText, fixed = TRUE)
+  effectsText <- gsub("~", "~ baseline + ", effectsText, fixed = TRUE)
+  outText <- createJaspHtml(text = gettextf("The effects were specified as: \n%s",
+                                            effectsText))
+  outText$position <- 0.5
+  jaspResults[["mainContainer"]][["effectsCall"]] <- outText
 
+  exoVariables <- unique(unlist(options[["exoEffects"]][["variableNames"]]))
 
+  dtCv <- dataset[, exoVariables]
+  colnames(dtCv) <- jaspBase::decodeColNames(colnames(dtCv))
+  colnames(dtCv) <- gsub("time_y", "time", colnames(dtCv))
+
+  # if a event effect is specified we need the variable to be present
+  exoList <- options[["exoEffects"]][["list"]]
+  if (!is.null(exoList[["Event"]])) {
+    eventVariables <- jaspBase::decodeColNames(exoList[["Event"]])
+    for (ii in 1:length(eventVariables)) {
+      assign(eventVariables[ii], dtCv[, eventVariables[ii]], pos = 1) # dont know why pos=1 is working....
+    }
+  }
+
+  # drop the event variables
+  dtCv <- dtCv[, !(names(dtCv) %in% eventVariables)]
+  # unfactor the data
+  indx <- sapply(dtCv, is.factor)
+  dtCv[indx] <- lapply(dtCv[indx], function(x) as.numeric(as.character(x)))
+
+  # this whole block needs some rework, it seems the NAs are not found in JASP.
+  firstNA <- min(which(is.na(dtCv), arr.ind = TRUE)[, "row"])
+  nr <- nrow(dtCv)
+  # are all entries between first NA and last row NA, then it is a person variable:
+  colnams <- list()
+  for (cc in 1:ncol(dtCv)) {
+    if (all(is.na(dtCv[firstNA:nr, cc]))) {
+      colnams <- append(colnams, colnames(dtCv)[cc])
+    }
+  }
+
+  dtCvP <- dtCv[, unlist(colnams)]
+
+  statsObject <- remstats::remstats(reh = rehObject, tie_effects = effects, attr_data = dtCvP)
+
+  remstatsResultState <- createJaspState(statsObject)
+  remstatsResultState$dependOn(c("eventDirection", "eventSequence",
+                                 "modelOrientation", "riskset", "naAction"))
+
+  jaspResults[["mainContainer"]][["remstatsResultState"]] <- remstatsResultState
+
+  return()
 }
+
+
+.remRemstimate <- function(jaspResults, dataset, options) {
+
+  if (!is.null(jaspResults[["mainContainer"]][["remstimateResultState"]]$object))
+    return()
+
+  rehObject <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
+  statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
+
+  fit <- remstimate::remstimate(reh = rehObject, stats = statsObject,
+                                method = options[["method"]])
+
+  remstimateResultState <- createJaspState(fit)
+  remstimateResultState$dependOn(c("eventDirection", "eventSequence",
+                                   "modelOrientation", "riskset", "naAction", "method"))
+
+  jaspResults[["mainContainer"]][["remstimateResultState"]] <- remstimateResultState
+}
+
+
+.remModelFitTable <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["mainContainer"]][["modelFitTable"]])) return()
+
+  remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
+
+  modelFitTable <- createJaspTable(title = gettext("Model Fit Table"))
+  modelFitTable$dependOn(c("eventDirection", "eventSequence",
+                               "modelOrientation", "riskset", "naAction", "method"))
+  modelFitTable$position <- 1
+
+  modelFitTable$addColumnInfo(name = "fitmeasure",     title = gettext("Coefficient"), type= "string")
+  modelFitTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
+  modelFitTable$addColumnInfo(name = "df",   title = gettext("df"),  type= "number")
+  modelFitTable$addColumnInfo(name = "pvalue",   title = gettext("p"),     type= "number")
+
+
+  footnote <- ""
+  if (!is.null(remResults)){
+    modelFitTable$addFootnote(footnote)
+  }
+
+  if (!is.null(remResults)){
+
+    res <- summary(remResults)
+    dtFill <- data.frame(fitmeasure = c("Null deviance", "Residual deviance", "Chi^2", "AIC", "AICC", "BIC"))
+    dtFill$estimate <- c(res$null.deviance, res$residual.deviance, res$model.deviance, res$AIC, res$AICC, res$BIC)
+    dtFill$df <- c(res$df.null, res$df.residual, res$df.model, NA_real_, NA_real_, NA_real_)
+    dtFill$pvalue <- c(NA_real_, NA_real_, res$chiP, NA_real_, NA_real_, NA_real_)
+
+    modelFitTable$setData(dtFill)
+  }
+
+  jaspResults[["mainContainer"]][["modelFitTable"]] <- modelFitTable
+
+  return()
+}
+
+
+.remCoefficientsTable <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["mainContainer"]][["coefficientsTable"]])) return()
+
+  remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
+
+
+  coefficientsTable <- createJaspTable(title = gettext("Coefficients Table"))
+  coefficientsTable$dependOn(c("eventDirection", "eventSequence",
+                       "modelOrientation", "riskset", "naAction", "method"))
+  coefficientsTable$position <- 2
+
+  coefficientsTable$addColumnInfo(name = "coef",     title = gettext("Coefficient"), type= "string")
+  coefficientsTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
+  coefficientsTable$addColumnInfo(name = "stdErr",   title = gettext("Std. Error"),  type= "number")
+  coefficientsTable$addColumnInfo(name = "zValue",   title = gettext("z-value"),     type= "number")
+  coefficientsTable$addColumnInfo(name = "prZ",      title = gettext("p"),     type= "number")
+  coefficientsTable$addColumnInfo(name = "pr0",      title = gettext("p(=0)"),       type= "number")
+
+
+  footnote <- ""
+  if (!is.null(remResults)){
+    coefficientsTable$addFootnote(footnote)
+  }
+
+  if (!is.null(remResults)){
+
+    res <- summary(remResults)
+    dtFill <- data.frame(res$coefsTab)
+    colnames(dtFill) <- c("estimate", "stdErr", "zValue", "prZ", "pr0")
+    rwnames <- rownames(res$coefsTab)
+    # check for the endoNames
+    endoNames <- .endoEffectsMatching()
+    for (ii in 1:nrow(endoNames)) {
+      ind <- grep(endoNames[ii, "R_name"], rwnames)
+      if (length(ind) > 0) {
+        rwnames[ind] <- gsub(endoNames[ii, "R_name"], endoNames[ii, "JASP_name"], rwnames[ind])
+      }
+    }
+    rwnames <- tolower(rwnames)
+    dtFill$coef <- rwnames
+
+    coefficientsTable$setData(dtFill)
+  }
+
+  jaspResults[["mainContainer"]][["coefficientsTable"]] <- coefficientsTable
+
+  return()
+}
+
+
+
+
 
 
 # once Bruno fixes the VariablesList form, we dont need this anymore, since the values
 # instead of the labels will be given to R
-.effectsMatching <- function() {
+.endoEffectsMatching <- function() {
 
   effs <- c(
     "In degree receiver",						 "indegreeReceiver",
@@ -300,7 +437,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
     # endoEffectsJaspSave <- endoEffects
     endoScaling <- sapply(options[[endoIndex]], function(x) x[["endogenousEffectScaling"]])
     endoEffectsJaspSave <- paste0(endoEffects, "('", endoScaling, "')")
-    endoNames <- .effectsMatching()
+    endoNames <- .endoEffectsMatching()
     endoEffects <- endoNames[which(endoNames %in% endoEffects, arr.ind = TRUE), "R_name"]
     endoEffects <- paste0(endoEffects, "(scaling = ", "'", endoScaling, "'", ")")
     endoEffectsRSave <- endoEffects
@@ -317,6 +454,16 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
     exoScaling <- sapply(options[[exoIndex]], function(x) x[["exoEffectsScaling"]])
     # exoAbsolute <- sapply(options[[exoIndex]], function(x) x[["absolute"]])
     exoEffects <- paste0(exoEffects, ", scaling = '", exoScaling, "')")#, absolute = ", exoAbsolute, ")")
+    # event is a special case, has no scaling:
+    eventIndex <- grep("event", exoEffects)
+    if (length(eventIndex) > 0) {
+      for (ev in 1:length(eventIndex)) {
+        eventName <- options[["exoEffects"]][["list"]][["Event"]][ev]
+        exoEffects[eventIndex[ev]] <- gsub("scaling.[^)]*", "placeHolder", exoEffects[eventIndex[ev]])
+        exoEffects[eventIndex[ev]] <- gsub("'","", exoEffects[eventIndex[ev]], fixed = TRUE)
+        exoEffects[eventIndex[ev]] <- gsub("placeHolder", paste0("'", eventName, "'"), exoEffects[eventIndex[ev]], fixed = TRUE)
+      }
+    }
     exoEffectsSave2 <- exoEffects
     exoEffects <- paste0(exoEffects, collapse = " + ")
     effects <- paste0(effects, " + ", exoEffects)
@@ -327,27 +474,35 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   if (length(options[[interIndex]]) > 0) {
     interEffects <- sapply(options[[interIndex]], function(x) if (x[["include"]]) x[["value"]] else NULL)
     interEffects[sapply(interEffects, is.null)] <- NULL
-    interEffects <- unlist(interEffects)
+    if (length(interEffects) > 0) {
+      interEffects <- unlist(interEffects)
 
 
-    # replace the endo effects
-    for (ee in 1:length(endoEffectsJaspSave)) {
-      ind <- grep(endoEffectsJaspSave[ee], interEffects, fixed = TRUE)
-      if (length(ind) > 0) {
-        interEffects <- gsub(endoEffectsJaspSave[ee], endoEffectsRSave[ee], interEffects, fixed = TRUE)
+      # replace the endo effects
+      if (length(options[[endoIndex]]) > 0) {
+        for (ee in 1:length(endoEffectsJaspSave)) {
+          ind <- grep(endoEffectsJaspSave[ee], interEffects, fixed = TRUE)
+          if (length(ind) > 0) {
+            interEffects <- gsub(endoEffectsJaspSave[ee], endoEffectsRSave[ee], interEffects, fixed = TRUE)
+          }
+        }
       }
-    }
 
-    # replace the exo effects
-    for (eee in 1:length(exoEffectsSave1)) {
-      ind <- grep(exoEffectsSave1[eee], interEffects, fixed = TRUE)
-      if (length(ind) > 0) {
-        interEffects <- gsub(exoEffectsSave1[eee], exoEffectsSave2[eee], interEffects, fixed = TRUE)
+
+      # replace the exo effects
+      if (length(options[[endoIndex]]) > 0) {
+        for (eee in 1:length(exoEffectsSave1)) {
+          ind <- grep(exoEffectsSave1[eee], interEffects, fixed = TRUE)
+          if (length(ind) > 0) {
+            interEffects <- gsub(exoEffectsSave1[eee], exoEffectsSave2[eee], interEffects, fixed = TRUE)
+          }
+        }
       }
+
+      interEffects <- gsub(" * ", ":", interEffects, fixed = TRUE)
+      interEffects <- paste0(interEffects, collapse = " + ")
+      effects <- paste0(effects, " + ", interEffects)
     }
-    interEffects <- gsub(" * ", ":", interEffects, fixed = TRUE)
-    interEffects <- paste0(interEffects, collapse = " + ")
-    effects <- paste0(effects, " + ", interEffects)
   }
 
   if (!is.null(effects)) {
@@ -357,3 +512,41 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
 
   return(effects)
 }
+
+
+
+# Leave this for now unless the same exo effect should be specified with different scaling
+# .feedbackInterEffectsWindow <- function(jaspResults, options) {
+#   ###########################################################################
+#   ### this still needs some work regarding the option to exit at the beginning
+#   ###########################################################################
+#   if (length(options$exoEffects) <= 1)
+#     return()
+#   # || !is.null(jaspResults[["sourceTopics"]])) return()
+#
+#   # exogenous effects
+#   exoIndex <- grep("specifiedExoEffects", names(options))
+#   if (!is.null(options[[exoIndex]])) {
+#     exoEffects <- sapply(options[[exoIndex]], function(x) x[["value"]])
+#     exoScaling <- sapply(options[[exoIndex]], function(x) x[["exoEffectsScaling"]])
+#     exoEffects <- paste0(exoEffects, ", scaling = '", exoScaling, "', absolute = ", exoAbsolute, ")")
+#   }
+#
+#
+#   # jaspResults[["specifiedEffectsFromR"]] <- createJaspQmlSource("specifiedEffectsFromR", outExoList)
+#
+#
+#   endoIndex <- grep("specifiedEndogenousEffects", names(options))
+#   outEndoList <- list()
+#   for (ii in seq_len(length(options[[endoIndex]]))) {
+#     outEndoList <- append(outEndoList,
+#                           paste0(options[[endoIndex]][[ii]][["variable"]], " (", options[[endoIndex]][[ii]][["endogenousEffectScaling"]], ")"))
+#   }
+#
+#   interTmp <- combn(c(unlist(outExoList), unlist(outEndoList)), m = 2)
+#   inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
+#
+#   jaspResults[["possibleInteractionEffectsFromR"]] <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
+#
+#   return()
+# }
