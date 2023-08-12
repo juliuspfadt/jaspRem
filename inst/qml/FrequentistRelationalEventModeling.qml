@@ -257,7 +257,7 @@ Form
 			ComponentsList
 			{
 
-				name: "specifiedExoEffects"
+				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
 
 				rSource: "specifiedEffectsFromR"
