@@ -72,9 +72,9 @@ Form
 
 		RadioButtonGroup
 		{
-			name: "modelOrientation"
-			id: modelOrientation
-			title: qsTr("Model orientation")
+			name: "orientation"
+			id: orientation
+			title: qsTr("Orientation")
 			radioButtonsOnSameRow: false
 
 			RadioButton
@@ -120,53 +120,21 @@ Form
 	{
 		title: qsTr("Endogenous Effects")
 		columns: 1
-		visible: modelOrientation.value == "tie" && eventDirection.value == "directed"
 
 		VariablesForm
 		{
 			preferredHeight: 150 * preferencesModel.uiScale
 			AvailableVariablesList 
 			{ 
-				name: "possibleEndogenousEffectsTieDirected"; 
+				name: "possibleEndogenousEffects";
+				rSource: "endoEffectsFromR"
 				title: qsTr("Endogenous effects")
-				values:
-				[
-					{ label: qsTr("In degree receiver"),						value: "indegreeReceiver"},
-					{ label: qsTr("In degree sender"),							value: "indegreeSender"					},
-					{ label: qsTr("Fixed effects for event type"),	value: "FEtype"						},
-					{ label: qsTr("Inertia"),												value: "inertia"					},
-					{ label: qsTr("Incoming shared partners"),			value: "isp"										},
-					{ label: qsTr("Incoming two-path"),							value: "itp"										},
-					{ label: qsTr("Outgoing shared partners"),			value: "osp"										},
-					{ label: qsTr("Outgoing two-path"),							value: "otp"										},
-					{ label: qsTr("Out deregee receiver"),					value: "outdegreeReceiver"			},
-					{ label: qsTr("Out degree sender"),							value: "outdegreeSender"				},
-					{ label: qsTr("Pshift AB-AB"),									value: "psABAB"						},
-					{ label: qsTr("Pshift AB-AY"),									value: "psABAY"						},
-					{ label: qsTr("Pshift AB-BA"),									value: "psABBA"									},
-					{ label: qsTr("Pshift AB-BY"),									value: "psABBY"									},
-					{ label: qsTr("Pshift AB-XA"),									value: "psABXA"									},
-					{ label: qsTr("Pshift AB-XB"),									value: "psABXB"									},
-					{ label: qsTr("Pshift AB-XY"),									value: "psABXY"									},
-					{ label: qsTr("Recency continue"),							value: "recencyContinue"	},
-					{ label: qsTr("Recency receive of receiver"), 	value: "recencyReceiveReceiver"	},
-					{ label: qsTr("Recency receive of sender"),			value: "recencyReceiveSender"		},
-					{ label: qsTr("Recency send of receiver"),			value: "recencySendReceiver"		},
-					{ label: qsTr("Recency send of sender"),				value: "recencySendSender"			},
-					{ label: qsTr("Reciprocity"),										value: "reciprocity"						},
-					{ label: qsTr("Recency rank receive"),					value: "rrankReceive"						},
-					{ label: qsTr("Recency rank send"),							value: "rrankSend"							},
-					{ label: qsTr("Total degree dyad"),							value: "totaldegreeDyad"	},
-					{ label: qsTr("Total degree receiver"),					value: "totaldegreeReceiver"		},
-					{ label: qsTr("Total degree sender"),						value: "totaldegreeSender"			},
-					{ label: qsTr("User statistics"),								value: "userStat"					}
-				]
 			}
 
 			AssignedVariablesList 
 			{ 
-				id: specifiedEndogenousEffectsTieDirected
-				name: "specifiedEndogenousEffectsTieDirected"
+				id: specifiedEndogenousEffects
+				name: "specifiedEndogenousEffects"
 
 				property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
 				property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
@@ -179,11 +147,10 @@ Form
 
 				rowComponent: DropDown {
 					name: "endogenousEffectScaling"; 
-					values: specifiedEndogenousEffectsTieDirected.scalingTwoVars.includes(rowValue) ? specifiedEndogenousEffectsTieDirected.scalingTwo : specifiedEndogenousEffectsTieDirected.scalingAll 
-					visible: !specifiedEndogenousEffectsTieDirected.scalingNoneVars.includes(rowValue)
+					values: specifiedEndogenousEffects.scalingTwoVars.includes(rowValue) ? specifiedEndogenousEffects.scalingTwo : specifiedEndogenousEffects.scalingAll 
+					visible: !specifiedEndogenousEffects.scalingNoneVars.includes(rowValue)
 					}
 			}
-
 		}
 	}
 
@@ -191,7 +158,7 @@ Form
 	{
 		title: qsTr("Exogenous Effects")
 		columns: 1
-		visible: modelOrientation.value == "tie" && eventDirection.value == "directed"
+		visible: orientation.value == "tie" && eventDirection.value == "directed"
 
 		TableView
 		{
@@ -224,35 +191,6 @@ Form
 		{
 			title: qsTr("Specified Effects")
 			implicitHeight: 150 * preferencesModel.uiScale
-				// AvailableVariablesList
-				// {	
-				// 	implicitWidth: 500 * preferencesModel.uiScale
-				// 	implicitHeight: 200 * preferencesModel.uiScale
-				// 	name:	"interactionEffectsList"
-				// 	source:	[{ rSource: "sourceTopics"}]
-				// 	// source: "allVariables"
-				// 	// rSource:	"sourceTopics"
-				// 	rowComponent: RowLayout { 
-				// 	DropDown {
-				// 		name: "interactionsDropDown"; 
-				// 		values: [{ label: qsTr("none"), value : "none"}, { label: qsTr("prop"), value : "prop"}, { label: qsTr("std"), value : "std"}]
-				// 	}
-				// 	CheckBox {Layout.preferredWidth: 100; name: "bb"}
-				// }
-				// }
-
-				// AssignedVariablesList	
-				// {
-				// 	name:	"interactions"
-				// 	title: qsTr("Model interactions")
-				// 	listViewType: JASP.Interaction
-				// 	addAvailableVariablesToAssigned: false
-				// 	rowComponent: DropDown {
-				// 		name: "interactionsDropDown"; 
-				// 		values: [{ label: qsTr("none"), value : "none"}, { label: qsTr("prop"), value : "prop"}, { label: qsTr("std"), value : "std"}]
-				// 	}
-				// }
-
 
 			ComponentsList
 			{
@@ -311,7 +249,7 @@ Form
 // 	{
 // 		title: qsTr("Effects")
 // 		columns: 1
-// 		visible: modelOrientation.value == "tie" && eventDirection.value == "undirected"
+// 		visible: orientation.value == "tie" && eventDirection.value == "undirected"
 
 // 		VariablesForm
 // 		{
@@ -450,7 +388,7 @@ Form
 // 	{
 // 		title: qsTr("Effects Sender Model")
 // 		columns: 1
-// 		visible: modelOrientation.value == "actorOriented"
+// 		visible: orientation.value == "actorOriented"
 
 // 		VariablesForm
 // 		{
@@ -528,7 +466,7 @@ Form
 // 	{
 // 		title: qsTr("Effects Receiver Model")
 // 		columns: 1
-// 		visible: modelOrientation.value == "actorOriented"
+// 		visible: orientation.value == "actorOriented"
 
 // 		VariablesForm
 // 		{

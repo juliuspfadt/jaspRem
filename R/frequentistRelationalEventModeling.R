@@ -33,17 +33,18 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   # sink(file="~/Downloads/log.txt")
   # on.exit(sink(NULL))
 
+  .feedbackEndoEffects(jaspResults, options)
+
   ready <- (length(options[["timeVariable"]]) > 0) && (length(options[["actorVariables"]]) > 1)
 
   if (!ready) return()
 
+
   options <- .getExogenousEffects(options)
 
-  .feedbackEffectsWindow(jaspResults, options)
+  .feedbackExoEffects(jaspResults, options)
 
   dataset <- .remReadData(dataset, options)
-
-  # .feedbackInterEffectsWindow(jaspResults, options)
 
   .remErrorHandling(dataset, options)
   .remMainContainer(jaspResults)
@@ -109,11 +110,11 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   return(dataset)
 }
 
-.feedbackEffectsWindow <- function(jaspResults, options) {
+.feedbackExoEffects <- function(jaspResults, options) {
 ###########################################################################
 ### this still needs some work regarding the option to exit at the beginning
 ###########################################################################
-  if (length(options$exoEffects) <= 1)
+  if (!(length(options$exoEffects) > 0))
     return()
       # || !is.null(jaspResults[["sourceTopics"]])) return()
 
@@ -197,7 +198,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   rehObject <- try(remify::remify(edgelist = dt,
                                  directed = options[["eventDirection"]] == "directed",
                                  ordinal = options[["eventSequence"]] == "orderOnly",
-                                 model = options[["modelOrientation"]],
+                                 model = options[["orientation"]],
                                  riskset = options[["riskset"]]))
 
   if (isTryError(rehObject)) {
@@ -208,7 +209,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
 
   remifyResultState <- createJaspState(rehObject)
   remifyResultState$dependOn(c("eventDirection", "eventSequence",
-                               "modelOrientation", "riskset", "naAction", "weightVariable"))
+                               "orientation", "riskset", "naAction", "weightVariable"))
 
   jaspResults[["mainContainer"]][["remifyResultState"]] <- remifyResultState
 
@@ -227,7 +228,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   effectsText <- Reduce(paste, deparse(effects))
   effectsText <- gsub("+", "+\n", effectsText, fixed = TRUE)
 
-  # print the effects to the output
+  # show the effects to the output
   outText <- createJaspHtml(text = gettextf("The effects were specified as: \n%s",
                                             effectsText))
   outText$position <- 0.5
@@ -284,7 +285,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   remstatsResultState <- createJaspState(statsObject)
   endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
   remstatsResultState$dependOn(c("eventDirection", "eventSequence",
-                                 "modelOrientation", "riskset", "naAction",
+                                 "orientation", "riskset", "naAction",
                                  endoDepend, "specifiedExogenousEffects"))
 
   jaspResults[["mainContainer"]][["remstatsResultState"]] <- remstatsResultState
@@ -312,7 +313,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   remstimateResultState <- createJaspState(fit)
   endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
   remstimateResultState$dependOn(c("eventDirection", "eventSequence",
-                                   "modelOrientation", "riskset", "naAction", "method",
+                                   "orientation", "riskset", "naAction", "method",
                                    endoDepend, "specifiedExogenousEffects"))
 
   jaspResults[["mainContainer"]][["remstimateResultState"]] <- remstimateResultState
@@ -328,7 +329,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   modelFitTable <- createJaspTable(title = gettext("Model Fit Table"))
   endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
   modelFitTable$dependOn(c("eventDirection", "eventSequence",
-                           "modelOrientation", "riskset", "naAction", "method",
+                           "orientation", "riskset", "naAction", "method",
                            endoDepend, "specifiedExogenousEffects"))
   modelFitTable$position <- 1
 
@@ -370,7 +371,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
   coefficientsTable <- createJaspTable(title = gettext("Coefficients Table"))
   endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
   coefficientsTable$dependOn(c("eventDirection", "eventSequence",
-                               "modelOrientation", "riskset", "naAction", "method",
+                               "orientation", "riskset", "naAction", "method",
                                endoDepend, "specifiedExogenousEffects"))
   coefficientsTable$position <- 2
 
@@ -396,9 +397,9 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
     # check for the endoNames
     endoNames <- .endoEffectsMatching()
     for (ii in 1:nrow(endoNames)) {
-      ind <- grep(endoNames[ii, "R_name"], rwnames)
+      ind <- grep(endoNames[ii, "endoEffectsR"], rwnames)
       if (length(ind) > 0) {
-        rwnames[ind] <- gsub(endoNames[ii, "R_name"], endoNames[ii, "JASP_name"], rwnames[ind])
+        rwnames[ind] <- gsub(endoNames[ii, "endoEffectsR"], endoNames[ii, "endoEffectsJasp"], rwnames[ind])
       }
     }
     rwnames <- tolower(rwnames)
@@ -417,42 +418,72 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
 
 
 
-# once Bruno fixes the VariablesList form, we dont need this anymore, since the values
-# instead of the labels will be given to R
 .endoEffectsMatching <- function() {
 
-  effs <- c(
-    "In degree receiver",						 "indegreeReceiver",
-    "In degree sender",							 "indegreeSender"					,
-    "Fixed effects for event type",	 "FEtype"						,
-    "Inertia",												 "inertia"					,
-    "Incoming shared partners",			 "isp"										,
-    "Incoming two-path",							 "itp"										,
-    "Outgoing shared partners",			 "osp"										,
-    "Outgoing two-path",							 "otp"										,
-    "Out deregee receiver",					 "outdegreeReceiver"			,
-    "Out degree sender",							 "outdegreeSender"				,
-    "Pshift AB-AB",									 "psABAB"						,
-    "Pshift AB-AY",									 "psABAY"						,
-    "Pshift AB-BA",									 "psABBA"									,
-    "Pshift AB-BY",									 "psABBY"									,
-    "Pshift AB-XA",									 "psABXA"									,
-    "Pshift AB-XB",									 "psABXB"									,
-    "Pshift AB-XY",									 "psABXY"									,
-    "Recency continue",							 "recencyContinue"	,
-    "Recency receive of receiver", 	 "recencyReceiveReceiver"	,
-    "Recency receive of sender",			 "recencyReceiveSender"		,
-    "Recency send of receiver",			 "recencySendReceiver"		,
-    "Recency send of sender",				 "recencySendSender"			,
-    "Reciprocity",										 "reciprocity"						,
-    "Recency rank receive",					 "rrankReceive"						,
-    "Recency rank send",							 "rrankSend"							,
-    "Total degree dyad",							 "totaldegreeDyad"	,
-    "Total degree receiver",					 "totaldegreeReceiver"		,
-    "Total degree sender",						 "totaldegreeSender"			,
-    "User statistics",								 "userStat"					)
-  out <- matrix(effs, ncol = 2, nrow = length(effs)/2, byrow = TRUE)
-  colnames(out) <- c("JASP_name", "R_name")
+  endoEffectsJasp <- c(
+    gettext("In degree receiver"),
+    gettext("In degree sender"),
+    gettext("Fixed effects for event type"),
+    gettext("Inertia"),
+    gettext("Incoming shared partners"),
+    gettext("Incoming two-path"),
+    gettext("Outgoing shared partners"),
+    gettext("Outgoing two-path"),
+    gettext("Out deregee receiver"),
+    gettext("Out degree sender"),
+    gettext("Pshift AB-AB"),
+    gettext("Pshift AB-AY"),
+    gettext("Pshift AB-BA"),
+    gettext("Pshift AB-BY"),
+    gettext("Pshift AB-XA"),
+    gettext("Pshift AB-XB"),
+    gettext("Pshift AB-XY"),
+    gettext("Recency continue"),
+    gettext("Recency receive of receiver"),
+    gettext("Recency receive of sender"),
+    gettext("Recency send of receiver"),
+    gettext("Recency send of sender"),
+    gettext("Reciprocity"),
+    gettext("Recency rank receive"),
+    gettext("Recency rank send"),
+    gettext("Total degree dyad"),
+    gettext("Total degree receiver"),
+    gettext("Total degree sender"),
+    gettext("User statistics")
+  )
+
+  endoEffectsR <- c(
+    "indegreeReceiver",
+    "indegreeSender",
+    "FEtype",
+    "inertia",
+ 	  "isp",
+   	"itp",
+   	"osp",
+   	"otp",
+    "outdegreeReceiver",
+    "outdegreeSender",
+    "psABAB",
+   	"psABAY",
+    "psABBA",
+   	"psABBY",
+    "psABXA",
+   	"psABXB",
+    "psABXY",
+    "recencyContinue",
+    "recencyReceiveReceiver",
+    "recencyReceiveSender",
+    "recencySendReceiver",
+  	"recencySendSender",
+    "reciprocity",
+    "rrankReceive",
+    "rrankSend",
+    "totaldegreeDyad",
+    "totaldegreeReceiver",
+    "totaldegreeSender",
+    "userStat")
+
+  out <- cbind(endoEffectsJasp, endoEffectsR)
   return(out)
 
 }
@@ -469,7 +500,7 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
     endoScaling <- sapply(options[[endoIndex]], function(x) x[["endogenousEffectScaling"]])
     endoEffectsJaspSave <- paste0(endoEffects, "('", endoScaling, "')")
     endoNames <- .endoEffectsMatching()
-    endoEffects <- endoNames[which(endoNames %in% endoEffects, arr.ind = TRUE), "R_name"]
+    endoEffects <- endoNames[which(endoNames %in% endoEffects, arr.ind = TRUE), "endoEffectsR"]
     endoEffects <- paste0(endoEffects, "(scaling = ", "'", endoScaling, "'", ")")
     endoEffectsRSave <- endoEffects
     endoEffects <- paste(endoEffects, collapse = " + ")
@@ -583,3 +614,42 @@ frequentistRelationalEventModeling <- function(jaspResults, dataset, options) {
 #
 #   return()
 # }
+
+
+.feedbackEndoEffects <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["endoEffectsFromR"]])) return()
+
+  if (options[["eventDirection"]] == "directed" && options[["orientation"]] == "tie") {
+
+    endos <- .endoEffectsMatching()
+    specs <- endos[1:29, "endoEffectsJasp"]
+    specs <- as.list(specs)
+
+  } else if (options[["eventDirection"]] == "directed" && options[["orientation"]] == "actor") {
+
+    endos <- .endoEffectsMatching()
+    specs <- endos[1:29, "endoEffectsJasp"]
+    specs <- as.list(specs)
+
+  } else if (options[["eventDirection"]] == "undirected" && options[["orientation"]] == "tie") {
+
+    endos <- .endoEffectsMatching()
+    specs <- endos[1:29, "endoEffectsJasp"]
+    specs <- as.list(specs)
+
+  } else if (options[["eventDirection"]] == "undirected" && options[["orientation"]] == "actor") {
+
+    endos <- .endoEffectsMatching()
+    specs <- endos[1:29, "endoEffectsJasp"]
+    specs <- as.list(specs)
+
+  }
+
+  src <- createJaspQmlSource("endoEffectsFromR", specs)
+  src$dependOn(c("eventDirection", "orientation"))
+  jaspResults[["endoEffectsFromR"]] <- src
+
+  return()
+
+}
