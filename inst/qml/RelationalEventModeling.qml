@@ -33,23 +33,65 @@ Form
 
 		RadioButtonGroup
 		{
-			name: "eventDirection"
-			id: eventDirection
-			title: qsTr("Event direction")
+			name: "orientation"
+			id: orientation
+			title: qsTr("Orientation")
 			radioButtonsOnSameRow: false
 
 			RadioButton
 			{
-				value: "directed"
-				label: qsTr("Directed")
+				value: "tie"
+				label: qsTr("Tie-oriented")
 				checked: true
+
+				RadioButtonGroup
+				{
+					name: "eventDirection"
+					id: eventDirection
+					title: qsTr("")
+					radioButtonsOnSameRow: false
+
+					RadioButton
+					{
+						value: "directed"
+						label: qsTr("Directed")
+						checked: true
+					}
+					RadioButton
+					{
+						value: "undirected"
+						label: qsTr("Undirected")
+					}
+				}
 			}
 			RadioButton
 			{
-				value: "undirected"
-				label: qsTr("Undirected")
+				value: "actor"
+				label: qsTr("Actor-oriented")
+
+				RadioButtonGroup
+				{
+					name: "actorDirection"
+					id: actorDirection
+					title: qsTr("")
+					radioButtonsOnSameRow: false
+
+					RadioButton
+					{
+						value: "sender"
+						label: qsTr("Sender")
+						checked: true
+					}
+					RadioButton
+					{
+						value: "receiver"
+						label: qsTr("Receiver")
+					}
+				}
 			}
 		}
+
+
 
 		RadioButtonGroup
 		{
@@ -70,25 +112,6 @@ Form
 			}
 		}
 
-		RadioButtonGroup
-		{
-			name: "orientation"
-			id: orientation
-			title: qsTr("Orientation")
-			radioButtonsOnSameRow: false
-
-			RadioButton
-			{
-				value: "tie"
-				label: qsTr("Tie-oriented")
-				checked: true
-			}
-			RadioButton
-			{
-				value: "actor"
-				label: qsTr("Actor-oriented")
-			}
-		}
 
 		RadioButtonGroup
 		{
@@ -107,11 +130,11 @@ Form
 				value: "active"
 				label: qsTr("Active")
 			}
-			RadioButton
-			{
-				value: "manual"
-				label: qsTr("Manual")
-			}
+			// RadioButton
+			// {
+			// 	value: "manual"
+			// 	label: qsTr("Manual")
+			// }
 		}
 	}
 
@@ -149,7 +172,7 @@ Form
 					name: "endogenousEffectScaling"; 
 					values: specifiedEndogenousEffects.scalingTwoVars.includes(rowValue) ? specifiedEndogenousEffects.scalingTwo : specifiedEndogenousEffects.scalingAll 
 					visible: !specifiedEndogenousEffects.scalingNoneVars.includes(rowValue)
-					}
+				}
 			}
 		}
 	}
@@ -158,7 +181,7 @@ Form
 	{
 		title: qsTr("Exogenous Effects")
 		columns: 1
-		visible: orientation.value == "tie" && eventDirection.value == "directed"
+		// visible: orientation.value == "tie" && eventDirection.value == "directed"
 
 		TableView
 		{
@@ -260,18 +283,18 @@ Form
 // 				title: qsTr("Endogenous effects")
 // 				values:
 // 				[
-// 					{ label: qsTr("Degree difference"),							value: "degreeDiff"				},
-// 					{ label: qsTr("Degree maximum"),								value: "degreeMax"				},
-// 					{ label: qsTr("Degree Minimum"),								value: "degreeMin"				},
-// 					{ label: qsTr("Fixed effects for event type"),	value: "FEtype"						},
-// 					{ label: qsTr("Inertia"),												value: "inertia"					},
-// 					{ label: qsTr("Pshift AB-AB"),									value: "psABAB"						},
-// 					{ label: qsTr("Pshift AB-AY"),									value: "psABAY"						},
-// 					{ label: qsTr("Shared partners"),								value: "sp"								},
-// 					{ label: qsTr("Unique shared partners"),				value: "spUnique"					},
-// 					{ label: qsTr("Recency continue"),							value: "recencyContinue"	},
-// 					{ label: qsTr("Total degree dyad"),							value: "totaldegreeDyad"	},
-// 					{ label: qsTr("User statistics"),								value: "userStat"					}
+					// { label: qsTr("Degree difference"),							value: "degreeDiff"				},
+					// { label: qsTr("Degree maximum"),								value: "degreeMax"				},
+					// { label: qsTr("Degree Minimum"),								value: "degreeMin"				},
+					// { label: qsTr("Fixed effects for event type"),	value: "FEtype"						},
+					// { label: qsTr("Inertia"),												value: "inertia"					},
+					// { label: qsTr("Pshift AB-AB"),									value: "psABAB"						},
+					// { label: qsTr("Pshift AB-AY"),									value: "psABAY"						},
+					// { label: qsTr("Shared partners"),								value: "sp"								},
+					// { label: qsTr("Unique shared partners"),				value: "spUnique"					},
+					// { label: qsTr("Recency continue"),							value: "recencyContinue"	},
+					// { label: qsTr("Total degree dyad"),							value: "totaldegreeDyad"	},
+					// { label: qsTr("User statistics"),								value: "userStat"					}
 // 				]
 // 			}
 
@@ -600,21 +623,7 @@ Form
 			title: qsTr("Estimation method")
 			name: "method"
 			RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
-			RadioButton { value: "GDADAMAX" ; label: qsTr("Adaptive gradient descent"); checked: false}
-		}
-	}
-
-		Section
-	{
-		title: qsTr("Advanced Options")
-
-		RadioButtonGroup
-		{
-			title: 	qsTr("Missing Values")
-			name: 	"naAction"
-
-			RadioButton { value: "pairwise"; label: qsTr("Exclude cases pairwise"); checked: false}
-			RadioButton { value: "listwise"; label: qsTr("Exclude cases listwise"); checked: true}
+			RadioButton { value: "BSIR" ; label: qsTr("Bayesian important resampling"); checked: false}
 		}
 	}
 

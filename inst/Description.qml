@@ -12,6 +12,7 @@ Description
 	website		: "https://jasp-stats.org"
 	license		: "GPL (>= 2)"
 	icon      : "logoFreq.png"
+	requiresData: false
 	hasWrappers	: false
 
 	// GroupTitle
@@ -19,16 +20,30 @@ Description
 	// 	title:	qsTr("")
 	// 	icon:	"logo.png"
 	// }
+	Analysis
+	{
+		title: 	"Prepare REM"
+		func: 	"prepareRelationalEventModeling"
+		qml: 		"PrepareRelationalEventModeling.qml"
+		// icon: 	"logoBay.png"
+	}
+
+	Separator {}
 
 	Analysis
 	{
-	    title: 	"Classical REM"
-	    func: 	"frequentistRelationalEventModeling"
-			qml: 		"FrequentistRelationalEventModeling.qml"
+		title: 	"REM"
+		func: 	"relationalEventModeling"
+		qml: 		"RelationalEventModeling.qml"
+		requiresData: true
+
 			// icon: 	"logoFreq.png"
 	}
 	
-	Separator {}
+
+}
+
+
 
 	// GroupTitle
 	// {
@@ -36,11 +51,4 @@ Description
 	// 	icon:	"logoBay.png"
 	// }
 
-	Analysis
-	{
-	    title: 	"Bayesian REM"
-	    func: 	"bayesianRelationalEventModeling"
-			qml: 		"BayesianRelationalEventModeling.qml"
-			// icon: 	"logoBay.png"
-	}
-}
+
