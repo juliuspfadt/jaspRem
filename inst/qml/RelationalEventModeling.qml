@@ -10,7 +10,7 @@ Form
 	{
 		preferredHeight: 300 * preferencesModel.uiScale
 		AvailableVariablesList{	name:	"allVariables"; id: allVariables}
-		AssignedVariablesList	{	name:	"timeVariable";			title: qsTr("Time Variable");		suggestedColumns: ["scale"];	singleVariable: true	; id: assignedVariableTime}
+		AssignedVariablesList	{	name:	"timeVariable";			title: qsTr("Time Variable");		suggestedColumns: ["scale","ordinal", "nominal"];	singleVariable: true	; id: assignedVariableTime}
 		AssignedVariablesList	{	name:	"actorVariables";		title: qsTr("Actor Variables");	suggestedColumns: ["scale","ordinal", "nominal"]; singleVariable: false; height: 75 * preferencesModel.uiScale}
 		AssignedVariablesList	{	name:	"weightVariable";		title: qsTr("Weight Variable");	suggestedColumns: ["scale"];	singleVariable: true	}
 		
@@ -213,7 +213,7 @@ Form
 		
 		ComponentsList
 		{
-			name: "exoTable"
+			name: "exogenousEffectsTable"
 			titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
 			implicitHeight: 100 * preferencesModel.uiScale
 			implicitWidth: 600 * preferencesModel.uiScale
@@ -257,7 +257,7 @@ Form
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 250; text: rowValue } 
 					DropDown {
-						name: "exoEffectsScaling"; 
+						name: "exogenousEffectsScaling"; 
 						values: [{ label: qsTr("none"), value : "none"}, { label: qsTr("std"), value : "std"}]
 						// visible: !specifiedExoEffects.scalingNoneVars.includes(rowValue)
 					}
@@ -283,7 +283,7 @@ Form
 				implicitWidth: 500 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 400; text: rowValue } 
-					CheckBox {Layout.preferredWidth: 100; name: "include"}
+					CheckBox {Layout.preferredWidth: 100; name: "includeIA"}
 				}
 			}
 		}
@@ -299,7 +299,7 @@ Form
 			title: qsTr("Estimation method")
 			name: "method"
 			RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
-			RadioButton { value: "BSIR" ; label: qsTr("Bayesian important resampling"); checked: false}
+			RadioButton { value: "BSIR" ; label: qsTr("Bayesian importance resampling"); checked: false}
 		}
 	}
 
