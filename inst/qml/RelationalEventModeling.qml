@@ -15,16 +15,52 @@ Form
 		AssignedVariablesList	{	name:	"weightVariable";		title: qsTr("Weight Variable");	suggestedColumns: ["scale"];	singleVariable: true	}
 		
 		// AssignedVariablesList	{	name:	"covariates";				title: qsTr("Covariates");		suggestedColumns: ["scale","ordinal", "nominal"];	singleVariable: false	; height: 115 * preferencesModel.uiScale; id: covariates}
-
 	}
-
-// // in order to have access to all variables in the data set even though they might not be assigned, 
+	// // in order to have access to all variables in the data set even though they might not be assigned, 
 // // this section is hidden
 	Section
 	{
 		AssignedVariablesList{ name: "allVariablesHidden"; source: "allVariables" }
 		visible: false
 	}
+	Section{
+		title: qsTr("Upload Covariates Data")
+
+		FileSelector
+		{
+		name:									"actorData"
+		label:								qsTr("Upload actor attributes")
+		placeholderText:			qsTr("e.g., home/Data/actorData.csv")
+		filter:								"*.csv"
+		save:									false
+		fieldWidth:						180 * preferencesModel.uiScale
+		}
+		Group{}
+		ComponentsList
+		{
+			name: "dyadDataList"
+			title: qsTr("Upload dyadic attributes")
+			implicitHeight		: 90 * preferencesModel.uiScale // about 3 rows
+			minimumItems: 1
+			rowComponent: 
+			RowLayout
+			{
+				FileSelector
+				{
+					id:										dyadData
+					name:									"dyadData"
+					label:								""
+					placeholderText:			qsTr("e.g., home/Data/dyadData.csv")
+					filter:								"*.csv"
+					save:									false
+					fieldWidth:						180 * preferencesModel.uiScale
+				}
+			}
+		}
+
+	}
+	
+
 
 	Section
 	{

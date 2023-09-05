@@ -31,37 +31,101 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  # sink(file="~/Downloads/log.txt")
-  # on.exit(sink(NULL))
+  sink(file="~/Downloads/log.txt")
+  on.exit(sink(NULL))
 
-  .feedbackEndoEffects(jaspResults, options)
+  .remUploadActorData(jaspResults, options)
+  .remUploadDyadData(jaspResults, options)
 
-  .feedbackExoTableVariables(jaspResults, options)
+  # .feedbackEndoEffects(jaspResults, options)
+  #
+  # .feedbackExoTableVariables(jaspResults, options)
+
+  print(jaspResults[["dyadData"]]$object)
 
   ready <- (options[["timeVariable"]] != "") && (length(options[["actorVariables"]]) > 1)
 
   if (!ready) return()
 
-  options <- .getExogenousEffects(options)
+  # options <- .getExogenousEffects(options)
+  #
+  # .feedbackExoEffects(jaspResults, options)
+  #
+  # dataset <- .remReadData(dataset, options)
+  #
+  # .remErrorHandling(dataset, options)
+  # .remMainContainer(jaspResults, options)
 
-  .feedbackExoEffects(jaspResults, options)
-
-  dataset <- .remReadData(dataset, options)
-
-  .remErrorHandling(dataset, options)
-  .remMainContainer(jaspResults, options)
-
-  .remRemify(jaspResults, dataset, options)
-  .remRemstats(jaspResults, dataset, options)
-  # .remRemstatsBeta(jaspResults, dataset, options)
-
-  .remRemstimate(jaspResults, dataset, options)
-
-  .remModelFitTable(jaspResults, options)
-  .remCoefficientsTable(jaspResults, options)
+  # .remRemify(jaspResults, dataset, options)
+  # .remRemstats(jaspResults, dataset, options)
+  # # .remRemstatsBeta(jaspResults, dataset, options)
+  #
+  # .remRemstimate(jaspResults, dataset, options)
+  #
+  # .remModelFitTable(jaspResults, options)
+  # .remCoefficientsTable(jaspResults, options)
 
   return()
 }
+
+.remUploadActorData <- function(jaspResults, options) {
+
+  if (options[["actorData"]] == "") return()
+  if (!is.null(jaspResults[["actorData"]]$object)) return()
+
+  actorDt <- read.csv(options[["actorData"]])
+
+  actorData <- createJaspState(actorDt)
+  actorData$dependOn("actorData")
+  jaspResults[["actorData"]] <- actorData
+
+  return()
+}
+
+
+.remUploadDyadData <- function(jaspResults, options) {
+
+  dyadDataPaths <- sapply(options[["dyadDataList"]], function(x) x[["dyadData"]])
+  if (all(dyadDataPaths == "")) return()
+
+  if (!is.null(jaspResults[["dyadData"]]$object)) return()
+
+  dyadOut <- list()
+  for (i in 1:length(dyadDataPaths)) {
+
+    if (dyadDataPaths[i] != "") {
+      dyadDt <- read.csv(options[["dyadDataList"]][[i]][["dyadData"]], row.names = NULL, check.names = FALSE)
+      attrName <- basename(options[["dyadDataList"]][[i]][["dyadData"]])
+      attrName <- gsub("\\..*","", attrName)
+
+      # if (dim(dyadDt)[1] == dim(dyadDt)[2] && all(is.na(diag(as.matrix(dyadDt))))) { # square matrix -> change to long format
+      #
+      #   value <- c(as.matrix(dyadDt))
+      #   rownames(dyadDt) <- colnames(dyadDt)
+      #
+      #   rn <- rep(rownames(dyadDt), ncol(dyadDt))
+      #   cn <- rep(colnames(dyadDt), each = nrow(dyadDt))
+      #   dyadDf <- data.frame(rn, cn, value)
+      #   attrName <- basename(options[["dyadDataList"]][[i]][["dyadData"]])
+      #   attrName <- gsub("\\..*","", attrName)
+      #   colnames(dyadDf) <- c("actor1", "actor2", attrName)
+      #   dyadOut[[i]] <- dyadDf[complete.cases(dyadDf), ]
+      # } else {
+        dyadOut[[attrName]] <- dyadDt
+      # }
+    } else {
+      dyadOut[[i]] <- NULL
+    }
+  }
+
+  dyadData <- createJaspState(dyadOut)
+  dyadData$dependOn("dyadDataList")
+  jaspResults[["dyadData"]] <- dyadData
+
+  return()
+}
+
+
 
 .feedbackEndoEffects <- function(jaspResults, options) {
 

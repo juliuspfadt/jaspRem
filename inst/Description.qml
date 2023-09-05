@@ -20,15 +20,6 @@ Description
 	// 	title:	qsTr("")
 	// 	icon:	"logo.png"
 	// }
-	Analysis
-	{
-		title: 	"Prepare REM"
-		func: 	"prepareRelationalEventModeling"
-		qml: 		"PrepareRelationalEventModeling.qml"
-		// icon: 	"logoBay.png"
-	}
-
-	Separator {}
 
 	Analysis
 	{
