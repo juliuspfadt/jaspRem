@@ -35,6 +35,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   .feedbackEndoEffects(jaspResults, options)
 
+  .feedbackExoTableVariables(jaspResults, options)
+
   ready <- (options[["timeVariable"]] != "") && (length(options[["actorVariables"]]) > 1)
 
   if (!ready) return()
@@ -65,20 +67,25 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   # if (!is.null(options[["exoEffects"]]))
   #   return(options)
 
-  exoTable <- options$exogenousEffectsTable
-  exoNames <- exoTable[[1]]$levels
+  exoTable <- options$exoTable
+  varNames <- sapply(exoTable, function(x) x[["value"]])
   exoEffectsList <- c("Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie")
-  exoInds <- lapply(exoTable, function(x) which(x[["values"]] == 1))
+
+  exoInds <- vector("list", length(varNames))
+  names(exoInds) <- varNames
+  for (i in 1:length(exoTable)) {
+    exoInds[[i]] <- which(sapply(exoTable[[i]], function(x) isTRUE(x)))
+  }
 
   if (length(unlist(exoInds)) == 0)
     return(options)
 
-  options[["exoEffects"]] <- list()
-  options[["exoEffects"]][["variableNames"]] <- jaspBase::encodeColNames(c(exoNames[sort(unique(unlist(exoInds)))], "time_y", "name"))
-  exoEffectsNames <- c("Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie")
-  names(exoInds) <- exoEffectsNames
   exoInds[sapply(exoInds, function(x) length(x) == 0)] <- NULL
-  options[["exoEffects"]][["list"]] <- lapply(exoInds, function(x) exoNames[x])
+
+  options[["exoEffects"]] <- list()
+  options[["exoEffects"]][["variableNames"]] <- jaspBase::encodeColNames(c(names(exoInds), "time_y", "name"))
+
+  options[["exoEffects"]][["list"]] <- exoInds
 
   return(options)
 
@@ -115,27 +122,25 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 ###########################################################################
 ### this still needs some work regarding the option to exit at the beginning
 ###########################################################################
-  if (!(length(options$exoEffects) > 0))
+  if (length(options$exoEffects$list) == 0)
     return()
       # || !is.null(jaspResults[["sourceTopics"]])) return()
 
-  exo <- options$exoEffects
-  exoList <- exo$list
-  # lapply(exoList, function(x))
+  exoEffects <- options$exoEffects
+  exoList <- options$exoEffects$list
 
   exoNames <- names(exoList)
   outExoList <- list()
   for (i in 1:length(exoList)) {
     if (!is.null(exoList[[i]])) {
-      nam1 <- tolower(exoNames[i])
-      vars <- exoList[[i]]
-      tmp <- as.list(paste0(nam1, "('", vars, "')"))
+      vars <- exoNames[i]
+      nam <- names(exoList[[i]])
+      tmp <- as.list(paste0(nam, "('", vars, "')"))
       outExoList <- append(outExoList, tmp)
     }
   }
 
   jaspResults[["specifiedEffectsFromR"]] <- createJaspQmlSource("specifiedEffectsFromR", outExoList)
-
 
   endoIndex <- grep("specifiedEndogenousEffects", names(options))
   outEndoList <- list()
@@ -579,6 +584,28 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   return()
 
+}
+
+
+.feedbackExoTableVariables <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["exoTableVariablesR"]])) return()
+
+  vars <- jaspBase::decodeColNames(options[["allVariablesHidden"]])
+
+  vars <- vars[-grep("empty", vars)]
+  vars <- vars[-grep("actor", vars)]
+  vars <- vars[-grep("time", vars)]
+  vars <- vars[-grep("name", vars)]
+  vars <- vars[-grep("weight", vars)]
+
+  vars <- as.list(vars)
+
+  src <- createJaspQmlSource("exoTableVariablesR", vars)
+  src$dependOn(c("allVariablesHidden", "timeVariable", "actorVariables", "weightVariable"))
+  jaspResults[["exoTableVariablesR"]] <- src
+
+  return()
 }
 
 

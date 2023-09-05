@@ -20,11 +20,11 @@ Form
 
 // // in order to have access to all variables in the data set even though they might not be assigned, 
 // // this section is hidden
-// 	Section
-// 	{
-// 		AssignedVariablesList{ name: "allVariablesHidden"; source: "allVariables" }
-// 		visible: true
-// 	}
+	Section
+	{
+		AssignedVariablesList{ name: "allVariablesHidden"; source: "allVariables" }
+		visible: false
+	}
 
 	Section
 	{
@@ -183,31 +183,54 @@ Form
 		columns: 1
 		// visible: orientation.value == "tie" && eventDirection.value == "directed"
 
-		TableView
+		// TableView
+		// {
+
+		// 	id: exoEffectsTable
+		// 	modelType			: JASP.Simple
+
+		// 	implicitWidth		: form.implicitWidth
+		// 	implicitHeight		: 200 * preferencesModel.uiScale // about 3 rows
+
+		// 	initialRowCount		: allVariables.intValue 
+		// 	initialColumnCount	: 9
+
+		// 	// rowCount			: allVariables.intValue
+		// 	// columnCount			: 9
+
+		// 	name				: "exogenousEffectsTable"
+		// 	title: qsTr("Tab")
+		// 	cornerText			: qsTr("Variables")
+		// 	columnNames			: [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")]
+		// 	isFirstColEditable	: true
+		// 	itemType			: JASP.Integer
+		// 	// source: [{["allVariables", "covariates"], discard: [{values: ["name", "time_y"]}] }]
+		// 	source: [{name: "allVariables", discard: [{values: ["name", "time_y", "empty0", "empty1", "empty2"]}]}]
+
+		// 	function getDefaultValue(columnIndex, rowIndex)				{ return 0	}
+		// }
+
+		
+		ComponentsList
 		{
+			name: "exoTable"
+			titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
+			implicitHeight: 100 * preferencesModel.uiScale
+			implicitWidth: 600 * preferencesModel.uiScale
+			rSource: "exoTableVariablesR"
+			rowComponent: RowLayout { 
+				Text{Layout.preferredWidth: 130; text: rowValue } 
+				CheckBox {Layout.preferredWidth: 40; name: "average"}
+				CheckBox {Layout.preferredWidth: 50; name: "difference"}
+				CheckBox {Layout.preferredWidth: 25; name: "event"}
+				CheckBox {Layout.preferredWidth: 45; name: "maximum"}
+				CheckBox {Layout.preferredWidth: 45; name: "minimum"}
+				CheckBox {Layout.preferredWidth: 40; name: "receive"}
+				CheckBox {Layout.preferredWidth: 30; name: "same"}
+				CheckBox {Layout.preferredWidth: 30; name: "send"}
+				CheckBox {Layout.preferredWidth: 30; name: "tie"}
 
-			id: exoEffectsTable
-			modelType			: JASP.Simple
-
-			implicitWidth		: form.implicitWidth
-			implicitHeight		: 200 * preferencesModel.uiScale // about 3 rows
-
-			initialRowCount		: allVariables.intValue 
-			initialColumnCount	: 9
-
-			// rowCount			: allVariables.intValue
-			// columnCount			: 9
-
-			name				: "exogenousEffectsTable"
-			title: qsTr("Tab")
-			cornerText			: qsTr("Variables")
-			columnNames			: [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")]
-			isFirstColEditable	: true
-			itemType			: JASP.Integer
-			// source: [{["allVariables", "covariates"], discard: [{values: ["name", "time_y"]}] }]
-			source: [{name: "allVariables", discard: [{values: ["name", "time_y"]}]}]
-
-			function getDefaultValue(columnIndex, rowIndex)				{ return 0	}
+			}
 		}
 
 		Group
@@ -265,6 +288,22 @@ Form
 			}
 		}
 	}
+
+
+
+	Section
+	{
+		title: qsTr("Estimation Options")
+
+		RadioButtonGroup {
+			title: qsTr("Estimation method")
+			name: "method"
+			RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
+			RadioButton { value: "BSIR" ; label: qsTr("Bayesian important resampling"); checked: false}
+		}
+	}
+
+}
 
 
 //  // section visible for the tie-oriented undirected model
@@ -614,22 +653,6 @@ Form
 // 		// 	}
 // 		// }
 // 	}
-
-	Section
-	{
-		title: qsTr("Estimation Options")
-
-		RadioButtonGroup {
-			title: qsTr("Estimation method")
-			name: "method"
-			RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
-			RadioButton { value: "BSIR" ; label: qsTr("Bayesian important resampling"); checked: false}
-		}
-	}
-
-}
-
-
 
 
 
