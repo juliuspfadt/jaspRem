@@ -177,7 +177,7 @@ Form
  // section visible for the tie-oriented directed model
 	Section 
 	{
-		title: qsTr("Endogenous Effects")
+		title: qsTr("Effects")
 		columns: 1
 
 		VariablesForm
@@ -199,10 +199,10 @@ Form
 				property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
 				property var scalingTwoVars: 
 					["Degree difference", "Outgoing two-path", "Incoming two-path", "Outgoing shared partners", "Incoming shared partners", 
-					 "Shared partners"];
+					"Shared partners"];
 				property var scalingNoneVars: ["Pshift AB-AB", "Pshift AB-AY", "Pshift AB-BA", "Pshift AB-BY", "Pshift AB-XA", "Pshift AB-XB", "Pshift AB-XY", 
-																	 "Recency continue", "Recency receive of receiver", "Recency send of receiver", "Recency send of sender", 
-																	 "Recency rank receive", "Recency rank send"];
+																	"Recency continue", "Recency receive of receiver", "Recency send of receiver", "Recency send of sender", 
+																	"Recency rank receive", "Recency rank send"];
 
 				rowComponent: DropDown {
 					name: "endogenousEffectScaling"; 
@@ -211,75 +211,42 @@ Form
 				}
 			}
 		}
-	}
 
-	Section
-	{
-		title: qsTr("Exogenous Effects")
-		columns: 1
-		// visible: orientation.value == "tie" && eventDirection.value == "directed"
-
-		// TableView
-		// {
-
-		// 	id: exoEffectsTable
-		// 	modelType			: JASP.Simple
-
-		// 	implicitWidth		: form.implicitWidth
-		// 	implicitHeight		: 200 * preferencesModel.uiScale // about 3 rows
-
-		// 	initialRowCount		: allVariables.intValue 
-		// 	initialColumnCount	: 9
-
-		// 	// rowCount			: allVariables.intValue
-		// 	// columnCount			: 9
-
-		// 	name				: "exogenousEffectsTable"
-		// 	title: qsTr("Tab")
-		// 	cornerText			: qsTr("Variables")
-		// 	columnNames			: [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")]
-		// 	isFirstColEditable	: true
-		// 	itemType			: JASP.Integer
-		// 	// source: [{["allVariables", "covariates"], discard: [{values: ["name", "time_y"]}] }]
-		// 	source: [{name: "allVariables", discard: [{values: ["name", "time_y", "empty0", "empty1", "empty2"]}]}]
-
-		// 	function getDefaultValue(columnIndex, rowIndex)				{ return 0	}
-		// }
-
-		
-		ComponentsList
+		Group
 		{
-			name: "exogenousEffectsTable"
-			titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
-			implicitHeight: 100 * preferencesModel.uiScale
-			implicitWidth: 600 * preferencesModel.uiScale
-			rSource: "exoTableVariablesR"
-			rowComponent: RowLayout { 
-				Text{Layout.preferredWidth: 130; text: rowValue } 
-				CheckBox {Layout.preferredWidth: 40; name: "average"}
-				CheckBox {Layout.preferredWidth: 50; name: "difference"}
-				CheckBox {Layout.preferredWidth: 25; name: "event"}
-				CheckBox {Layout.preferredWidth: 45; name: "maximum"}
-				CheckBox {Layout.preferredWidth: 45; name: "minimum"}
-				CheckBox {Layout.preferredWidth: 40; name: "receive"}
-				CheckBox {Layout.preferredWidth: 30; name: "same"}
-				CheckBox {Layout.preferredWidth: 30; name: "send"}
-				CheckBox {Layout.preferredWidth: 30; name: "tie"}
-
+			title: qsTr("Exogenous effects")
+			implicitHeight: 140 * preferencesModel.uiScale
+			ComponentsList
+			{
+				name: "exogenousEffectsTable"
+				titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
+				// maybe translate that?
+				implicitHeight: 100 * preferencesModel.uiScale
+				implicitWidth: 600 * preferencesModel.uiScale
+				rSource: "exoTableVariablesR"
+				rowComponent: RowLayout { 
+					Text{Layout.preferredWidth: 130; text: rowValue } 
+					CheckBox {Layout.preferredWidth: 40; name: "average"}
+					CheckBox {Layout.preferredWidth: 50; name: "difference"}
+					CheckBox {Layout.preferredWidth: 25; name: "event"}
+					CheckBox {Layout.preferredWidth: 45; name: "maximum"}
+					CheckBox {Layout.preferredWidth: 45; name: "minimum"}
+					CheckBox {Layout.preferredWidth: 40; name: "receive"}
+					CheckBox {Layout.preferredWidth: 30; name: "same"}
+					CheckBox {Layout.preferredWidth: 30; name: "send"}
+					CheckBox {Layout.preferredWidth: 30; name: "tie"}
+				}
 			}
 		}
 
 		Group
 		{
-			title: qsTr("Specified Effects")
-			implicitHeight: 150 * preferencesModel.uiScale
-
+			title: qsTr("Specified exogenous effects")
+			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
 			{
-
 				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
-
 				rSource: "specifiedEffectsFromR"
 				property var scalingNoneVars: ["event", "same"];
 				property var absoluteVars: ["difference"];
@@ -309,7 +276,7 @@ Form
 		Group
 		{
 			title: qsTr("Interaction Effects")
-			implicitHeight: 150 * preferencesModel.uiScale
+			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
 			{
 				name: "interactionEffects"
@@ -324,7 +291,6 @@ Form
 			}
 		}
 	}
-
 
 
 	Section
