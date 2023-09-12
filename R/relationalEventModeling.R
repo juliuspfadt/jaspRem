@@ -1,7 +1,3 @@
-#' TODO:
-
-
-
 
 
 # Copyright (C) 2013-2022 University of Amsterdam
@@ -42,19 +38,18 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   .feedbackExoEffects(jaspResults, options)
 
-  dataset <- .remReadData(dataset, options)
+  dataset <- .remReadData(jaspResults, dataset, options)
 
-  .remErrorHandling(dataset, options)
+  .remErrorHandling(jaspResults, dataset, options)
   .remMainContainer(jaspResults, options)
 
   .remRemify(jaspResults, dataset, options)
   # .remRemstats(jaspResults, dataset, options)
-  # # .remRemstatsBeta(jaspResults, dataset, options)
-  #
-  # .remRemstimate(jaspResults, dataset, options)
-  #
-  # .remModelFitTable(jaspResults, options)
-  # .remCoefficientsTable(jaspResults, options)
+  .remRemstatsBeta(jaspResults, dataset, options)
+  .remRemstimate(jaspResults, dataset, options)
+
+  .remModelFitTable(jaspResults, options)
+  .remCoefficientsTable(jaspResults, options)
 
   return()
 }
@@ -102,6 +97,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     if (dyadDataPaths[i] != "") {
       dyadDt <- read.csv(options[["dyadDataList"]][[i]][["dyadData"]], row.names = NULL, check.names = FALSE)
+      rownames(dyadDt) <- colnames(dyadDt)
       attrName <- basename(options[["dyadDataList"]][[i]][["dyadData"]])
       attrName <- gsub("\\..*","", attrName)
 
@@ -132,7 +128,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   return()
 }
-
 
 
 .feedbackEndoEffects <- function(jaspResults, options) {
@@ -222,7 +217,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   exoInds[sapply(exoInds, function(x) length(x) == 0)] <- NULL
 
   exoEffects <- list()
-  exoEffects[["variableNames"]] <- jaspBase::encodeColNames(c(names(exoInds), "time_y", "name"))
+  exoEffects[["variableNames"]] <- jaspBase::encodeColNames(names(exoInds))
   exoEffects[["list"]] <- exoInds
 
   exoEffectsState <- createJaspState(exoEffects)
@@ -281,7 +276,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
-.remReadData <- function(dataset, options) {
+.remReadData <- function(jaspResults, dataset, options) {
 
   if (!is.null(dataset))
     return(dataset)
@@ -292,18 +287,50 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     variables  <- c(options$timeVariable, options$actorVariables, options$weightVariable)
   }
 
+  exoEffects <- jaspResults[["exoEffectsState"]][["object"]][["list"]]
+  if (!is.null(exoEffects)) {
+    tmp1 <- lapply(exoEffects, function(x) names(x) == "event")
+    tmp2 <- unlist(lapply(tmp1, any))
+    eventNames <- names(tmp2[tmp2])
+    variables <- c(variables, jaspBase::encodeColNames(eventNames))
+  }
+
   dataset <- .readDataSetToEnd(columns = variables)
   return(dataset)
 }
 
 
-.remErrorHandling <- function(dataset, options) {
+.remErrorHandling <- function(jaspResults, dataset, options) {
 
   .hasErrors(dataset = dataset,
              type = 'infinity',
              exitAnalysisIfErrors = TRUE)
 
-  # first three variables should be time actis and maybe weight
+  evnames <- jaspBase::decodeColNames(colnames(dataset))
+  evnames <- evnames[! evnames == "time"]
+  print(evnames)
+  if (!is.null(jaspResults[["actorDataState"]]$object)) {
+    attrnames <- colnames(jaspResults[["actorDataState"]]$object)
+    if (length(c(evnames, attrnames)) != length(unique(c(evnames, attrnames)))) {
+      .quitAnalysis(gettext("Duplicate variable names have been detected, please rename them"))
+    }
+  }
+
+  if (!is.null(jaspResults[["dyadDataState"]]$object)) {
+    dyadnames <- names(jaspResults[["dyadDataState"]]$object)
+    if (length(c(evnames, dyadnames)) != length(unique(c(evnames, dyadnames)))) {
+      .quitAnalysis(gettext("Duplicate variable names have been detected, please rename them"))
+    }
+  }
+
+  if (!is.null(jaspResults[["actorDataState"]]$object) && !is.null(jaspResults[["dyadDataState"]]$object)) {
+    if (length(c(evnames, attrnames, dyadnames)) != length(unique(c(evnames, attrnames, dyadnames)))) {
+      .quitAnalysis(gettext("Duplicate variable names have been detected, please rename them"))
+    }
+  }
+
+
+  # first three variables should be time actors and maybe weight
   # seperator variables should be there
 }
 
@@ -370,12 +397,12 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   effectsText <- gsub("+", "+\n", effectsText, fixed = TRUE)
 
   # show the effects to the output
-  outText <- createJaspHtml(text = gettextf("The effects were specified as: \n%s",
-                                            effectsText))
+  outText <- createJaspHtml(text = gettextf("The effects were specified as: \n%s", effectsText))
   outText$position <- 0.5
   jaspResults[["mainContainer"]][["effectsCall"]] <- outText
 
-  dtExo <- .separateCovariateData(jaspResults, dataset, options)
+  dtExo <- .prepareCovariateData(jaspResults, dataset, options)
+
   statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effects, attr_data = dtExo))
 
   if (isTryError(statsObject)) {
@@ -406,6 +433,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   rehObject <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
   statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
+
 
   fit <- try(remstimate::remstimate(reh = rehObject, stats = statsObject,
                                 method = options[["method"]]))
@@ -632,6 +660,22 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         exoEffects[ev] <- gsub("placeHolder", paste0("'", eventNames[which(eventIndex == ev)], "'"), exoEffects[ev], fixed = TRUE)
       }
     }
+
+    # tie is a special case, has no scaling:
+    tieIndex <- grep("tie", exoEffects)
+    if (length(tieIndex) > 0) {
+      tmp1 <- lapply(jaspResults[["exoEffectsState"]][["object"]][["list"]], function(x) names(x) == "tie")
+      tmp2 <- unlist(lapply(tmp1, any))
+      tieNames <- names(tmp2[tmp2])
+      for (ti in tieIndex) {
+        splitted <- unlist(strsplit(exoEffects[ti], ","))
+        targ <- splitted[1]
+        targ <- gsub("'","", targ, fixed = TRUE)
+        exoEffects[ti] <- paste0(targ, ", '", tieNames[which(tieIndex == ti)], "',", splitted[2])
+      }
+    }
+
+
     exoEffectsSave2 <- exoEffects
     exoEffects <- paste0(exoEffects, collapse = " + ")
     effects <- paste(effects, "+", exoEffects)
@@ -695,45 +739,68 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 }
 
-.separateCovariateData <- function(jaspResults, dataset, options) {
+.prepareCovariateData <- function(jaspResults, dataset, options) {
 
-  exoVariables <- jaspBase::encodeColNames(unique(unlist(jaspResults[["exoEffectsState"]][["object"]][["variableNames"]])))
+  exoVariablesEnc <- jaspBase::encodeColNames(unique(unlist(jaspResults[["exoEffectsState"]][["object"]][["variableNames"]])))
+  exoVariablesDec <- jaspBase::decodeColNames(unique(unlist(jaspResults[["exoEffectsState"]][["object"]][["variableNames"]])))
+  exoEffects <- jaspResults[["exoEffectsState"]][["object"]][["list"]]
 
-  if (!is.null(exoVariables)) {
-    dtCv <- dataset[, exoVariables]
-    colnames(dtCv) <- jaspBase::decodeColNames(colnames(dtCv))
-    colnames(dtCv) <- gsub("time_y", "time", colnames(dtCv))
 
+  evnames <- jaspBase::decodeColNames(colnames(dataset))
+  evnames <- evnames[! evnames == "time"]
+  if (!is.null(jaspResults[["actorDataState"]]$object)) {
+    attrnames <- colnames(jaspResults[["actorDataState"]]$object)
+  }
+
+  if (!is.null(jaspResults[["dyadDataState"]]$object)) {
+    dyadnames <- names(jaspResults[["dyadDataState"]]$object)
+  }
+
+
+
+  if (!is.null(exoVariablesEnc)) { # exo effects specified
+
+    exoList <- jaspResults[["exoEffectsState"]][["object"]][["list"]]
+
+    # first the event effect
     # if a event effect is specified we need the variable to be present
-    exoList <- options[["exoEffects"]][["list"]]
     tmp1 <- lapply(exoList, function(x) names(x) == "event")
     tmp2 <- unlist(lapply(tmp1, any))
     eventNames <- names(tmp2[tmp2])
+
+    colnames(dataset) <- jaspBase::decodeColNames(colnames(dataset))
+
     if (length(eventNames) > 0) {
       eventVariables <- jaspBase::decodeColNames(eventNames)
       for (ii in 1:length(eventVariables)) {
-        assign(eventVariables[ii], dtCv[, eventVariables[ii]], pos = 1) # dont know why pos=1 is working....
+        assign(eventVariables[ii], dataset[, eventVariables[ii]], pos = 1) # dont know why pos=1 is working....
       }
-      # drop the event variables
-      dtCv <- dtCv[, !(names(dtCv) %in% eventVariables)]
     }
 
-    ##############
-    # so in theory the exo data should now only contain the covariates for each person, given
-    # that we eliminiated the event things that are part of the event data
-    # Or are there other variables that I forget about?
-    ##############
+    # dyadic covariate data
+    if (!is.null(jaspResults[["dyadDataState"]]$object)) {
 
-    # unfactor the data
-    indx <- sapply(dtCv, is.factor)
-    dtCv[indx] <- lapply(dtCv[indx], function(x) as.numeric(as.character(x)))
+      dyInds <- which(dyadnames %in% exoVariablesDec)
+      if (length(dyInds) > 0) {
+        for (iii in 1:length(dyInds)) {
+          assign(dyadnames[iii], jaspResults[["dyadDataState"]][["object"]][[dyadnames[iii]]], pos = 1)
+        }
+      }
+    }
 
-    dtCvP <- dtCv[complete.cases(dtCv), ]
+    # the attr data
+    if (!is.null(jaspResults[["actorDataState"]]$object)) {
+      # is there any exo effects specified for a variable in the attributes data
+      if (any(!is.na(match(attrnames, exoVariablesDec)))) {
+        dt <- jaspResults[["actorDataState"]]$object
+        return(dt)
+      }
+    }
 
-  } else {
-    dtCvP <- NULL
+
+
   }
-  return(dtCvP)
+  return()
 }
 
 .matchEffectsForStats <- function(formulaOld, newEffects) {
@@ -752,13 +819,21 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   dupInd <- match(form, effs)
   dupInd <- dupInd[complete.cases(dupInd)]
 
-  effsOut <- effs[-dupInd]
+  effsOutForm <- effs[-dupInd]
 
-  effsOut <- paste0(effsOut, collapse = " + ")
-  effsOut <- paste0("~", effsOut)
-  effsOut <- eval(parse(text = effsOut))
+  if (length(effsOutForm) > 0) {
+    effsOutForm <- paste0(effsOutForm, collapse = " + ")
+    effsOutForm <- paste0("~", effsOutForm)
+    effsOutForm <- eval(parse(text = effsOutForm))
+  } else {
+    effsOutForm <- NULL
+  }
 
-  return(effsOut)
+
+  slices <- gsub("\\((.*)", "", effs)
+  slices <- gsub("1", "baseline", slices)
+
+  return(list(form = effsOutForm, slices = slices))
 
 }
 
@@ -784,36 +859,45 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   outText$position <- 0.5
   jaspResults[["mainContainer"]][["effectsCall"]] <- outText
 
-  dtExo <- .separateCovariateData(jaspResults, dataset, options)
+  dtExo <- .prepareCovariateData(jaspResults, dataset, options)
 
   # check if there is already a statsObject in storage
   if (!is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object)) {
     statsObjectOld <- jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object
     formulaOld <- attr(statsObjectOld, "formula")
     effsOut <- .matchEffectsForStats(formulaOld, effects)
-    statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effsOut, attr_data = dtExo))
-    statsObjectCombined <- try(remstats::bind_remstats(statsObjectOld, statsObject))
+
+    if (is.null(effsOut$form)) {
+      statsObjectCombined <- statsObject <- statsObjectOld
+      print("nothing new")
+    } else {
+      statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effsOut$form, attr_data = dtExo))
+      statsObjectCombined <- try(remstats::bind_remstats(statsObjectOld, statsObject))
+    }
+
     jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object <- statsObjectCombined
 
-    # now take the slices out of the combined statsObject and pass them on
+    print(sessionInfo())
+    print(str(effsOut))
+    print(dimnames(statsObject))
+    sliced <- statsObjectCombined[, , effsOut$slices]
+    class(sliced) <- c("tomstats", "remstats")
+    attr(sliced, "model") <- attr(statsObjectCombined, "model")
+    attr(sliced, "formula") <- attr(statsObjectCombined, "formula")
+    attr(sliced, "riskset") <- attr(statsObjectCombined, "riskset")
 
-    # remstatsResultState <- createJaspState(statsObject)
-    # jaspResults[["mainContainer"]][["remstatsResultState"]] <- remstatsResultState
-
+    remstatsResultState <- createJaspState(sliced)
 
   } else {
+
     # in the first round both states are created
     statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effects, attr_data = dtExo))
+
     remstatsResultState <- createJaspState(statsObject)
-    jaspResults[["mainContainer"]][["remstatsResultState"]] <- remstatsResultState
+
+
     remstatsResultStateStorage <- createJaspState(statsObject)
     jaspResults[["mainContainer"]][["remstatsResultStateStorage"]] <- remstatsResultStateStorage
-  }
-
-
-  if (isTryError(statsObject)) {
-    errmsg <- gettextf("Remstats failed. Internal error message: %s", .remExtractErrorMessage(statsObject))
-    jaspResults[["mainContainer"]]$setError(errmsg)
   }
 
   endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
@@ -821,6 +905,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                  "orientation", "riskset", "naAction",
                                  endoDepend, "specifiedExogenousEffects",
                                  "interactionEffects"))
+  jaspResults[["mainContainer"]][["remstatsResultState"]] <- remstatsResultState
+
+  if (isTryError(statsObject)) {
+    errmsg <- gettextf("Remstats failed. Internal error message: %s", .remExtractErrorMessage(statsObject))
+    jaspResults[["mainContainer"]]$setError(errmsg)
+  }
+
+
   return()
 
   #' To sum this up, the remaining difficulty is to use specific subparts of the stats array by name or by number.

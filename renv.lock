@@ -1414,16 +1414,16 @@
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "remify",
       "RemoteUsername": "TilburgNetworkGroup",
-      "RemoteRef": "HEAD",
+      "RemoteRepo": "remify",
+      "RemoteRef": "master",
       "RemoteSha": "0466247bc83f2c1510e9437247f7f392e167a431",
       "Requirements": [
         "R",
         "Rcpp",
         "RcppArmadillo"
       ],
-      "Hash": "490ac05e9a5b643fcde530f6e4ed3584"
+      "Hash": "e5d9c09f154157bb302420186f9d79d2"
     },
     "remotes": {
       "Package": "remotes",
@@ -1441,14 +1441,14 @@
     },
     "remstats": {
       "Package": "remstats",
-      "Version": "3.1.4",
+      "Version": "3.1.5.1",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
+      "RemoteUsername": "juliuspfadt",
       "RemoteRepo": "remstats",
-      "RemoteUsername": "TilburgNetworkGroup",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "4a904ec2aa779bbfa416d7d2ced495c7818a815c",
+      "RemoteRef": "master",
+      "RemoteSha": "2d4701a55d0d6a3a63df5b6f6540f20863342c95",
       "Requirements": [
         "R",
         "Rcpp",
@@ -1458,7 +1458,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "cc05dcaf846405a37446a0b70a1293f9"
+      "Hash": "0cf4516e04c2346005a8fb11239bc3b8"
     },
     "remstimate": {
       "Package": "remstimate",
