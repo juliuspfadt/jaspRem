@@ -20,8 +20,8 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  sink(file="~/Downloads/log.txt")
-  on.exit(sink(NULL))
+  # sink(file="~/Downloads/log.txt")
+  # on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
@@ -36,7 +36,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   .getExogenousEffects(jaspResults, options)
 
-  .feedbackExoEffects(jaspResults, options)
+  .feedbackExoAndInteractionEffects(jaspResults, options)
 
   dataset <- .remReadData(jaspResults, dataset, options)
 
@@ -44,8 +44,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .remMainContainer(jaspResults, options)
 
   .remRemify(jaspResults, dataset, options)
-  # .remRemstats(jaspResults, dataset, options)
-  .remRemstatsBeta(jaspResults, dataset, options)
+  .remRemstats(jaspResults, dataset, options)
   .remRemstimate(jaspResults, dataset, options)
 
   .remModelFitTable(jaspResults, options)
@@ -57,7 +56,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 .remMainContainer <- function(jaspResults, options) {
 
   if (!is.null(jaspResults[["mainContainer"]])) return()
-  # TODO: Dependencies
   mainContainer <- createJaspContainer()
   mainContainer$dependOn(c("timeVariable", "actorVariables", "weightVariable"))
   jaspResults[["mainContainer"]] <- mainContainer
@@ -130,6 +128,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
+# -------- Effects preparation and handling ----------
+
 .feedbackEndoEffects <- function(jaspResults, options) {
 
   if (!is.null(jaspResults[["endoEffectsFromR"]])) return()
@@ -162,6 +162,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   src <- createJaspQmlSource("endoEffectsFromR", specs)
   src$dependOn(c("eventDirection", "orientation"))
   jaspResults[["endoEffectsFromR"]] <- src
+
 
   return()
 
@@ -216,11 +217,11 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   exoInds[sapply(exoInds, function(x) length(x) == 0)] <- NULL
 
-  exoEffects <- list()
-  exoEffects[["variableNames"]] <- jaspBase::encodeColNames(names(exoInds))
-  exoEffects[["list"]] <- exoInds
+  specExoEffects <- list()
+  specExoEffects[["variableNames"]] <- jaspBase::encodeColNames(names(exoInds))
+  specExoEffects[["list"]] <- exoInds
 
-  exoEffectsState <- createJaspState(exoEffects)
+  exoEffectsState <- createJaspState(specExoEffects)
   exoEffectsState$dependOn("exogenousEffectsTable")
   jaspResults[["exoEffectsState"]] <- exoEffectsState
 
@@ -230,7 +231,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 
 
-.feedbackExoEffects <- function(jaspResults, options) {
+.feedbackExoAndInteractionEffects <- function(jaspResults, options) {
 
   if (!is.null(jaspResults[["specifiedEffectsFromR"]]) && !is.null(jaspResults[["possibleInteractionEffectsFromR"]]))
     return()
@@ -255,12 +256,13 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   specifiedEffectsFromR$dependOn("exogenousEffectsTable")
   jaspResults[["specifiedEffectsFromR"]] <- specifiedEffectsFromR
 
-  endoIndex <- grep("specifiedEndogenousEffects", names(options))
-  outEndoList <- list()
-  for (ii in seq_len(length(options[[endoIndex]]))) {
-    outEndoList <- append(outEndoList,
-                          paste0(options[[endoIndex]][[ii]][["variable"]], "('", options[[endoIndex]][[ii]][["endogenousEffectScaling"]], "')"))
-  }
+
+  endos <- options[["endogenousEffects"]]
+  endosSave <- lapply(endos, function(x) {
+    if (x[["includeEndoEffect"]]) x[["value"]] else NULL
+  })
+  specEndos <- which(!sapply(endosSave, is.null))
+  outEndoList <- lapply(endos[specEndos], function(x) x[["value"]])
 
   combList <- c(unlist(outExoList), unlist(outEndoList))
   if (length(combList) > 1) {
@@ -268,7 +270,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
 
     possibleInteractionEffectsFromR <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
-    possibleInteractionEffectsFromR$dependOn(c("specifiedEndogenousEffects", "exogenousEffectsTable"))
+    possibleInteractionEffectsFromR$dependOn(c("includeEndoEffect", "specifiedExogenousEffects"))
     jaspResults[["possibleInteractionEffectsFromR"]] <- possibleInteractionEffectsFromR
   }
 
@@ -276,6 +278,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
+# ----------- Main analysis -------------
 .remReadData <- function(jaspResults, dataset, options) {
 
   if (!is.null(dataset))
@@ -308,7 +311,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   evnames <- jaspBase::decodeColNames(colnames(dataset))
   evnames <- evnames[! evnames == "time"]
-  print(evnames)
+
   if (!is.null(jaspResults[["actorDataState"]]$object)) {
     attrnames <- colnames(jaspResults[["actorDataState"]]$object)
     if (length(c(evnames, attrnames)) != length(unique(c(evnames, attrnames)))) {
@@ -366,10 +369,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                  model = options[["orientation"]],
                                  riskset = options[["riskset"]]))
 
-  if (isTryError(rehObject)) {
-    errmsg <- gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(rehObject))
-    jaspResults[["mainContainer"]]$setError(errmsg)
-  }
+
 
 
   remifyResultState <- createJaspState(rehObject)
@@ -378,50 +378,103 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   jaspResults[["mainContainer"]][["remifyResultState"]] <- remifyResultState
 
+
   return()
 }
 
 
 .remRemstats <- function(jaspResults, dataset, options) {
 
-  if (!is.null(jaspResults[["mainContainer"]][["remstatsResultState"]]$object))
-    return()
-
-  if (jaspResults[["mainContainer"]]$getError()) return() # doesnt make sense to continue if there is already an error
+  if (!is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object) &&
+      !is.null(jaspResults[["mainContainer"]][["remstatsResultState"]]$object)) return()
 
   rehObject <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
 
-  effects <- .translateEffects(jaspResults, options)
+  if (isTryError(rehObject)) {
+    return()
+  }
 
-  effectsText <- Reduce(paste, deparse(effects))
+  # produce the effects text:
+  effectsObj <- .translateEffects(jaspResults, options)
+  effectsForm <- effectsObj$effects
+  effectsText <- Reduce(paste, deparse(effectsForm))
   effectsText <- gsub("+", "+\n", effectsText, fixed = TRUE)
 
-  # show the effects to the output
-  outText <- createJaspHtml(text = gettextf("The effects were specified as: \n%s", effectsText))
+  # show the effects above the output
+  outText <- createJaspHtml(text = gettextf("The effects were specified as: \n%s",
+                                            effectsText))
   outText$position <- 0.5
   jaspResults[["mainContainer"]][["effectsCall"]] <- outText
 
+  # prepare the data for remstats, aka, assign the attributes to objects so they are present for remstats
   dtExo <- .prepareCovariateData(jaspResults, dataset, options)
 
-  statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effects, attr_data = dtExo))
 
-  if (isTryError(statsObject)) {
-    errmsg <- gettextf("Remstats failed. Internal error message: %s", .remExtractErrorMessage(statsObject))
-    jaspResults[["mainContainer"]]$setError(errmsg)
+  # check if there is already a statsObject in storage, if null we are in the first round of calculations
+  # or maybe the user did not choose to save the samples
+  if (is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object) ||
+      !options[["oldEffectsSaved"]]) {
+
+    # in the first round both states are created
+    statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effectsForm, attr_actors = dtExo))
+
+    if (!isTryError(statsObject)) {
+      dimnames(statsObject)[[3]] <- effectsObj$dimNames
+    }
+
+    remstatsResultState <- createJaspState(statsObject)
+
+    remstatsResultStateStorage <- createJaspState(statsObject)
+    jaspResults[["mainContainer"]][["remstatsResultStateStorage"]] <- remstatsResultStateStorage
+
+  } else {
+
+    statsObjectOld <- jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object
+    formulaOld <- attr(statsObjectOld, "formula")
+    dimNamesOld <- dimnames(statsObjectOld)[[3]]
+    # match the current specified effects with the effects that have been calculated in the past
+    # return the "new" effects,
+    effsOut <- .matchEffectsForStats(formulaOld, effectsObj, dimNamesOld)
+
+    if (is.null(effsOut$form)) { # if no new effects, we can just continue with the old object and calculate nothing new
+      statsObjectCombined <- statsObject <- statsObjectOld
+    } else { # some effects that have not been calculated in the past
+      statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effsOut$form, attr_data = dtExo))
+
+      # add the jasp-detailed dimnames to the whole thing.
+      if (!isTryError(statsObject)) {
+        dimnames(statsObject)[[3]] <- effsOut$dimNamesNew
+      }
+
+      # bind the current and the old statsobject together, remstats should by itself take care of duplicates
+      # and leave deal with those, aka, not bind them twice
+      statsObjectCombined <- remstats::bind_remstats(statsObjectOld, statsObject)
+      attr(statsObjectCombined, "formula") <- effsOut$formComb
+    }
+
+    jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object <- statsObjectCombined
+
+    # now just continue with the statsObject array slices that are required for the current analysis
+    sliced <- statsObjectCombined[, , effectsObj$dimNames]
+    class(sliced) <- c("tomstats", "remstats")
+    attr(sliced, "model") <- attr(statsObject, "model")
+    attr(sliced, "formula") <- effectsForm
+    attr(sliced, "riskset") <- attr(statsObject, "riskset")
+
+    remstatsResultState <- createJaspState(sliced)
+
+
   }
 
-  remstatsResultState <- createJaspState(statsObject)
-  endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
   remstatsResultState$dependOn(c("eventDirection", "eventSequence",
                                  "orientation", "riskset", "naAction",
-                                 endoDepend, "specifiedExogenousEffects",
-                                 "interactionEffects"))
-
+                                 "endogenousEffects", "specifiedExogenousEffects",
+                                 "interactionEffects", "oldEffectsSaved"))
   jaspResults[["mainContainer"]][["remstatsResultState"]] <- remstatsResultState
 
   return()
-}
 
+}
 
 
 .remRemstimate <- function(jaspResults, dataset, options) {
@@ -429,31 +482,27 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["mainContainer"]][["remstimateResultState"]]$object))
     return()
 
-  if (jaspResults[["mainContainer"]]$getError()) return() # doesnt make sense to continue if there is already an error
-
   rehObject <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
   statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
 
-
-  fit <- try(remstimate::remstimate(reh = rehObject, stats = statsObject,
-                                method = options[["method"]]))
-
-  if (isTryError(fit)) {
-    errmsg <- gettextf("Remstimate failed. Internal error message: %s", .extractErrorMessage(fit))
-    jaspResults[["mainContainer"]]$setError(errmsg)
+  if (isTryError(statsObject)) {
+    return()
   }
 
+  fit <- try(remstimate::remstimate(reh = rehObject, stats = statsObject, method = options[["method"]]))
+
   remstimateResultState <- createJaspState(fit)
-  endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
   remstimateResultState$dependOn(c("eventDirection", "eventSequence",
-                                   "orientation", "riskset", "naAction", "method",
-                                   endoDepend, "specifiedExogenousEffects",
-                                   "interactionEffects"))
+                                   "orientation", "riskset", "naAction",
+                                   "endogenousEffects", "specifiedExogenousEffects",
+                                   "interactionEffects", "method"))
 
   jaspResults[["mainContainer"]][["remstimateResultState"]] <- remstimateResultState
+
 }
 
 
+# -------------- Output functions ---------------
 .remModelFitTable <- function(jaspResults, options) {
 
   if (!is.null(jaspResults[["mainContainer"]][["modelFitTable"]])) return()
@@ -461,36 +510,79 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
 
   modelFitTable <- createJaspTable(title = gettext("Model Fit Table"))
-  endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
   modelFitTable$dependOn(c("eventDirection", "eventSequence",
-                           "orientation", "riskset", "naAction", "method",
-                           endoDepend, "specifiedExogenousEffects",
-                           "interactionEffects"))
+                           "orientation", "riskset", "naAction",
+                           "endogenousEffects", "specifiedExogenousEffects",
+                           "interactionEffects", "method"))
   modelFitTable$position <- 1
-
-  modelFitTable$addColumnInfo(name = "fitmeasure",     title = gettext("Statistic"), type= "string")
-  modelFitTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
-  modelFitTable$addColumnInfo(name = "df",   title = gettext("df"),  type= "number")
-  modelFitTable$addColumnInfo(name = "pvalue",   title = gettext("p"),     type= "number")
 
   jaspResults[["mainContainer"]][["modelFitTable"]] <- modelFitTable
 
-  if (jaspResults[["mainContainer"]]$getError()) return()
-
-  footnote <- ""
-  if (!is.null(remResults)){
-    modelFitTable$addFootnote(footnote)
+  if (isTryError(jaspResults[["mainContainer"]][["remifyResultState"]]$object)) {
+    errmsg <- gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(jaspResults[["mainContainer"]][["remifyResultState"]]$object))
+    modelFitTable$setError(errmsg)
+    return()
   }
 
-  if (!is.null(remResults)){
+  if (isTryError(jaspResults[["mainContainer"]][["remstatsResultState"]]$object)) {
+    errmsg <- gettextf("Remstats failed. Internal error message: %s", .extractErrorMessage(jaspResults[["mainContainer"]][["remstatsResultState"]]$object))
+    modelFitTable$setError(errmsg)
+    return()
+  }
 
-    res <- summary(remResults)
-    dtFill <- data.frame(fitmeasure = c("Null deviance", "Residual deviance", "Chi^2", "AIC", "AICC", "BIC"))
-    dtFill$estimate <- c(res$null.deviance, res$residual.deviance, res$model.deviance, res$AIC, res$AICC, res$BIC)
-    dtFill$df <- c(res$df.null, res$df.residual, res$df.model, NA_real_, NA_real_, NA_real_)
-    dtFill$pvalue <- c(NA_real_, NA_real_, res$chiP, NA_real_, NA_real_, NA_real_)
+  if (isTryError(jaspResults[["mainContainer"]][["remstimateResultState"]]$object)) {
+    errmsg <- gettextf("Remstimate failed. Internal error message: %s", .extractErrorMessage(jaspResults[["mainContainer"]][["remstimateResultState"]]$object))
+    modelFitTable$setError(errmsg)
+    return()
+  }
 
-    modelFitTable$setData(dtFill)
+
+  if (!is.null(remResults)) {
+
+    if (options[["method"]] == "MLE") {
+
+      modelFitTable$addColumnInfo(name = "fitmeasure",     title = gettext("Statistic"), type= "string")
+      modelFitTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
+      modelFitTable$addColumnInfo(name = "df",   title = gettext("df"),  type= "number")
+      modelFitTable$addColumnInfo(name = "pvalue",   title = gettext("p"),     type= "number")
+
+      footnote <- ""
+      if (!is.null(remResults)){
+        modelFitTable$addFootnote(footnote)
+      }
+
+      res <- summary(remResults)
+      dtFill <- data.frame(fitmeasure = c("Null deviance", "Residual deviance", "Chi^2", "AIC", "AICC", "BIC"))
+      dtFill$estimate <- c(res$null.deviance, res$residual.deviance, res$model.deviance, res$AIC, res$AICC, res$BIC)
+      dtFill$df <- c(res$df.null, res$df.residual, res$df.model, NA_real_, NA_real_, NA_real_)
+      dtFill$pvalue <- c(NA_real_, NA_real_, res$chiP, NA_real_, NA_real_, NA_real_)
+
+      modelFitTable$setData(dtFill)
+
+    } else { # method = BSIR
+
+      modelFitTable$addColumnInfo(name = "fitmeasure",     title = gettext("statistic"), type= "string")
+      modelFitTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
+
+      footnote <- ""
+      if (!is.null(remResults)){
+        modelFitTable$addFootnote(footnote)
+      }
+
+      res <- summary(remResults)
+
+      reh <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
+
+      npar <- ncol(res$coefsTab)
+      N <- reh$M
+      BIC <- -2 * res$loglik + npar * log(N)
+
+      dtFill <- data.frame(fitmeasure = "BIC")
+      dtFill$estimate <- BIC
+      modelFitTable$setData(dtFill)
+
+    }
+
   }
 
   return()
@@ -505,47 +597,91 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 
   coefficientsTable <- createJaspTable(title = gettext("Coefficients Table"))
-  endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
   coefficientsTable$dependOn(c("eventDirection", "eventSequence",
-                               "orientation", "riskset", "naAction", "method",
-                               endoDepend, "specifiedExogenousEffects",
-                               "interactionEffects"))
+                               "orientation", "riskset", "naAction",
+                               "endogenousEffects", "specifiedExogenousEffects",
+                               "interactionEffects", "method"))
   coefficientsTable$position <- 2
-
-  coefficientsTable$addColumnInfo(name = "coef",     title = gettext("Coefficient"), type= "string")
-  coefficientsTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
-  # coefficientsTable$addColumnInfo(name = "exp", title = "exp(Estimate)",    type= "number")
-  coefficientsTable$addColumnInfo(name = "stdErr",   title = gettext("Std. Error"),  type= "number")
-  coefficientsTable$addColumnInfo(name = "zValue",   title = gettext("z-value"),     type= "number")
-  coefficientsTable$addColumnInfo(name = "prZ",      title = gettext("p"),     type= "number")
-  coefficientsTable$addColumnInfo(name = "pr0",      title = gettext("p(=0)"),       type= "number")
 
   jaspResults[["mainContainer"]][["coefficientsTable"]] <- coefficientsTable
 
-  if (jaspResults[["mainContainer"]]$getError()) return()
-
-  footnote <- ""
-  if (!is.null(remResults)){
-    coefficientsTable$addFootnote(footnote)
+  if (isTryError(jaspResults[["mainContainer"]][["remifyResultState"]]$object)) {
+    errmsg <- gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(jaspResults[["mainContainer"]][["remifyResultState"]]$object))
+    coefficientsTable$setError(errmsg)
+    return()
   }
 
-  if (!is.null(remResults)){
+  if (isTryError(jaspResults[["mainContainer"]][["remstatsResultState"]]$object)) {
+    errmsg <- gettextf("Remstats failed. Internal error message: %s", .extractErrorMessage(jaspResults[["mainContainer"]][["remstatsResultState"]]$object))
+    coefficientsTable$setError(errmsg)
+    return()
+  }
 
-    res <- summary(remResults)
-    dtFill <- data.frame(res$coefsTab)
-    colnames(dtFill) <- c("estimate", "stdErr", "zValue", "prZ", "pr0")
-    rwnames <- rownames(res$coefsTab)
-    # check for the endoNames
-    endoNames <- .endoEffectsMatching(options)
-    for (ii in 1:nrow(endoNames)) {
-      ind <- grep(endoNames[ii, "endoEffectsR"], rwnames)
-      if (length(ind) > 0) {
-        rwnames[ind] <- gsub(endoNames[ii, "endoEffectsR"], endoNames[ii, "endoEffectsJasp"], rwnames[ind])
+  if (isTryError(jaspResults[["mainContainer"]][["remstimateResultState"]]$object)) {
+    errmsg <- gettextf("Remstimate failed. Internal error message: %s", .extractErrorMessage(jaspResults[["mainContainer"]][["remstimateResultState"]]$object))
+    coefficientsTable$setError(errmsg)
+    return()
+  }
+
+  if (!is.null(remResults)) {
+
+    if (options[["method"]] == "MLE") {
+
+      coefficientsTable$addColumnInfo(name = "coef",     title = gettext("Coefficient"), type= "string")
+      coefficientsTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
+      # coefficientsTable$addColumnInfo(name = "exp", title = "exp(Estimate)",    type= "number")
+      coefficientsTable$addColumnInfo(name = "stdErr",   title = gettext("Std. Error"),  type= "number")
+      coefficientsTable$addColumnInfo(name = "zValue",   title = gettext("z-value"),     type= "number")
+      coefficientsTable$addColumnInfo(name = "prZ",      title = gettext("p"),     type= "number")
+      coefficientsTable$addColumnInfo(name = "pr0",      title = gettext("p(=0)"),       type= "number")
+
+
+      res <- summary(remResults)
+      dtFill <- data.frame(res$coefsTab)
+      colnames(dtFill) <- c("estimate", "stdErr", "zValue", "prZ", "pr0")
+      rwnames <- rownames(res$coefsTab)
+      # # check for the endoNames
+      # endoNames <- .endoEffectsMatching(options)
+      # for (ii in 1:nrow(endoNames)) {
+      #   ind <- grep(endoNames[ii, "endoEffectsR"], rwnames)
+      #   if (length(ind) > 0) {
+      #     rwnames[ind] <- gsub(endoNames[ii, "endoEffectsR"], endoNames[ii, "endoEffectsJasp"], rwnames[ind])
+      #   }
+      # }
+      # rwnames <- tolower(rwnames)
+      dtFill$coef <- rwnames
+      # dtFill$exp <- exp(dtFill$estimate)
+
+    } else { # method = BSIR
+      coefficientsTable$addColumnInfo(name = "coef",     title = gettext("Coefficient"), type= "string")
+      coefficientsTable$addColumnInfo(name = "postMode",     title = gettext("Posterior Mode"), type= "number")
+      coefficientsTable$addColumnInfo(name = "postSD", title = gettext("Posterior SD"),    type= "number")
+      coefficientsTable$addColumnInfo(name = "q2.5",   title = gettext("2.5% Quantile"),  type= "number")
+      coefficientsTable$addColumnInfo(name = "q50",   title = gettext("50% Quantile"),     type= "number")
+      coefficientsTable$addColumnInfo(name = "q97.5",      title = gettext("97.5% Quantile"),     type= "number")
+      coefficientsTable$addColumnInfo(name = "pr0",      title = gettext("p(=0|y)"),       type= "number")
+
+
+      res <- summary(remResults)
+      dtFill <- data.frame(res$coefsTab)
+      colnames(dtFill) <- c("postMode", "postSD", "q2.5", "q50", "q97.5", "pr0")
+      rwnames <- rownames(res$coefsTab)
+      # check for the endoNames
+      endoNames <- .endoEffectsMatching(options)
+      for (ii in 1:nrow(endoNames)) {
+        ind <- grep(endoNames[ii, "endoEffectsR"], rwnames)
+        if (length(ind) > 0) {
+          rwnames[ind] <- gsub(endoNames[ii, "endoEffectsR"], endoNames[ii, "endoEffectsJasp"], rwnames[ind])
+        }
       }
+      # rwnames <- tolower(rwnames)
+      dtFill$coef <- rwnames
     }
-    # rwnames <- tolower(rwnames)
-    dtFill$coef <- rwnames
-    # dtFill$exp <- exp(dtFill$estimate)
+
+    footnote <- ""
+    if (!is.null(remResults)){
+      coefficientsTable$addFootnote(footnote)
+    }
 
     coefficientsTable$setData(dtFill)
   }
@@ -554,11 +690,12 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
+# ------------- Helper functions ----------------
 
 .endoEffectsMatching <- function(options) {
 
   if (options[["orientation"]] == "tie" && options[["eventDirection"]] == "directed") {
-    endoEffectsJasp <- gettext(c("In degree receiver", "In degree sender", "Fixed effects for event type", "Inertia",
+    endoEffectsJasp <- gettext(c("In degree receiver", "In degree sender", "Inertia",
                                "Incoming shared partners", "Incoming two-path", "Outgoing shared partners",
                                "Outgoing two-path", "Out deregee receiver", "Out degree sender", "Pshift AB-AB",
                                "Pshift AB-AY", "Pshift AB-BA", "Pshift AB-BY", "Pshift AB-XA", "Pshift AB-XB", "Pshift AB-XY",
@@ -567,35 +704,41 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                "Recency rank send", "Total degree dyad", "Total degree receiver", "Total degree sender",
                                "User statistics"))
 
-    endoEffectsR <- c("indegreeReceiver", "indegreeSender", "FEtype", "inertia", "isp", "itp", "osp", "otp",
+    endoEffectsR <- c("indegreeReceiver", "indegreeSender", "inertia", "isp", "itp", "osp", "otp",
                       "outdegreeReceiver", "outdegreeSender", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA",
                       "psABXB", "psABXY", "recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender",
                       "recencySendReceiver", "recencySendSender", "reciprocity", "rrankReceive", "rrankSend",
                       "totaldegreeDyad", "totaldegreeReceiver", "totaldegreeSender", "userStat")
 
   } else if (options[["orientation"]] == "tie" && options[["eventDirection"]] == "undirected") {
-    endoEffectsJasp <- gettext(c("Degree difference",	"Degree maximum", "Degree minimum",	"Fixed effects for event type",
-                                 "Inertia",	"Pshift AB-AB", "Pshift AB-AY",	"Shared partners",	"Unique shared partners",
-                                 "Recency continue", "Total degree dyad", "User statistics"))
+    endoEffectsJasp <- gettext(c("Current common partner", "Degree difference",	"Degree maximum", "Degree minimum",
+                                 "Inertia",	"Pshift AB-AB", "Pshift AB-AY",	"Recency continue",
+                                 "Shared partners",	"Total degree dyad", "User statistics"))
 
-    endoEffectsR <- c("degreeDiff", "degreeMax", "degreeMin", "FEtype", "inertia", "psABAB",
-                      "psABAY", "sp", "spUnique", "recencyContinue", "totaldegreeDyad", "userStat")
+    endoEffectsR <- c("ccp", "degreeDiff", "degreeMax", "degreeMin", "inertia", "psABAB",
+                      "psABAY", "recencyContinue", "sp", "totaldegreeDyad", "userStat")
+
 
   } else if (options[["orientation"]] == "actor" && options[["actorDirection"]] == "sender") {
-    endoEffectsJasp <- gettext(c("Degree difference",	"Degree maximum", "Degree minimum",	"Fixed effects for event type",
-                                 "Inertia",	"Pshift AB-AB", "Pshift AB-AY",	"Shared partners",	"Unique shared partners",
-                                 "Recency continue", "Total degree dyad", "User statistics"))
+    endoEffectsJasp <- gettext(c("In degree Sender", "Out degree Sender", "Recency send of sender", "Recency receive of sender",
+                                 "Total degree sender", "User statistics"))
 
-    endoEffectsR <- c("degreeDiff", "degreeMax", "degreeMin", "FEtype", "inertia", "psABAB",
-                      "psABAY", "sp", "spUnique", "recencyContinue", "totaldegreeDyad", "userStat")
+    endoEffectsR <- c("indegreeSender", "outdegreeSender", "recencySendSender", "recencyReceiveSender",
+                      "totaldegreeSender", "userStat")
 
   } else if (options[["orientation"]] == "actor" && options[["actorDirection"]] == "receiver") {
-    endoEffectsJasp <- gettext(c("Degree difference",	"Degree maximum", "Degree minimum",	"Fixed effects for event type",
-                                 "Inertia",	"Pshift AB-AB", "Pshift AB-AY",	"Shared partners",	"Unique shared partners",
-                                 "Recency continue", "Total degree dyad", "User statistics"))
+    endoEffectsJasp <- gettext(c("In degree receiver", "Inertia",
+                                 "Incoming shared partners", "Incoming two-path", "Outgoing shared partners",
+                                 "Outgoing two-path",
+                                 "Recency continue", "Recency receive of receiver",
+                                 "Recency send of receiver", "Reciprocity", "Recency rank receive",
+                                 "Recency rank send", "Total degree receiver",
+                                 "User statistics"))
 
-    endoEffectsR <- c("degreeDiff", "degreeMax", "degreeMin", "FEtype", "inertia", "psABAB",
-                      "psABAY", "sp", "spUnique", "recencyContinue", "totaldegreeDyad", "userStat")
+    endoEffectsR <- c("indegreeReceiver", "inertia", "isp", "itp", "osp", "otp",
+                      "outdegreeReceiver", "recencyContinue", "recencyReceiveReceiver",
+                      "recencySendReceiver", "reciprocity", "rrankReceive", "rrankSend",
+                      "totaldegreeReceiver", "userStat")
 
   }
 
@@ -617,64 +760,100 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   effects <- "~1"
   # endogenous effects:
-  endoIndex <- grep("specifiedEndogenousEffects", names(options))
-  if (length(options[[endoIndex]]) > 0) {
-    endoEffects <- sapply(options[[endoIndex]], function(x) x[["variable"]])
-    # endoEffectsJaspSave <- endoEffects
-    endoScaling <- sapply(options[[endoIndex]], function(x) x[["endogenousEffectScaling"]])
-    endoEffectsJaspSave <- paste0(endoEffects, "('", endoScaling, "')")
-    endoNames <- .endoEffectsMatching(options)
-    endoEffects <- endoNames[which(endoNames %in% endoEffects, arr.ind = TRUE), "endoEffectsR"]
-    endoNoScalingNames <- .endoNoScalingList()
-    endoMatch <- which(!is.na(match(endoEffects, endoNoScalingNames)))
-    if (length(endoMatch) > 0) {
-      endoEffects[-endoMatch] <- paste0(endoEffects[-endoMatch], "(scaling = ", "'", endoScaling[-endoMatch], "'", ")")
-      endoEffects[endoMatch] <- paste0(endoEffects[endoMatch], "()")
-    } else {
-      endoEffects <- paste0(endoEffects, "(scaling = ", "'", endoScaling, "'", ")")
-    }
+  endoEffectsSave <- NULL
+  endos <- options[["endogenousEffects"]]
+  endosSave <- lapply(endos, function(x) {
+    if (x[["includeEndoEffect"]]) x[["value"]] else NULL
+      })
+  specEndos <- which(!sapply(endosSave, is.null))
 
-    endoEffectsRSave <- endoEffects
+  endoDims <- c() # also save the dimnames to later assign to the statsObject slices
+  if (length(specEndos) > 0) {
+
+    endosMatched <- .endoEffectsMatching(options) # get the matching endo names for the type of model etc
+    endosR <- endosMatched[specEndos, "endoEffectsR"]
+    endosJasp <- endosMatched[specEndos, "endoEffectsJasp"]
+    endoScaling <- sapply(endos, function(x) x[["endogenousEffectsScaling"]])[specEndos]
+    endoType <- sapply(endos, function(x) x[["endogenousEffectsConsiderType"]])[specEndos]
+    endoUnique <- sapply(endos, function(x) x[["endogenousEffectsUnique"]])[specEndos]
+    endoEffects <- paste0(endosR, "(")
+
+    for (i in 1:length(endosR)) {
+
+      # create the proper dimname
+      dimstmp <- endosR[i]
+
+      if (!(endoScaling[i] %in% c("none", ""))) {
+        endoEffects[i] <- paste0(endoEffects[i], "scaling = '", endoScaling[i], "', ")
+        dimstmp <- paste0(dimstmp, ".", endoScaling[i])
+      }
+      if (endoUnique[i]) {
+        endoEffects[i] <- paste0(endoEffects[i], "unique = ", endoUnique[i], ", ")
+        dimstmp <- paste0(dimstmp, ".unique")
+
+      }
+      if (endoType[i])  {
+        endoEffects[i] <- paste0(endoEffects[i], "consider_type = ", endoType[i], ", ")
+        dimstmp <- paste0(dimstmp, ".type")
+      }
+      endoDims <- append(endoDims, dimstmp)
+    }
+    endoEffects <- paste0(endoEffects, ")")
+    endoEffects <- gsub(", )", ")", endoEffects)
+    endoEffectsSave <- endoEffects
+
     endoEffects <- paste(endoEffects, collapse = " + ")
     effects <- paste(effects, "+", endoEffects)
   }
 
+
   # exogenous effects
+  exoEffectsSave2 <- NULL
+  exoDims <- c() # also save the dimnames to later assign to the statsObject slices
   exoIndex <- grep("specifiedExogenousEffects", names(options))
-  if (length(exoIndex) > 0 && length(options[[exoIndex]]) > 0) {
+  if (length(options[[exoIndex]]) > 0) {
+    exos <- options[[exoIndex]]
     exoEffects <- sapply(options[[exoIndex]], function(x) x[["value"]])
     exoEffectsSave1 <- exoEffects
     exoEffects <- gsub(")", "", exoEffects)
-    exoScaling <- sapply(options[[exoIndex]], function(x) x[["exogenousEffectsScaling"]])
-    # exoAbsolute <- sapply(options[[exoIndex]], function(x) x[["absolute"]])
-    exoEffects <- paste0(exoEffects, ", scaling = '", exoScaling, "')")#, absolute = ", exoAbsolute, ")")
-    # event is a special case, has no scaling:
-    eventIndex <- grep("event", exoEffects)
-    if (length(eventIndex) > 0) {
-      tmp1 <- lapply(jaspResults[["exoEffectsState"]][["object"]][["list"]], function(x) names(x) == "event")
-      tmp2 <- unlist(lapply(tmp1, any))
-      eventNames <- names(tmp2[tmp2])
-      for (ev in eventIndex) {
-        exoEffects[ev] <- gsub("scaling.[^)]*", "placeHolder", exoEffects[ev])
-        exoEffects[ev] <- gsub("'","", exoEffects[ev], fixed = TRUE)
-        exoEffects[ev] <- gsub("placeHolder", paste0("'", eventNames[which(eventIndex == ev)], "'"), exoEffects[ev], fixed = TRUE)
+    exoScaling <- sapply(exos, function(x) x[["exogenousEffectsScaling"]])
+    exoAbsolute <- sapply(exos, function(x) x[["absolute"]])
+
+    for (ii in 1:length(exoEffects)) {
+
+      #  create the proper dimname for the effect
+      dimstmp <- exoEffectsSave1[ii]
+      dimstmp <- gsub("('", "_", dimstmp, fixed = TRUE)
+      dimstmp <- gsub("')", "", dimstmp, fixed = TRUE)
+
+      if (!(exoScaling[ii] %in% c("none", ""))) {
+        exoEffects[ii] <- paste0(exoEffects[ii], ", scaling = '", exoScaling[ii], "'")
+        dimstmp <- paste0(dimstmp, ".", exoScaling[ii])
       }
+
+      if (exoAbsolute[ii]) {
+        exoEffects[ii] <- paste0(exoEffects[ii], ", absolute = ", exoAbsolute[ii])
+        dimstmp <- paste0(dimstmp, ".", "absolute")
+      }
+
+      # deal with the event effects
+      if (startsWith(exoEffects[ii], "event")) {
+        ma <- regexpr("'(.*?)'", exoEffects[ii])
+        eventName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
+        exoEffects[ii] <- sub("\\(", paste0("(", eventName, ", "), exoEffects[ii])
+      }
+
+      # deal with the tie effects
+      if (startsWith(exoEffects[ii], "tie")) {
+        ma <- regexpr("'(.*?)'", exoEffects[ii])
+        tieName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
+        exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", tieName), exoEffects[ii])
+      }
+
+      exoDims <- append(exoDims, dimstmp)
     }
 
-    # tie is a special case, has no scaling:
-    tieIndex <- grep("tie", exoEffects)
-    if (length(tieIndex) > 0) {
-      tmp1 <- lapply(jaspResults[["exoEffectsState"]][["object"]][["list"]], function(x) names(x) == "tie")
-      tmp2 <- unlist(lapply(tmp1, any))
-      tieNames <- names(tmp2[tmp2])
-      for (ti in tieIndex) {
-        splitted <- unlist(strsplit(exoEffects[ti], ","))
-        targ <- splitted[1]
-        targ <- gsub("'","", targ, fixed = TRUE)
-        exoEffects[ti] <- paste0(targ, ", '", tieNames[which(tieIndex == ti)], "',", splitted[2])
-      }
-    }
-
+    exoEffects <- paste0(exoEffects, ")")
 
     exoEffectsSave2 <- exoEffects
     exoEffects <- paste0(exoEffects, collapse = " + ")
@@ -682,44 +861,56 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   # interactions
+  interEffectsSave <- NULL
   interIndex <- grep("interactionEffects", names(options))
+  interDims <- c()
   if (length(interIndex) > 0 && length(options[[interIndex]]) > 0) {
+
     interEffects <- sapply(options[[interIndex]], function(x) if (x[["includeIA"]]) x[["value"]] else NULL)
     interEffects[sapply(interEffects, is.null)] <- NULL
+
     if (length(interEffects) > 0) {
+
       interEffects <- unlist(interEffects)
+      interDims[1:length(interEffects)] <- interEffects
 
-
-      # replace the endo effects
-      if (length(options[[endoIndex]]) > 0) {
-        for (ee in 1:length(endoEffectsJaspSave)) {
-          ind <- grep(endoEffectsJaspSave[ee], interEffects, fixed = TRUE)
+      # work the endo effects
+      if (length(specEndos) > 0) {
+        for (ee in 1:length(endosR)) {
+          ind <- grep(endosJasp[ee], interEffects, fixed = TRUE)
           if (length(ind) > 0) {
-            interEffects <- gsub(endoEffectsJaspSave[ee], endoEffectsRSave[ee], interEffects, fixed = TRUE)
+            interEffects[ind] <- gsub(endosJasp[ee], endoEffectsSave[ee], interEffects[ind], fixed = TRUE)
+            interDims[ind] <- gsub(endosJasp[ee], endoDims[ee], interDims[ind], fixed = TRUE)
           }
         }
       }
 
-
-      # replace the exo effects
-      if (length(options[[endoIndex]]) > 0) {
-        for (eee in 1:length(exoEffectsSave1)) {
+      # work the exo effects
+      if (length(options[[exoIndex]]) > 0) {
+        for (eee in 1:length(exos)) {
           ind <- grep(exoEffectsSave1[eee], interEffects, fixed = TRUE)
           if (length(ind) > 0) {
-            interEffects <- gsub(exoEffectsSave1[eee], exoEffectsSave2[eee], interEffects, fixed = TRUE)
+            interEffects[ind] <- gsub(exoEffectsSave1[eee], exoEffectsSave2[eee], interEffects[ind], fixed = TRUE)
+            interDims[ind] <- gsub(exoEffectsSave1[eee], exoDims[eee], interDims[ind], fixed = TRUE)
           }
         }
       }
 
       interEffects <- gsub(" * ", ":", interEffects, fixed = TRUE)
+      interEffectsSave <- interEffects
       interEffects <- paste0(interEffects, collapse = " + ")
+
+      interDims <- gsub(" * ", ":", interDims, fixed = TRUE)
+
       effects <- paste0(effects, " + ", interEffects)
     }
   }
 
   effects <- eval(parse(text = effects))
 
-  return(effects)
+  dimNms <- c("baseline", endoDims, exoDims, interDims)
+
+  return(list(effects = effects, dimNames = dimNms))
 }
 
 
@@ -745,7 +936,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   exoVariablesDec <- jaspBase::decodeColNames(unique(unlist(jaspResults[["exoEffectsState"]][["object"]][["variableNames"]])))
   exoEffects <- jaspResults[["exoEffectsState"]][["object"]][["list"]]
 
-
   evnames <- jaspBase::decodeColNames(colnames(dataset))
   evnames <- evnames[! evnames == "time"]
   if (!is.null(jaspResults[["actorDataState"]]$object)) {
@@ -755,8 +945,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["dyadDataState"]]$object)) {
     dyadnames <- names(jaspResults[["dyadDataState"]]$object)
   }
-
-
 
   if (!is.null(exoVariablesEnc)) { # exo effects specified
 
@@ -783,6 +971,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       dyInds <- which(dyadnames %in% exoVariablesDec)
       if (length(dyInds) > 0) {
         for (iii in 1:length(dyInds)) {
+
           assign(dyadnames[iii], jaspResults[["dyadDataState"]][["object"]][[dyadnames[iii]]], pos = 1)
         }
       }
@@ -797,22 +986,29 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       }
     }
 
-
-
   }
   return()
 }
 
-.matchEffectsForStats <- function(formulaOld, newEffects) {
+# match the effects formula from an old remstats object and the current one
+# put out the formula that is all new, aka, oldFormula minus effects
+# also transform the effects to the names of the statsObject slices, as remstats puts them out
+# to use later for matching with the slices of the old object
+.matchEffectsForStats <- function(formulaOld, effects, dimNamesOld) {
 
-  formulaOld <- as.character(formulaOld)
-  newEffects <- as.character(newEffects)
+  newEffects <- effects$effects
+  formulaOldc <- as.character(formulaOld)
+  newEffectsc <- as.character(newEffects)
 
-  form <- strsplit(formulaOld, split = " + ", fixed = TRUE)
+  if (length(newEffectsc[-1]) == 1 && newEffectsc[-1] == "1") { # if there is only a baseline effect in the current specification?
+    return(list(form = NULL, slices = "baseline"))
+  }
+
+  form <- strsplit(formulaOldc, split = " + ", fixed = TRUE)
   form[[1]] <- NULL
   form <- unlist(form)
 
-  effs <- strsplit(newEffects, split = " + ", fixed = TRUE)
+  effs <- strsplit(newEffectsc, split = " + ", fixed = TRUE)
   effs[[1]] <- NULL
   effs <- unlist(effs)
 
@@ -825,142 +1021,144 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     effsOutForm <- paste0(effsOutForm, collapse = " + ")
     effsOutForm <- paste0("~", effsOutForm)
     effsOutForm <- eval(parse(text = effsOutForm))
+
+    # also export the combination of the old formula and new formula to attach to the combined object
+    formComb <- c(form, effs)
+    formCombOut <- paste0(formComb, collapse = " + ")
+    formCombOut <- paste0("~", formCombOut)
+    formCombOut <- eval(parse(text = formCombOut))
+
+    # now export the new dimnames to assign to the new statsObejct
+    dimNamesOut <- c("baseline", setdiff(effects$dimNames, dimNamesOld))
+
   } else {
     effsOutForm <- NULL
+    formCombOut <- formulaOld
+    dimNamesOut <- NULL
   }
 
 
-  slices <- gsub("\\((.*)", "", effs)
-  slices <- gsub("1", "baseline", slices)
+  # # transform the effects to the dimnames for the statsObject slices
+  # effs <- gsub("\"", "", effs)
+  #
+  # slices <- vector(length = length(effs))
+  # slices[1] <- "baseline"
+  #
+  # indsIA <- grep(":", effs)
+  # if (length(indsIA) > 0) {
+  #   ends <- length(effs[-indsIA])
+  # } else {
+  #   ends <- length(effs)
+  # }
+  # for (i in 2:ends) {
+  #   transEff <- .transformEffectsForMatching(effs[i])
+  #   slices[i] <- paste0(transEff, collapse = "")
+  # }
+  #
+  # # tie and events come out with counter in remstats if there are more than one each
+  # tie_effects <- grepl("tie", slices)
+  # if (sum(tie_effects) > 1) {
+  #   ties <- slices[tie_effects]
+  #   tieCounts <- paste0("tie", 1:sum(tie_effects))
+  #   newTies <- ties
+  #   for (t in 1:length(ties)) {
+  #     newTies[t] <- gsub("^([^.]+)", tieCounts[t], ties[t])
+  #     slices[tie_effects][t] <- newTies[t]
+  #   }
+  # }
+  #
+  # event_effects <- grepl("event", slices)
+  # if (sum(event_effects) > 1) {
+  #   events <- slices[event_effects]
+  #   eventCounts <- paste0("event", 1:sum(event_effects))
+  #   newTEvents <- events
+  #   for (t in 1:length(events)) {
+  #     newEvents[t] <- gsub("^([^.]+)", eventCounts[t], events[t])
+  #     slices[event_effects][t] <- newEvents[t]
+  #   }
+  # }
+  #
+  # # interactions
+  # for (ii in indsIA) {
+  #   spl <- strsplit(effs[ii], ":")
+  #   spl <- as.list(unlist(spl))
+  #   transEff <- lapply(spl, .transformEffectsForMatching)
+  #   transEff <- sapply(transEff, paste0, collapse = "")
+  #
+  #   if (sum(tie_effects) > 1) {
+  #     ind <- match(ties, transEff)
+  #     if (sum(!is.na(ind)) > 0) { # tie effect in interaction
+  #       ind <- ind[complete.cases(ind)]
+  #       transEff[ind] <- newTies[ind]
+  #     }
+  #   }
+  #
+  #   if (sum(event_effects) > 1) {
+  #     ind <- match(events, transEff)
+  #     if (sum(!is.na(ind)) > 0) { # event effect in interaction
+  #       ind <- ind[complete.cases(ind)]
+  #       transEff[ind] <- newEvents[ind]
+  #     }
+  #   }
+  #
+  #   slices[ii] <- paste0(transEff, collapse = ":")
+  # }
 
-  return(list(form = effsOutForm, slices = slices))
+  # # get the untransformed tie effects in the interactions
+  # if (length(indsIA) > 0) {
+  #   tie_effectsIA <- grepl("tie_", slices)
+  #   ties <- slices[tie_effectsIA]
+  #   if (sum(tie_effectsIA) > 0) {
+  #     for (t in 1:sum(tie_effectsIA)) {
+  #       grep(ties, slices[tie_effectsIA][t])
+  #       slices[tie_effectsIA][t] <- gsub(ties[t], tieCounts[t], ties[t])
+  #     }
+  #   }
+  # }
+
+
+  return(list(form = effsOutForm, formComb = formCombOut, dimNamesNew = dimNamesOut))
 
 }
 
 
+.transformEffectsForMatching <- function(effect) {
 
-.remRemstatsBeta <- function(jaspResults, dataset, options) {
-
-  if (!is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object) &&
-      !is.null(jaspResults[["mainContainer"]][["remstatsResultState"]]$object)) return()
-
-  if (jaspResults[["mainContainer"]]$getError()) return() # doesnt make sense to continue if there is already an error
-
-  rehObject <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
-
-  effects <- .translateEffects(jaspResults, options)
-
-  effectsText <- Reduce(paste, deparse(effects))
-  effectsText <- gsub("+", "+\n", effectsText, fixed = TRUE)
-
-  # show the effects to the output
-  outText <- createJaspHtml(text = gettextf("The effects were specified as: \n%s",
-                                            effectsText))
-  outText$position <- 0.5
-  jaspResults[["mainContainer"]][["effectsCall"]] <- outText
-
-  dtExo <- .prepareCovariateData(jaspResults, dataset, options)
-
-  # check if there is already a statsObject in storage
-  if (!is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object)) {
-    statsObjectOld <- jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object
-    formulaOld <- attr(statsObjectOld, "formula")
-    effsOut <- .matchEffectsForStats(formulaOld, effects)
-
-    if (is.null(effsOut$form)) {
-      statsObjectCombined <- statsObject <- statsObjectOld
-      print("nothing new")
-    } else {
-      statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effsOut$form, attr_data = dtExo))
-      statsObjectCombined <- try(remstats::bind_remstats(statsObjectOld, statsObject))
+  # get the string before the first opening parentheses and save it in effName
+  ma <- regexpr("^[^\\(]+", effect)
+  effName <- regmatches(effect, ma)
+  exoList <- c("average", "difference", "event", "maximum", "minimum", "receive",
+               "same", "send", "tie")
+  if (length(effName) > 0) {
+    if (effName %in% exoList) {
+      ma2 <- regexpr("\\((.*?)\\,", effect)
+      varName <- regmatches(effect, ma2)
+      varName <- gsub("(", "", varName, fixed = TRUE)
+      varName <- gsub(",", "", varName, fixed = TRUE)
+      varName <- gsub("'", "", varName, fixed = TRUE)
+      effName <- paste0(effName, "_", varName)
     }
+  }
 
-    jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object <- statsObjectCombined
+  tmp <- ""
+  if (grepl("unique = TRUE", effect)) {
+    tmp <- paste0(tmp, ".unique")
+  }
+  if (grepl("consider_type = TRUE", effect)) {
+    tmp <- paste0(tmp, ".type")
+  }
 
-    print(sessionInfo())
-    print(str(effsOut))
-    print(dimnames(statsObject))
-    sliced <- statsObjectCombined[, , effsOut$slices]
-    class(sliced) <- c("tomstats", "remstats")
-    attr(sliced, "model") <- attr(statsObjectCombined, "model")
-    attr(sliced, "formula") <- attr(statsObjectCombined, "formula")
-    attr(sliced, "riskset") <- attr(statsObjectCombined, "riskset")
-
-    remstatsResultState <- createJaspState(sliced)
-
+  if (grepl("scaling = std", effect)) {
+    tmp <- paste0(tmp, ".std")
+  } else if (grepl("scaling = prop", effect)) {
+    tmp <- paste0(tmp, ".prop")
   } else {
-
-    # in the first round both states are created
-    statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effects, attr_data = dtExo))
-
-    remstatsResultState <- createJaspState(statsObject)
-
-
-    remstatsResultStateStorage <- createJaspState(statsObject)
-    jaspResults[["mainContainer"]][["remstatsResultStateStorage"]] <- remstatsResultStateStorage
+    tmp <- paste0(tmp, ".none")
   }
 
-  endoDepend <- names(options)[grep("specifiedEndogenousEffects", names(options))]
-  remstatsResultState$dependOn(c("eventDirection", "eventSequence",
-                                 "orientation", "riskset", "naAction",
-                                 endoDepend, "specifiedExogenousEffects",
-                                 "interactionEffects"))
-  jaspResults[["mainContainer"]][["remstatsResultState"]] <- remstatsResultState
-
-  if (isTryError(statsObject)) {
-    errmsg <- gettextf("Remstats failed. Internal error message: %s", .remExtractErrorMessage(statsObject))
-    jaspResults[["mainContainer"]]$setError(errmsg)
+  if (grepl("absolute = TRUE", effect)) {
+    tmp <- paste0(tmp, ".abs")
   }
-
-
-  return()
-
-  #' To sum this up, the remaining difficulty is to use specific subparts of the stats array by name or by number.
-  #' The names look like this, which is a bit hard to replicate
-  #' [1] "baseline"                   "indegreeReceiver"
-  #' [3] "inertia"                    "event_JaspColumn_3_Encoded"
-  #' However, the thing about using a subarray is that it has to be a new object that has to be assigned a class
-  #' in order for it to be used in remstimate. Given that the whole motivation for this is to do it with large networks
-  #' this means we use a ton of memory, even though we get a speedup. I wonder if that will work at all.
-  #'
-  #' or maybe try putting the storage elemtn in the state but never delete it, aka no dependencies
-  #' and then also put the current statsObject in another state andpass that on, and always delete when options change
+  return(c(effName, tmp))
 }
 
-
-
-#' # Leave this for now unless the same exo effect should be specified with different scaling
-# .feedbackInterEffectsWindow <- function(jaspResults, options) {
-#   ###########################################################################
-#   ### this still needs some work regarding the option to exit at the beginning
-#   ###########################################################################
-#   if (length(options$exoEffects) <= 1)
-#     return()
-#   # || !is.null(jaspResults[["sourceTopics"]])) return()
-#
-#   # exogenous effects
-#   exoIndex <- grep("specifiedExoEffects", names(options))
-#   if (!is.null(options[[exoIndex]])) {
-#     exoEffects <- sapply(options[[exoIndex]], function(x) x[["value"]])
-#     exoScaling <- sapply(options[[exoIndex]], function(x) x[["exogenousEffectsScaling"]])
-#     exoEffects <- paste0(exoEffects, ", scaling = '", exoScaling, "', absolute = ", exoAbsolute, ")")
-#   }
-#
-#
-#   # jaspResults[["specifiedEffectsFromR"]] <- createJaspQmlSource("specifiedEffectsFromR", outExoList)
-#
-#
-#   endoIndex <- grep("specifiedEndogenousEffects", names(options))
-#   outEndoList <- list()
-#   for (ii in seq_len(length(options[[endoIndex]]))) {
-#     outEndoList <- append(outEndoList,
-#                           paste0(options[[endoIndex]][[ii]][["variable"]], " (", options[[endoIndex]][[ii]][["endogenousEffectScaling"]], ")"))
-#   }
-#
-#   interTmp <- combn(c(unlist(outExoList), unlist(outEndoList)), m = 2)
-#   inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
-#
-#   jaspResults[["possibleInteractionEffectsFromR"]] <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
-#
-#   return()
-# }

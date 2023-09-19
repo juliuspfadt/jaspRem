@@ -6,7 +6,7 @@ Description
 	name		: "jaspRem"
 	title		: qsTr("REM")
 	description	: qsTr("This module offers methods for relational event modeling.")
-	version		: "0.17.3"
+	version		: "0.18.1"
 	author		: "JASP Team"
 	maintainer	: "JASP Team <info@jasp-stats.org>"
 	website		: "https://jasp-stats.org"
@@ -30,7 +30,7 @@ Description
 
 			// icon: 	"logoFreq.png"
 	}
-	
+
 
 }
 
