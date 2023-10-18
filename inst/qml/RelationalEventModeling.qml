@@ -190,31 +190,88 @@ Form
 				implicitHeight: 120 * preferencesModel.uiScale
 				implicitWidth: 600 * preferencesModel.uiScale
 
+				// variables for the tie directed model
+				property var varsTieDirected: ["indegreeReceiver", "indegreeSender", "inertia", "isp", "itp", "osp", "otp",
+					"outdegreeReceiver", "outdegreeSender", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA",
+					"psABXB", "psABXY", "recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender",
+					"recencySendReceiver", "recencySendSender", "reciprocity", "rrankReceive", "rrankSend",
+					"totaldegreeDyad", "totaldegreeReceiver", "totaldegreeSender", "userStat"];
+				
+				// variables for the tie undirected model
+				property var varsTieUndirected: ["ccp", "degreeDiff", "degreeMax", "degreeMin", "inertia", "psABAB",
+					"psABAY", "recencyContinue", "sp", "totaldegreeDyad", "userStat"];
+				
+				// variables for the actor sender model
+				property var varsActorSender: ["indegreeSender", "outdegreeSender", "recencySendSender", "recencyReceiveSender",
+					"totaldegreeSender", "userStat"];
+				
+				// variables for the actor receiver model
+				property var varsActorReceiver: ["indegreeReceiver", "inertia", "isp", "itp", "osp", "otp",
+					"outdegreeReceiver", "recencyContinue", "recencyReceiveReceiver",
+					"recencySendReceiver", "reciprocity", "rrankReceive", "rrankSend",
+					"totaldegreeReceiver", "userStat"];
+
+				// thw whole matched list of the effect variables R names and translations
+				property var translated: {
+					"indegreeReceiver": qsTr("In degree receiver"),
+					"indegreeSender": qsTr("In degree sender"), 
+					"inertia": qsTr("Inertia"),
+					"isp": qsTr("Incoming shared partners"), 
+					"itp": qsTr("Incoming two-path"), 
+					"osp": qsTr("Outgoing shared partners"),
+					"otp": qsTr("Outgoing two-path"),
+					"outdegreeReceiver": qsTr("Outdegree receiver"),
+					"outdegreeSender": qsTr("Outdegree sender"),
+					"psABAB": qsTr("Pshift AB-AB"),
+					"psABAY": qsTr("Pshift AB-AY"),
+					"psABBA": qsTr("Pshift AB-BA"),
+					"psABBY": qsTr("Pshift AB-BY"),
+					"psABXA": qsTr("Pshift AB-XA"),
+					"psABXB": qsTr("Pshift AB-XB"),
+					"psABXY": qsTr("Pshift AB-XY"),
+					"recencyContinue": qsTr("Recency continue"), 
+					"recencyReceiveReceiver": qsTr("Recency receive of receiver"), 
+					"recencyReceiveSender": qsTr("Recency receive of sender"),
+					"recencySendReceiver": qsTr("Recency send of receiver"),
+					"recencySendSender": qsTr("Recency send of sender"),
+					"reciprocity": qsTr("Reciprocity"),
+					"rrankReceive": qsTr("Recency rank receive"),
+					"rrankSend": qsTr("Recency rank send"),
+					"totaldegreeDyad": qsTr("Total degree dyad"),
+					"totaldegreeReceiver": qsTr("Total degree receiver"),
+					"totaldegreeSender": qsTr("Total degree sender"),
+					"userStat": qsTr("User statistics"),
+					}
+
+				// variables that only have two scaling arguments 
+				property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
+				// variables that have no scaling arguments
+				property var varsScalingNone: 
+					["ccp", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", 
+					"recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender", "recencySendReceiver", "recencySendSender", 
+					"rrankReceive", "rrankSend", "userStat"];
+
+				// variables that do not have a consider-type argument 
+				property var varsNotConsiderType: ["ccp", "userStat"]
+				// variables that have a unique argument
+				property var varsUnique: ["isp", "itp", "osp", "otp", "sp"]
+
+				// variables to use in the scaling column
 				property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
 				property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
-				
-				property var varsScalingTwo: 
-					["Degree difference", "Incoming shared partners", "Incoming two-path", "Outgoing shared partners", "Outgoing two-path", 
-					"Shared partners"];
-				property var varsScalingNone: 
-					["Current common partner", "Pshift AB-AB", "Pshift AB-AY", "Pshift AB-BA", "Pshift AB-BY", "Pshift AB-XA", "Pshift AB-XB", "Pshift AB-XY", 
-					"Recency continue", "Recency receive of receiver", "Recency receive of sender", "Recency send of receiver", "Recency send of sender", 
-					"Recency rank receive", "Recency rank send", "User statistics"];
-				
-				// property var absolute: [""]
-				property var varsNotConsiderType: ["Current common partner", "User statistics"]
-				property var varsUnique:
-					["Incoming shared partners", "Incoming two-path", "Outgoing shared partners", "Outgoing two-path", 
-					"Shared partners"]
-				
 
-				rSource: "endoEffectsFromR"
-				// source: [{ values: scalingNoneTieDirect.concat(scalingTwoTieDirect)}] 
+				source: [
+					{ 
+						values: orientation.value == "tie" ? 
+							(eventDirection.value == "undirected" ? varsTieUndirected : varsTieDirected) : 
+							(actorDirection.value == "sender" ? varsActorSender : varsActorReceiver)
+						}] 
 				name: "endogenousEffects"
 				id: endogenousEffects
-				titles: ["", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]
+				titles: ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]
 				rowComponent: RowLayout {
-					Text{Layout.preferredWidth: 200; text: rowValue}
+					Text{Layout.preferredWidth: 200; text: endogenousEffects.translated[rowValue]}
+					TextField{ name: "translatedName"; value: endogenousEffects.translated[rowValue]; visible: false}
 					CheckBox{ name: "includeEndoEffect"; label: ""; Layout.preferredWidth: 80; id: inclEndoEff}
 					DropDown {
 						name: "endogenousEffectsScaling"; 
@@ -237,20 +294,6 @@ Form
 				}
 			}
 }
-			
-
-		// VariablesForm
-		// {
-		// 	preferredHeight: 150 * preferencesModel.uiScale
-		// 	AvailableVariablesList 
-		// 	{ 
-		// 		name: "possibleEndogenousEffects";
-		// 		rSource: "endoEffectsFromR"
-		// 		title: qsTr("Endogenous effects")
-		// 	}
-
-
-		// }
 
 		Group
 		{
@@ -265,7 +308,7 @@ Form
 				implicitWidth: 600 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
 				rowComponent: RowLayout { 
-					Text{Layout.preferredWidth: 130; text: rowValue } 
+					Text{Layout.preferredWidth: 110; text: rowValue } 
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
 					CheckBox {Layout.preferredWidth: 50; name: "difference"}
 					CheckBox {Layout.preferredWidth: 25; name: "event"}
@@ -287,7 +330,7 @@ Form
 			{
 				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
-				rSource: "specifiedEffectsFromR"
+				rSource: "specifiedExoEffectsFromR"
 
 				titles: ["", qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale
