@@ -105,25 +105,25 @@ Form
 				value: "actor"
 				label: qsTr("Actor-oriented")
 
-				RadioButtonGroup
-				{
-					name: "actorDirection"
-					id: actorDirection
-					title: qsTr("")
-					radioButtonsOnSameRow: false
+				// RadioButtonGroup
+				// {
+				// 	name: "actorDirection"
+				// 	id: actorDirection
+				// 	title: qsTr("")
+				// 	radioButtonsOnSameRow: false
 
-					RadioButton
-					{
-						value: "sender"
-						label: qsTr("Sender")
-						checked: true
-					}
-					RadioButton
-					{
-						value: "receiver"
-						label: qsTr("Receiver")
-					}
-				}
+				// 	RadioButton
+				// 	{
+				// 		value: "sender"
+				// 		label: qsTr("Sender")
+				// 		checked: true
+				// 	}
+				// 	RadioButton
+				// 	{
+				// 		value: "receiver"
+				// 		label: qsTr("Receiver")
+				// 	}
+				// }
 			}
 		}
 
@@ -181,7 +181,7 @@ Form
 
 		Group 
 		{
-			title: qsTr("Endogenous effects")
+			title: orientation.value == "tie" ? qsTr("Endogenous effects") : qsTr("Endogenous effects receiver model")
 			implicitHeight: 150 * preferencesModel.uiScale
 
 			ComponentsList 
@@ -268,7 +268,7 @@ Form
 					{ 
 						values: orientation.value == "tie" ? 
 							(eventDirection.value == "undirected" ? varsTieUndirected : varsTieDirected) : 
-							(actorDirection.value == "sender" ? varsActorSender : varsActorReceiver)
+							(varsActorReceiver)
 						}] 
 				name: "endogenousEffects"
 				id: endogenousEffects
@@ -297,11 +297,93 @@ Form
 					}
 				}
 			}
-}
+		}
+
+		Group 
+		{
+			visible: orientation.value == "actor"
+			title: qsTr("Endogenous effects sender model")
+			implicitHeight: 130 * preferencesModel.uiScale
+
+			ComponentsList 
+			{ 
+				implicitHeight: 80 * preferencesModel.uiScale
+				implicitWidth: 600 * preferencesModel.uiScale
+
+				// variables for the actor sender model
+				property var varsActorSender: ["indegreeSender", "outdegreeSender", "recencySendSender", "recencyReceiveSender",
+					"totaldegreeSender", "userStat"];
+
+				// thw whole matched list of the effect variables R names and translations
+				property var translated: {
+					"indegreeReceiver": qsTr("Indegree receiver"),
+					"indegreeSender": qsTr("Indegree sender"), 
+					"inertia": qsTr("Inertia"),
+					"isp": qsTr("Incoming shared partners"), 
+					"itp": qsTr("Incoming two-path"), 
+					"osp": qsTr("Outgoing shared partners"),
+					"otp": qsTr("Outgoing two-path"),
+					"outdegreeReceiver": qsTr("Outdegree receiver"),
+					"outdegreeSender": qsTr("Outdegree sender"),
+					"psABAB": qsTr("Pshift AB-AB"),
+					"psABAY": qsTr("Pshift AB-AY"),
+					"psABBA": qsTr("Pshift AB-BA"),
+					"psABBY": qsTr("Pshift AB-BY"),
+					"psABXA": qsTr("Pshift AB-XA"),
+					"psABXB": qsTr("Pshift AB-XB"),
+					"psABXY": qsTr("Pshift AB-XY"),
+					"recencyContinue": qsTr("Recency continue"), 
+					"recencyReceiveReceiver": qsTr("Recency receive of receiver"), 
+					"recencyReceiveSender": qsTr("Recency receive of sender"),
+					"recencySendReceiver": qsTr("Recency send of receiver"),
+					"recencySendSender": qsTr("Recency send of sender"),
+					"reciprocity": qsTr("Reciprocity"),
+					"rrankReceive": qsTr("Recency rank receive"),
+					"rrankSend": qsTr("Recency rank send"),
+					"totaldegreeDyad": qsTr("Total degree dyad"),
+					"totaldegreeReceiver": qsTr("Total degree receiver"),
+					"totaldegreeSender": qsTr("Total degree sender"),
+					"userStat": qsTr("User statistics"),
+					"ccp": qsTr("Current common partner "),
+					"degreeDiff": qsTr("Degree difference"),
+					"degreeMax": qsTr("Degree maximum"),
+					"degreeMin": qsTr("Degree minimum"), 
+					"sp": qsTr("Shared partners")
+					};
+
+				// variables that only have two scaling arguments 
+				property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
+				// variables that have no scaling arguments
+				property var varsScalingNone: 
+					["ccp", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", 
+					"recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender", "recencySendReceiver", "recencySendSender", 
+					"rrankReceive", "rrankSend", "userStat"];
+
+				// variables to use in the scaling column
+				property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
+				property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
+
+				source: [{ values: varsActorSender }] 
+				name: "endogenousEffectsSender"
+				id: endogenousEffectsSender
+				titles: ["", qsTr("Include"), qsTr("Scaling")]
+				rowComponent: RowLayout {
+					Text{Layout.preferredWidth: 200; text: endogenousEffectsSender.translated[rowValue]}
+					TextField{ name: "translatedNameSender"; value: endogenousEffectsSender.translated[rowValue]; visible: false}
+					CheckBox{ name: "includeEndoEffectSender"; label: ""; Layout.preferredWidth: 80; id: inclEndoEff}
+					DropDown {
+						name: "endogenousEffectsScalingSender"; 
+						Layout.preferredWidth: 50
+						values: endogenousEffectsSender.varsScalingTwo.includes(rowValue) ? endogenousEffectsSender.scalingTwo : endogenousEffectsSender.scalingAll
+						enabled: !endogenousEffectsSender.varsScalingNone.includes(rowValue) & inclEndoEff.checked
+					}
+				}
+			}
+		}
 
 		Group
 		{
-			title: qsTr("Exogenous effects")
+			title: orientation.value == "tie" ? qsTr("Exogenous effects") : qsTr("Exogenous effects receiver model")
 			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
 			{
@@ -328,7 +410,35 @@ Form
 
 		Group
 		{
-			title: qsTr("Specified exogenous effects")
+			visible: orientation.value == "actor"
+			title: qsTr("Exogenous effects sender model")
+			implicitHeight: 140 * preferencesModel.uiScale
+			ComponentsList
+			{
+				name: "exogenousEffectsTableSender"
+				titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
+				// maybe translate that?
+				implicitHeight: 100 * preferencesModel.uiScale
+				implicitWidth: 600 * preferencesModel.uiScale
+				rSource: "exoTableVariablesR"
+				rowComponent: RowLayout { 
+					Text{Layout.preferredWidth: 110; text: rowValue } 
+					CheckBox {Layout.preferredWidth: 40; name: "average"}
+					CheckBox {Layout.preferredWidth: 50; name: "difference"}
+					CheckBox {Layout.preferredWidth: 25; name: "event"}
+					CheckBox {Layout.preferredWidth: 45; name: "maximum"}
+					CheckBox {Layout.preferredWidth: 45; name: "minimum"}
+					CheckBox {Layout.preferredWidth: 40; name: "receive"}
+					CheckBox {Layout.preferredWidth: 30; name: "same"}
+					CheckBox {Layout.preferredWidth: 30; name: "send"}
+					CheckBox {Layout.preferredWidth: 30; name: "tie"}
+				}
+			}
+		}
+
+		Group
+		{
+			title: orientation.value == "tie" ? qsTr("Specified exogenous effects") : qsTr("Specified exogenous effects receiver model")
 			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
 			{
@@ -345,7 +455,6 @@ Form
 						name: "exogenousEffectsScaling"; 
 						values: [{ label: qsTr("none"), value : "none"}, { label: qsTr("std"), value : "std" }]
 						// values: (rowValue.startsWith("event") || rowValue.startsWith("same")) ? "" : [{ label: qsTr("none"), value : "none"}, { label: qsTr("std"), value : "std" }]
-
 						enabled: !(rowValue.startsWith("event") || rowValue.startsWith("same"))
 					}
 					CheckBox {
@@ -359,7 +468,38 @@ Form
 
 		Group
 		{
-			title: qsTr("Interaction Effects")
+			visible: orientation.value == "actor"
+			title: qsTr("Specified exogenous effects sender model")
+			implicitHeight: 140 * preferencesModel.uiScale
+			ComponentsList
+			{
+				name: "specifiedExogenousEffectsSender"
+				id: specifiedExoEffects
+				// rSource: "specifiedExoEffectsFromRSender"
+
+				titles: ["", qsTr("Scaling"), qsTr("Absolute")]
+				implicitHeight: 100 * preferencesModel.uiScale
+				implicitWidth: 400 * preferencesModel.uiScale
+				rowComponent: RowLayout { 
+					Text { Layout.preferredWidth: 250; text: rowValue } 
+					DropDown {
+						name: "exogenousEffectsScalingSender"; 
+						values: [{ label: qsTr("none"), value : "none"}, { label: qsTr("std"), value : "std" }]
+						// values: (rowValue.startsWith("event") || rowValue.startsWith("same")) ? "" : [{ label: qsTr("none"), value : "none"}, { label: qsTr("std"), value : "std" }]
+						enabled: !(rowValue.startsWith("event") || rowValue.startsWith("same"))
+					}
+					CheckBox {
+						Layout.preferredWidth: 100
+						name: "absoluteSender"
+						visible: rowValue.startsWith("difference")
+					}
+				}
+			}
+		}
+
+		Group
+		{
+			title: orientation.value == "tie" ? qsTr("Interaction effects") : qsTr("Interaction effects receiver model")
 			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
 			{
@@ -371,6 +511,25 @@ Form
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 400; text: rowValue } 
 					CheckBox {Layout.preferredWidth: 100; name: "includeInteractionEffect"}
+				}
+			}
+		}
+
+		Group
+		{
+			visible: orientation == "actor"
+			title: qsTr("Interaction effects sender model")
+			implicitHeight: 140 * preferencesModel.uiScale
+			ComponentsList
+			{
+				name: "interactionEffectsSender"
+				// rSource: "possibleInteractionEffectsFromRSender"
+				titles: [qsTr("Include")]
+				implicitHeight: 100 * preferencesModel.uiScale
+				implicitWidth: 500 * preferencesModel.uiScale
+				rowComponent: RowLayout { 
+					Text{Layout.preferredWidth: 400; text: rowValue } 
+					CheckBox {Layout.preferredWidth: 100; name: "includeInteractionEffectSender"}
 				}
 			}
 		}
