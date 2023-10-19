@@ -128,7 +128,6 @@ Form
 		}
 
 
-
 		RadioButtonGroup
 		{
 			name: "eventSequence"
@@ -213,8 +212,8 @@ Form
 
 				// thw whole matched list of the effect variables R names and translations
 				property var translated: {
-					"indegreeReceiver": qsTr("In degree receiver"),
-					"indegreeSender": qsTr("In degree sender"), 
+					"indegreeReceiver": qsTr("Indegree receiver"),
+					"indegreeSender": qsTr("Indegree sender"), 
 					"inertia": qsTr("Inertia"),
 					"isp": qsTr("Incoming shared partners"), 
 					"itp": qsTr("Incoming two-path"), 
@@ -241,7 +240,12 @@ Form
 					"totaldegreeReceiver": qsTr("Total degree receiver"),
 					"totaldegreeSender": qsTr("Total degree sender"),
 					"userStat": qsTr("User statistics"),
-					}
+					"ccp": qsTr("Current common partner "),
+					"degreeDiff": qsTr("Degree difference"),
+					"degreeMax": qsTr("Degree maximum"),
+					"degreeMin": qsTr("Degree minimum"), 
+					"sp": qsTr("Shared partners")
+					};
 
 				// variables that only have two scaling arguments 
 				property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
@@ -366,7 +370,7 @@ Form
 				implicitWidth: 500 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 400; text: rowValue } 
-					CheckBox {Layout.preferredWidth: 100; name: "includeIA"}
+					CheckBox {Layout.preferredWidth: 100; name: "includeInteractionEffect"}
 				}
 			}
 		}

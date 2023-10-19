@@ -27,10 +27,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .remUploadDyadData(jaspResults, options)
 
   .feedbackExoTableVariables(jaspResults, options)
-
   .getExogenousEffects(jaspResults, options)
-
-  .feedbackExoAndInteractionEffects(jaspResults, options)
+  .feedbackInteractionEffects(jaspResults, options)
 
 
   ready <- (options[["timeVariable"]] != "") && (length(options[["actorVariables"]]) > 1)
@@ -100,21 +98,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       attrName <- basename(options[["dyadDataList"]][[i]][["dyadData"]])
       attrName <- gsub("\\..*","", attrName)
 
-      # if (dim(dyadDt)[1] == dim(dyadDt)[2] && all(is.na(diag(as.matrix(dyadDt))))) { # square matrix -> change to long format
-      #
-      #   value <- c(as.matrix(dyadDt))
-      #   rownames(dyadDt) <- colnames(dyadDt)
-      #
-      #   rn <- rep(rownames(dyadDt), ncol(dyadDt))
-      #   cn <- rep(colnames(dyadDt), each = nrow(dyadDt))
-      #   dyadDf <- data.frame(rn, cn, value)
-      #   attrName <- basename(options[["dyadDataList"]][[i]][["dyadData"]])
-      #   attrName <- gsub("\\..*","", attrName)
-      #   colnames(dyadDf) <- c("actor1", "actor2", attrName)
-      #   dyadOut[[i]] <- dyadDf[complete.cases(dyadDf), ]
-      # } else {
-        dyadOut[[attrName]] <- dyadDt
-      # }
+      dyadOut[[attrName]] <- dyadDt
+
     } else {
       dyadOut[[i]] <- NULL
     }
@@ -166,6 +151,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["exoEffectsState"]])) return()
 
   exoTable <- options[["exogenousEffectsTable"]]
+
+  if (length(exoTable) == 0) return()
+
   varNames <- sapply(exoTable, function(x) x[["value"]])
   exoEffectsList <- c("Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie")
 
@@ -176,7 +164,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   if (length(unlist(exoInds)) == 0)
-    return(options)
+    return()
 
   exoInds[sapply(exoInds, function(x) length(x) == 0)] <- NULL
 
@@ -188,40 +176,33 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   exoEffectsState$dependOn("exogenousEffectsTable")
   jaspResults[["exoEffectsState"]] <- exoEffectsState
 
+  # fill the rSource for the specified exo effects
+  exoVarNames <- names(exoInds)
+  exoEffNames <- sapply(exoInds, names)
+  exoEffectsForQml <- as.list(paste0(exoEffNames, "('", exoVarNames, "')"))
+  specifiedExoEffectsFromR <- createJaspQmlSource("specifiedExoEffectsFromR", exoEffectsForQml)
+  jaspResults[["specifiedExoEffectsFromR"]] <- specifiedExoEffectsFromR
+
   return()
 
 }
 
+.feedbackInteractionEffects <- function(jaspResults, options) {
 
-
-.feedbackExoAndInteractionEffects <- function(jaspResults, options) {
-
-  if (!is.null(jaspResults[["specifiedExoEffectsFromR"]]) && !is.null(jaspResults[["possibleInteractionEffectsFromR"]]))
+  if (!is.null(jaspResults[["possibleInteractionEffectsFromR"]]))
     return()
 
   outExoList <- NULL
   if (!is.null(jaspResults[["exoEffectsState"]])) {
-    exoEffects <- jaspResults[["exoEffectsState"]]$object
-    exoList <- exoEffects[["list"]]
-
-    exoNames <- names(exoList)
-    outExoList <- list()
-    for (i in 1:length(exoList)) {
-      if (!is.null(exoList[[i]])) {
-        vars <- exoNames[i]
-        nam <- names(exoList[[i]])
-        tmp <- as.list(paste0(nam, "('", vars, "')"))
-        outExoList <- append(outExoList, tmp)
-      }
-    }
-
-    specifiedExoEffectsFromR <- createJaspQmlSource("specifiedExoEffectsFromR", outExoList)
-    specifiedExoEffectsFromR$dependOn("exogenousEffectsTable")
-    jaspResults[["specifiedExoEffectsFromR"]] <- specifiedExoEffectsFromR
+    exoOut <- jaspResults[["exoEffectsState"]]$object
+    exoEffects <- exoOut[["list"]]
+    exoVarNames <- names(exoEffects)
+    exoEffNames <- sapply(exoEffects, names)
+    outExoList <- as.list(paste0(exoEffNames, "('", exoVarNames, "')"))
   }
 
+
   # handle the endo effects to add to the interactions field
-  outEndoList <- NULL
   endos <- options[["endogenousEffects"]]
   endosSave <- lapply(endos, function(x) {
     if (x[["includeEndoEffect"]]) x[["value"]] else NULL
@@ -229,9 +210,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   specEndos <- which(!sapply(endosSave, is.null))
   outEndoList <- lapply(endos[specEndos], function(x) x[["value"]])
 
-  if (is.null(outExoList) && is.null(outEndoList)) return()
+  if ((length(outExoList) + length(outEndoList)) < 2) return()
 
-  combList <- c(unlist(outExoList), unlist(outEndoList))
+  combList <- c(unlist(outExoList), unlist(outEndoList) == 0)
   interTmp <- combn(c(unlist(outExoList), unlist(outEndoList)), m = 2)
   inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
 
@@ -328,8 +309,13 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     dt[, 1] <- as.POSIXct(dt[, 1])
   }
 
+  if (options[["eventDirection"]] == "undirected" && options[["orientation"]] == "tie") {
+    directed <- FALSE
+  } else {
+    directed <- TRUE
+  }
   rehObject <- try(remify::remify(edgelist = dt,
-                                 directed = options[["eventDirection"]] == "directed",
+                                 directed = directed,
                                  ordinal = options[["eventSequence"]] == "orderOnly",
                                  model = options[["orientation"]],
                                  riskset = options[["riskset"]]))
@@ -374,17 +360,41 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   # prepare the data for remstats, aka, assign the attributes to objects so they are present for remstats
   dtExo <- .prepareCovariateData(jaspResults, dataset, options)
 
+  # do the model conditions once here:
+  if (options[["orientation"]] == "tie") {
+    conds <- list(TRUE, NULL, NULL)
+  } else { # orientation = actor
+    if (options[["actorDirection"]] == "sender") {
+      conds <- list(NULL, TRUE, NULL)
+    } else { # direction = receiver
+      conds <- list(NULL, NULL, TRUE)
+    }
+  }
 
   # check if there is already a statsObject in storage, if null we are in the first round of calculations
   # or maybe the user did not choose to save the samples
   if (is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object) ||
       !options[["oldEffectsSaved"]]) {
 
+    # this weird thing makes sure the correct effects are filled in
+    conds[[which(!sapply(conds, is.null))]] <- effectsForm
     # in the first round both states are created
-    statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effectsForm, attr_actors = dtExo))
+    statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = conds[[1]], sender_effects = conds[[2]],
+                                          receiver_effects = conds[[3]], attr_actors = dtExo))
 
     if (!isTryError(statsObject)) {
-      dimnames(statsObject)[[3]] <- effectsObj$dimNames
+      # specify a new attribute to save the formula, since the actor oriented object does not have the same
+      # formula structure as the tie oriented
+      attr(statsObject, "formulaJasp") <- effectsForm
+      if (options[["orientation"]] == "actor") {
+        if (options[["actorDirection"]] == "sender") {
+          dimnames(statsObject[["sender_stats"]])[[3]] <- effectsObj$dimNames
+        } else {
+          dimnames(statsObject[["receiver_stats"]])[[3]] <- effectsObj$dimNames
+        }
+      } else {
+        dimnames(statsObject)[[3]] <- effectsObj$dimNames
+      }
     }
 
     remstatsResultState <- createJaspState(statsObject)
@@ -395,36 +405,64 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   } else {
 
     statsObjectOld <- jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object
-    formulaOld <- attr(statsObjectOld, "formula")
+    formulaOld <- attr(statsObjectOld, "formulaJasp")
     dimNamesOld <- dimnames(statsObjectOld)[[3]]
     # match the current specified effects with the effects that have been calculated in the past
     # return the "new" effects,
     effsOut <- .matchEffectsForStats(formulaOld, effectsObj, dimNamesOld)
 
+
     if (is.null(effsOut$form)) { # if no new effects, we can just continue with the old object and calculate nothing new
       statsObjectCombined <- statsObject <- statsObjectOld
+
     } else { # some effects that have not been calculated in the past
-      statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = effsOut$form, attr_data = dtExo))
+
+      # this weird thing makes sure the correct effects are filled in
+      conds[[which(!sapply(conds, is.null))]] <- effsOut$form
+
+      statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = conds[[1]], sender_effects = conds[[2]],
+                                          receiver_effects = conds[[3]], attr_actors = dtExo))
 
       # add the jasp-detailed dimnames to the whole thing.
       if (!isTryError(statsObject)) {
-        dimnames(statsObject)[[3]] <- effsOut$dimNamesNew
+        attr(statsObject, "formulaJasp") <- effsOut$form
+
+        if (options[["orientation"]] == "actor") {
+          if (options[["actorDirection"]] == "sender") {
+            dimnames(statsObject[["sender_stats"]])[[3]] <- effsOut$dimNamesNew
+          } else {
+            dimnames(statsObject[["receiver_stats"]])[[3]] <- effsOut$dimNamesNew
+          }
+        } else {
+          dimnames(statsObject)[[3]] <- effsOut$dimNamesNew
+        }
       }
 
       # bind the current and the old statsobject together, remstats should by itself take care of duplicates
       # and leave deal with those, aka, not bind them twice
       statsObjectCombined <- remstats::bind_remstats(statsObjectOld, statsObject)
-      attr(statsObjectCombined, "formula") <- effsOut$formComb
+      attr(statsObjectCombined, "formulaJasp") <- effsOut$formComb
     }
 
     jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object <- statsObjectCombined
 
     # now just continue with the statsObject array slices that are required for the current analysis
-    sliced <- statsObjectCombined[, , effectsObj$dimNames]
-    class(sliced) <- c("tomstats", "remstats")
+
+    if (options[["orientation"]] == "actor") {
+      if (options[["actorDirection"]] == "sender") {
+        sliced <- statsObjectCombined[["sender_stats"]][, , effectsObj$dimNames]
+      } else { # receiver
+        sliced <- statsObjectCombined[["receiver_stats"]][, , effectsObj$dimNames]
+      }
+      attr(sliced, "actors") <- attr(statsObject, "actors")
+    } else {
+      sliced <- statsObjectCombined[, , effectsObj$dimNames]
+      attr(sliced, "riskset") <- attr(statsObject, "riskset")
+    }
+
+    attr(sliced, "class") <- attr(statsObject, "class")
     attr(sliced, "model") <- attr(statsObject, "model")
     attr(sliced, "formula") <- effectsForm
-    attr(sliced, "riskset") <- attr(statsObject, "riskset")
 
     remstatsResultState <- createJaspState(sliced)
 
@@ -504,6 +542,17 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   if (!is.null(remResults)) {
 
+    res <- summary(remResults)
+    if (options[["orientation"]] == "actor") {
+      if (options[["actorDirection"]] == "sender") {
+        npar <- nrow(res[["coefsTab"]][["sender_model"]])
+        res <- res[["sender_model"]]
+      } else {
+        npar <- nrow(res[["coefsTab"]][["receiver_model"]])
+        res <- res[["receiver_model"]]
+      }
+    }
+
     if (options[["method"]] == "MLE") {
 
       modelFitTable$addColumnInfo(name = "fitmeasure",     title = gettext("Statistic"), type= "string")
@@ -516,7 +565,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         modelFitTable$addFootnote(footnote)
       }
 
-      res <- summary(remResults)
       dtFill <- data.frame(fitmeasure = c("Null deviance", "Residual deviance", "Chi^2", "AIC", "AICC", "BIC"))
       dtFill$estimate <- c(res$null.deviance, res$residual.deviance, res$model.deviance, res$AIC, res$AICC, res$BIC)
       dtFill$df <- c(res$df.null, res$df.residual, res$df.model, NA_real_, NA_real_, NA_real_)
@@ -534,11 +582,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         modelFitTable$addFootnote(footnote)
       }
 
-      res <- summary(remResults)
-
       reh <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
 
-      npar <- ncol(res$coefsTab)
+      npar <- nrow(res$coefsTab)
       N <- reh$M
       BIC <- -2 * res$loglik + npar * log(N)
 
@@ -590,6 +636,22 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   if (!is.null(remResults)) {
 
+    ctab <- summary(remResults)[["coefsTab"]]
+
+    if (options[["orientation"]] == "actor") {
+      if (options[["actorDirection"]] == "sender") {
+        ctab <- ctab[["sender_model"]]
+      } else {
+        ctab <- ctab[["receiver_model"]]
+      }
+    }
+
+    dtFill <- data.frame(ctab)
+    rwnames <- rownames(ctab)
+    coefNames <- .transformCoefficientNames(rwnames, options, jaspResults)
+    dtFill$coef <- coefNames
+    dtFill <- dtFill[, c(ncol(dtFill), 1:(ncol(dtFill) - 1))]
+
     if (options[["method"]] == "MLE") {
 
       coefficientsTable$addColumnInfo(name = "coef",     title = gettext("Coefficient"), type= "string")
@@ -600,13 +662,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       coefficientsTable$addColumnInfo(name = "prZ",      title = gettext("p"),     type= "number")
       coefficientsTable$addColumnInfo(name = "pr0",      title = gettext("p(=0)"),       type= "number")
 
-
-      res <- summary(remResults)
-      dtFill <- data.frame(res$coefsTab)
-      colnames(dtFill) <- c("estimate", "stdErr", "zValue", "prZ", "pr0")
-      rwnames <- rownames(res$coefsTab)
-      coefNames <- .transformCoefficientNames(rwnames, options, jaspResults)
-      dtFill$coef <- coefNames
+      colnames(dtFill) <- c("coef", "estimate", "stdErr", "zValue", "prZ", "pr0")
 
     } else { # method = BSIR
       coefficientsTable$addColumnInfo(name = "coef",     title = gettext("Coefficient"), type= "string")
@@ -617,13 +673,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       coefficientsTable$addColumnInfo(name = "q97.5",      title = gettext("97.5% Quantile"),     type= "number")
       coefficientsTable$addColumnInfo(name = "pr0",      title = gettext("p(=0|y)"),       type= "number")
 
-
-      res <- summary(remResults)
-      dtFill <- data.frame(res$coefsTab)
       colnames(dtFill) <- c("postMode", "postSD", "q2.5", "q50", "q97.5", "pr0")
-      rwnames <- rownames(res$coefsTab)
-      coefNames <- .transformCoefficientNames(rwnames, options, jaspResults)
-      dtFill$coef <- coefNames
+
     }
 
     footnote <- ""
@@ -638,11 +689,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
+
+
 # ------------- Helper functions ----------------
-
-
-
-
 
 .translateEffects <- function(jaspResults, options) {
 
