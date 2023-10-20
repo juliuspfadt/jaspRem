@@ -31,10 +31,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .feedbackInteractionEffects(jaspResults, options)
 
 
-  ready <- (options[["timeVariable"]] != "") && (length(options[["actorVariables"]]) > 1)
+  ready <- (options[["timeVariable"]] != "") && (length(options[["actorVariables"]]) > 1) &&
+    options[["syncAnalysisBox"]]
 
   if (!ready) return()
-
 
 
   dataset <- .remReadData(jaspResults, dataset, options)
@@ -315,10 +315,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     directed <- TRUE
   }
   rehObject <- try(remify::remify(edgelist = dt,
-                                 directed = directed,
-                                 ordinal = options[["eventSequence"]] == "orderOnly",
-                                 model = options[["orientation"]],
-                                 riskset = options[["riskset"]]))
+                                  directed = directed,
+                                  ordinal = options[["eventSequence"]] == "orderOnly",
+                                  model = options[["orientation"]],
+                                  riskset = options[["riskset"]]))
 
 
 
@@ -361,15 +361,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   dtExo <- .prepareCovariateData(jaspResults, dataset, options)
 
   # do the model conditions once here:
-  if (options[["orientation"]] == "tie") {
-    conds <- list(TRUE, NULL, NULL)
-  } else { # orientation = actor
-    if (options[["actorDirection"]] == "sender") {
-      conds <- list(NULL, TRUE, NULL)
-    } else { # direction = receiver
-      conds <- list(NULL, NULL, TRUE)
-    }
-  }
+
 
   # check if there is already a statsObject in storage, if null we are in the first round of calculations
   # or maybe the user did not choose to save the samples
@@ -704,57 +696,23 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       })
   specEndos <- which(!sapply(endosSave, is.null))
 
-  endoDims <- c() # also save the dimnames to later assign to the statsObject slices
   if (length(specEndos) > 0) {
-
-    endosR <- sapply(endos[specEndos], function(x) x[["value"]])
-    endosJasp <- sapply(endos[specEndos], function(x) x[["translatedName"]])
-    endoScaling <- sapply(endos[specEndos], function(x) x[["endogenousEffectsScaling"]])
-    endoType <- sapply(endos[specEndos], function(x) x[["endogenousEffectsConsiderType"]])
-    endoUnique <- sapply(endos[specEndos], function(x) x[["endogenousEffectsUnique"]])
-    endoEffects <- paste0(endosR, "(")
-
+    endoObj <- .processEndoEffects(endos[specEndos])
+    print(str(endoObj))
     # we need the R and translated jasp names of the endo effects later
     endosMatrix <- matrix(c(endosR, endosJasp), nrow = length(endosR), ncol = 2)
     endosState <- createJaspState(endosMatrix)
     jaspResults[["mainContainer"]][["endoEffectsState"]] <- endosState
 
-    for (i in 1:length(endosR)) {
-
-      # create the proper dimname
-      dimstmp <- endosR[i]
-
-      if (!(endoScaling[i] %in% c("none", ""))) {
-        endoEffects[i] <- paste0(endoEffects[i], "scaling = '", endoScaling[i], "', ")
-        dimstmp <- paste0(dimstmp, ".", endoScaling[i])
-      }
-      if (endoUnique[i]) {
-        endoEffects[i] <- paste0(endoEffects[i], "unique = ", endoUnique[i], ", ")
-        dimstmp <- paste0(dimstmp, ".unique")
-
-      }
-      if (endoType[i])  {
-        endoEffects[i] <- paste0(endoEffects[i], "consider_type = ", endoType[i], ", ")
-        dimstmp <- paste0(dimstmp, ".type")
-      }
-      endoDims <- append(endoDims, dimstmp)
-    }
-    endoEffects <- paste0(endoEffects, ")")
-    endoEffects <- gsub(", )", ")", endoEffects)
-    endoEffectsSave <- endoEffects
-
-    endoEffects <- paste(endoEffects, collapse = " + ")
-    effects <- paste(effects, "+", endoEffects)
   }
 
 
   # exogenous effects
   exoEffectsSave2 <- NULL
   exoDims <- c() # also save the dimnames to later assign to the statsObject slices
-  exoIndex <- grep("specifiedExogenousEffects", names(options))
-  if (length(options[[exoIndex]]) > 0) {
-    exos <- options[[exoIndex]]
-    exoEffects <- sapply(options[[exoIndex]], function(x) x[["value"]])
+  if (length(options[["specifiedExogenousEffects"]]) > 0) {
+    exos <- options[["specifiedExogenousEffects"]]
+    exoEffects <- sapply(exos, function(x) x[["value"]])
     exoEffectsSave1 <- exoEffects
     exoEffects <- gsub(")", "", exoEffects)
     exoScaling <- sapply(exos, function(x) x[["exogenousEffectsScaling"]])
@@ -803,11 +761,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   # interactions
   interEffectsSave <- NULL
-  interIndex <- grep("interactionEffects", names(options))
   interDims <- c()
-  if (length(interIndex) > 0 && length(options[[interIndex]]) > 0) {
+  if (length(options[["interactionEffects"]]) > 0) {
 
-    interEffects <- sapply(options[[interIndex]], function(x) if (x[["includeIA"]]) x[["value"]] else NULL)
+    interEffects <- sapply(options[["interactionEffects"]], function(x) if (x[["includeInteractionEffect"]]) x[["value"]] else NULL)
     interEffects[sapply(interEffects, is.null)] <- NULL
 
     if (length(interEffects) > 0) {
@@ -827,7 +784,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       }
 
       # work the exo effects
-      if (length(options[[exoIndex]]) > 0) {
+      if (length(options[["specifiedExogenousEffects"]]) > 0) {
         for (eee in 1:length(exos)) {
           ind <- grep(exoEffectsSave1[eee], interEffects, fixed = TRUE)
           if (length(ind) > 0) {
@@ -1028,89 +985,43 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
+.processEndoEffects <- function(endos) {
+
+  endoDims <- c() # also save the dimnames to later assign to the statsObject slices
+  endosR <- sapply(endos, function(x) x[["value"]])
+  endosJasp <- sapply(endos, function(x) x[["translatedName"]])
+  endoScaling <- sapply(endos, function(x) x[["endogenousEffectsScaling"]])
+  endoType <- sapply(endos, function(x) x[["endogenousEffectsConsiderType"]])
+  endoUnique <- sapply(endos, function(x) x[["endogenousEffectsUnique"]])
+  endoEffects <- paste0(endosR, "(")
 
 
+  for (i in 1:length(endosR)) {
 
-# .feedbackEndoEffects <- function(jaspResults, options) {
-#
-#   if (!is.null(jaspResults[["endoEffectsFromR"]])) return()
-#
-#   endos <- .endoEffectsMatching(options)
-#   specs <- endos[, "endoEffectsJasp"]
-#   specs <- as.list(specs)
-#
-#   src <- createJaspQmlSource("endoEffectsFromR", specs)
-#   src$dependOn(c("eventDirection", "orientation"))
-#   jaspResults[["endoEffectsFromR"]] <- src
-#
-#
-#   return()
-#
-# }
+    # create the proper dimname
+    dimstmp <- endosR[i]
 
+    if (!(endoScaling[i] %in% c("none", ""))) {
+      endoEffects[i] <- paste0(endoEffects[i], "scaling = '", endoScaling[i], "', ")
+      dimstmp <- paste0(dimstmp, ".", endoScaling[i])
+    }
+    if (endoUnique[i]) {
+      endoEffects[i] <- paste0(endoEffects[i], "unique = ", endoUnique[i], ", ")
+      dimstmp <- paste0(dimstmp, ".unique")
 
+    }
+    if (endoType[i])  {
+      endoEffects[i] <- paste0(endoEffects[i], "consider_type = ", endoType[i], ", ")
+      dimstmp <- paste0(dimstmp, ".type")
+    }
+    endoDims <- append(endoDims, dimstmp)
+  }
+  endoEffects <- paste0(endoEffects, ")")
+  endoEffects <- gsub(", )", ")", endoEffects)
+  endoEffectsSave <- endoEffects
 
-# .endoEffectsMatching <- function(options) {
-#
-#   if (options[["orientation"]] == "tie" && options[["eventDirection"]] == "directed") {
-#     endoEffectsJasp <- gettext(c("In degree receiver", "In degree sender", "Inertia",
-#                                "Incoming shared partners", "Incoming two-path", "Outgoing shared partners",
-#                                "Outgoing two-path", "Out deregee receiver", "Out degree sender", "Pshift AB-AB",
-#                                "Pshift AB-AY", "Pshift AB-BA", "Pshift AB-BY", "Pshift AB-XA", "Pshift AB-XB", "Pshift AB-XY",
-#                                "Recency continue", "Recency receive of receiver", "Recency receive of sender",
-#                                "Recency send of receiver", "Recency send of sender", "Reciprocity", "Recency rank receive",
-#                                "Recency rank send", "Total degree dyad", "Total degree receiver", "Total degree sender",
-#                                "User statistics"))
-#
-#     endoEffectsR <- c("indegreeReceiver", "indegreeSender", "inertia", "isp", "itp", "osp", "otp",
-#                       "outdegreeReceiver", "outdegreeSender", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA",
-#                       "psABXB", "psABXY", "recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender",
-#                       "recencySendReceiver", "recencySendSender", "reciprocity", "rrankReceive", "rrankSend",
-#                       "totaldegreeDyad", "totaldegreeReceiver", "totaldegreeSender", "userStat")
-#
-#   } else if (options[["orientation"]] == "tie" && options[["eventDirection"]] == "undirected") {
-#     endoEffectsJasp <- gettext(c("Current common partner", "Degree difference",	"Degree maximum", "Degree minimum",
-#                                  "Inertia",	"Pshift AB-AB", "Pshift AB-AY",	"Recency continue",
-#                                  "Shared partners",	"Total degree dyad", "User statistics"))
-#
-#     endoEffectsR <- c("ccp", "degreeDiff", "degreeMax", "degreeMin", "inertia", "psABAB",
-#                       "psABAY", "recencyContinue", "sp", "totaldegreeDyad", "userStat")
-#
-#
-#   } else if (options[["orientation"]] == "actor" && options[["actorDirection"]] == "sender") {
-#     endoEffectsJasp <- gettext(c("In degree Sender", "Out degree Sender", "Recency send of sender", "Recency receive of sender",
-#                                  "Total degree sender", "User statistics"))
-#
-#     endoEffectsR <- c("indegreeSender", "outdegreeSender", "recencySendSender", "recencyReceiveSender",
-#                       "totaldegreeSender", "userStat")
-#
-#   } else if (options[["orientation"]] == "actor" && options[["actorDirection"]] == "receiver") {
-#     endoEffectsJasp <- gettext(c("In degree receiver", "Inertia",
-#                                  "Incoming shared partners", "Incoming two-path", "Outgoing shared partners",
-#                                  "Outgoing two-path",
-#                                  "Recency continue", "Recency receive of receiver",
-#                                  "Recency send of receiver", "Reciprocity", "Recency rank receive",
-#                                  "Recency rank send", "Total degree receiver",
-#                                  "User statistics"))
-#
-#     endoEffectsR <- c("indegreeReceiver", "inertia", "isp", "itp", "osp", "otp",
-#                       "outdegreeReceiver", "recencyContinue", "recencyReceiveReceiver",
-#                       "recencySendReceiver", "reciprocity", "rrankReceive", "rrankSend",
-#                       "totaldegreeReceiver", "userStat")
-#
-#   }
-#
-#
-#   out <- cbind(endoEffectsJasp, endoEffectsR)
-#   return(out)
-#
-# }
+  endoEffects <- paste(endoEffects, collapse = " + ")
+  effects <- paste(effects, "+", endoEffects)
 
-
-# .endoNoScalingList <- function() {
-#   noScaling <- c("psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY",
-#                  "recencyContinue", "recencyReceiveReceiver", "recencySendReceiver", "recencySendSender",
-#                  "recencyRankReceiver", "recencyRankSend")
-#   return(noScaling)
-# }
-
+  return(list(effects = effects, effectsSave = endoEffectsSave, dims = endoDims))
+}

@@ -15,6 +15,14 @@ Form
 		AssignedVariablesList	{	name:	"weightVariable";		title: qsTr("Weight Variable");	suggestedColumns: ["scale"];	singleVariable: true	}
 		
 		// AssignedVariablesList	{	name:	"covariates";				title: qsTr("Covariates");		suggestedColumns: ["scale","ordinal", "nominal"];	singleVariable: false	; height: 115 * preferencesModel.uiScale; id: covariates}
+		CheckBox
+		{
+			id: 						syncAnalysisBox
+			name: 					"syncAnalysisBox"
+			label: 					qsTr("<b>Sync analysis</b>")
+			visible: 				true
+			checked: 				true
+		}
 	}
 	// // in order to have access to all variables in the data set even though they might not be assigned, 
 // // this section is hidden
@@ -104,26 +112,6 @@ Form
 			{
 				value: "actor"
 				label: qsTr("Actor-oriented")
-
-				// RadioButtonGroup
-				// {
-				// 	name: "actorDirection"
-				// 	id: actorDirection
-				// 	title: qsTr("")
-				// 	radioButtonsOnSameRow: false
-
-				// 	RadioButton
-				// 	{
-				// 		value: "sender"
-				// 		label: qsTr("Sender")
-				// 		checked: true
-				// 	}
-				// 	RadioButton
-				// 	{
-				// 		value: "receiver"
-				// 		label: qsTr("Receiver")
-				// 	}
-				// }
 			}
 		}
 
@@ -393,6 +381,7 @@ Form
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 600 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
+				// source: ["allVariables"]
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 110; text: rowValue } 
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
@@ -421,6 +410,7 @@ Form
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 600 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
+				// source: "allVariables"
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 110; text: rowValue } 
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
@@ -474,7 +464,7 @@ Form
 			ComponentsList
 			{
 				name: "specifiedExogenousEffectsSender"
-				id: specifiedExoEffects
+				id: specifiedExoEffectsSender
 				// rSource: "specifiedExoEffectsFromRSender"
 
 				titles: ["", qsTr("Scaling"), qsTr("Absolute")]
@@ -517,7 +507,7 @@ Form
 
 		Group
 		{
-			visible: orientation == "actor"
+			visible: orientation.value == "actor"
 			title: qsTr("Interaction effects sender model")
 			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
