@@ -19,7 +19,7 @@ Form
 		{
 			id: 						syncAnalysisBox
 			name: 					"syncAnalysisBox"
-			label: 					qsTr("<b>Sync analysis</b>")
+			label: 					qsTr("<b>Sync Analysis</b>")
 			visible: 				true
 			checked: 				true
 		}
@@ -31,24 +31,31 @@ Form
 		AssignedVariablesList{ name: "allVariablesHidden"; source: "allVariables" }
 		visible: false
 	}
-	Section{
+	Section
+	{
+		columns: 1
 		title: qsTr("Upload Covariates Data")
 
-		FileSelector
+		Group
 		{
-		name:									"actorData"
-		label:								qsTr("Upload actor attributes")
-		placeholderText:			qsTr("e.g., home/Data/actorData.csv")
-		filter:								"*.csv"
-		save:									false
-		fieldWidth:						180 * preferencesModel.uiScale
+			columns: 2
+			FileSelector
+			{
+				name:									"actorData"
+				label:								qsTr("Upload actor attributes")
+				placeholderText:			qsTr("e.g., home/Data/actorData.csv")
+				filter:								"*.csv"
+				save:									false
+				fieldWidth:						180 * preferencesModel.uiScale
+			}
 		}
-		Group{}
+
+
 		ComponentsList
 		{
 			name: "dyadDataList"
 			title: qsTr("Upload dyadic attributes")
-			implicitHeight		: 90 * preferencesModel.uiScale // about 3 rows
+			implicitHeight: 90 * preferencesModel.uiScale // about 3 rows
 			minimumItems: 1
 			rowComponent: 
 			RowLayout
@@ -252,8 +259,7 @@ Form
 				property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
 				property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
 
-				source: [
-					{ 
+				source: [{ 
 						values: orientation.value == "tie" ? 
 							(eventDirection.value == "undirected" ? varsTieUndirected : varsTieDirected) : 
 							(varsActorReceiver)
@@ -373,18 +379,20 @@ Form
 		{
 			title: orientation.value == "tie" ? qsTr("Exogenous effects") : qsTr("Exogenous effects receiver model")
 			implicitHeight: 140 * preferencesModel.uiScale
+
 			ComponentsList
 			{
+				id: exogenousEffectsTable
 				name: "exogenousEffectsTable"
 				titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
 				// maybe translate that?
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 600 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
-				// source: ["allVariables"]
 				rowComponent: RowLayout { 
-					Text{Layout.preferredWidth: 110; text: rowValue } 
+					Text{Layout.preferredWidth: 110; text: rowValue} 
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
+					// TextField { visible: false; name: "text1"; value: rowValue + "average"}
 					CheckBox {Layout.preferredWidth: 50; name: "difference"}
 					CheckBox {Layout.preferredWidth: 25; name: "event"}
 					CheckBox {Layout.preferredWidth: 45; name: "maximum"}
@@ -402,18 +410,20 @@ Form
 			visible: orientation.value == "actor"
 			title: qsTr("Exogenous effects sender model")
 			implicitHeight: 140 * preferencesModel.uiScale
+
 			ComponentsList
 			{
+				id: exogenousEffectsTableSender
 				name: "exogenousEffectsTableSender"
 				titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
 				// maybe translate that?
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 600 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
-				// source: "allVariables"
 				rowComponent: RowLayout { 
-					Text{Layout.preferredWidth: 110; text: rowValue } 
+					Text{Layout.preferredWidth: 110; text: rowValue} 
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
+					// TextField { visible: false; name: "text1"; value: rowValue + "average"}
 					CheckBox {Layout.preferredWidth: 50; name: "difference"}
 					CheckBox {Layout.preferredWidth: 25; name: "event"}
 					CheckBox {Layout.preferredWidth: 45; name: "maximum"}
@@ -435,6 +445,7 @@ Form
 				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
 				rSource: "specifiedExoEffectsFromR"
+				// source: [{name: "exogenousEffectsTable.text1", condition: "average == true"}]
 
 				titles: ["", qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale
@@ -465,7 +476,8 @@ Form
 			{
 				name: "specifiedExogenousEffectsSender"
 				id: specifiedExoEffectsSender
-				// rSource: "specifiedExoEffectsFromRSender"
+				rSource: "specifiedExoEffectsFromRSender"
+				// source: [{name: "exogenousEffectsTableSender.text1", condition: "average == true"}]
 
 				titles: ["", qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale
@@ -495,6 +507,7 @@ Form
 			{
 				name: "interactionEffects"
 				rSource: "possibleInteractionEffectsFromR"
+				// source: ["specifiedExogenousEffects", {name: "specifiedExogenousEffects", combineTerms: JASP.Combination2Way}]
 				titles: [qsTr("Include")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 500 * preferencesModel.uiScale
@@ -513,7 +526,8 @@ Form
 			ComponentsList
 			{
 				name: "interactionEffectsSender"
-				// rSource: "possibleInteractionEffectsFromRSender"
+				rSource: "possibleInteractionEffectsFromRSender"
+				// source: ["specifiedExogenousEffectsSender", {name: "specifiedExogenousEffectsSender", combineTerms: JASP.Combination2Way}]
 				titles: [qsTr("Include")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 500 * preferencesModel.uiScale

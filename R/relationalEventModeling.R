@@ -20,14 +20,14 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  # sink(file="~/Downloads/log.txt")
-  # on.exit(sink(NULL))
+  sink(file="~/Downloads/log.txt")
+  on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
 
   .feedbackExoTableVariables(jaspResults, options)
-  .getExogenousEffects(jaspResults, options)
+  .feedbackExoEffectsSpecified(jaspResults, options)
   .feedbackInteractionEffects(jaspResults, options)
 
 
@@ -85,6 +85,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 .remUploadDyadData <- function(jaspResults, options) {
 
   dyadDataPaths <- sapply(options[["dyadDataList"]], function(x) x[["dyadData"]])
+
   if (all(dyadDataPaths == "")) return()
 
   if (!is.null(jaspResults[["dyadDataState"]]$object)) return()
@@ -146,42 +147,41 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   return()
 }
 
-.getExogenousEffects <- function(jaspResults, options) {
+.feedbackExoEffectsSpecified <- function(jaspResults, options) {
 
-  if (!is.null(jaspResults[["exoEffectsState"]])) return()
-
-  exoTable <- options[["exogenousEffectsTable"]]
-
-  if (length(exoTable) == 0) return()
-
-  varNames <- sapply(exoTable, function(x) x[["value"]])
-  exoEffectsList <- c("Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie")
-
-  exoInds <- vector("list", length(varNames))
-  names(exoInds) <- varNames
-  for (i in 1:length(exoTable)) {
-    exoInds[[i]] <- which(sapply(exoTable[[i]], function(x) isTRUE(x)))
+  if (!is.null(jaspResults[["exoEffectsState"]])) {
+    return()
   }
 
-  if (length(unlist(exoInds)) == 0)
-    return()
-
-  exoInds[sapply(exoInds, function(x) length(x) == 0)] <- NULL
-
-  specExoEffects <- list()
-  specExoEffects[["variableNames"]] <- jaspBase::encodeColNames(names(exoInds))
-  specExoEffects[["list"]] <- exoInds
-
-  exoEffectsState <- createJaspState(specExoEffects)
-  exoEffectsState$dependOn("exogenousEffectsTable")
-  jaspResults[["exoEffectsState"]] <- exoEffectsState
+  exoOut <- .exogenousEffectsHelper(options[["exogenousEffectsTable"]])
+  specExoEffects <- exoOut$specifiedEffects
+  exoEffectsForQml <- exoOut$qmlNames
 
   # fill the rSource for the specified exo effects
-  exoVarNames <- names(exoInds)
-  exoEffNames <- sapply(exoInds, names)
-  exoEffectsForQml <- as.list(paste0(exoEffNames, "('", exoVarNames, "')"))
-  specifiedExoEffectsFromR <- createJaspQmlSource("specifiedExoEffectsFromR", exoEffectsForQml)
-  jaspResults[["specifiedExoEffectsFromR"]] <- specifiedExoEffectsFromR
+  if (!is.null(exoEffectsForQml)) {
+    specifiedExoEffectsFromR <- createJaspQmlSource("specifiedExoEffectsFromR", exoEffectsForQml)
+    specifiedExoEffectsFromR$dependOn("exogenousEffectsTable")
+    jaspResults[["specifiedExoEffectsFromR"]] <- specifiedExoEffectsFromR
+  }
+
+
+  if (options[["orientation"]] == "actor") {
+
+    exoOutSender <- .exogenousEffectsHelper(options[["exogenousEffectsTableSender"]])
+    specExoEffects <- list(receiver = specExoEffects, sender = exoOutSender$specifiedEffects)
+
+    # fill the rSource for the specified exo effects
+    if (!is.null(exoOutSender$qmlNames)) {
+      specifiedExoEffectsFromRSender <- createJaspQmlSource("specifiedExoEffectsFromRSender", exoOutSender$qmlName)
+      specifiedExoEffectsFromRSender$dependOn("exogenousEffectsTableSender")
+      jaspResults[["specifiedExoEffectsFromRSender"]] <- specifiedExoEffectsFromRSender
+    }
+
+  }
+
+  exoEffectsState <- createJaspState(specExoEffects)
+  exoEffectsState$dependOn(c("exogenousEffectsTable", "exogenousEffectsTableSender"))
+  jaspResults[["exoEffectsState"]] <- exoEffectsState
 
   return()
 
@@ -189,18 +189,36 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 .feedbackInteractionEffects <- function(jaspResults, options) {
 
-  if (!is.null(jaspResults[["possibleInteractionEffectsFromR"]]))
+  if (!is.null(jaspResults[["possibleInteractionEffectsFromR"]]) &&
+      !is.null(jaspResults[["possibleInteractionEffectsFromRSender"]]))
     return()
 
-  outExoList <- NULL
+  outExoList <- outExoListSender <- NULL
   if (!is.null(jaspResults[["exoEffectsState"]])) {
     exoOut <- jaspResults[["exoEffectsState"]]$object
-    exoEffects <- exoOut[["list"]]
-    exoVarNames <- names(exoEffects)
-    exoEffNames <- sapply(exoEffects, names)
-    outExoList <- as.list(paste0(exoEffNames, "('", exoVarNames, "')"))
-  }
 
+    if (options[["orientation"]] == "tie") {
+      exoEffects <- exoOut[["list"]]
+      exoVarNames <- names(exoEffects)
+      exoEffNames <- sapply(exoEffects, names)
+      if (length(exoVarNames) > 0)
+        outExoList <- as.list(paste0(exoEffNames, "('", exoVarNames, "')"))
+
+    } else { # orientation is actor, so we have receiver and sender model
+
+      exoEffects <- exoOut[["receiver"]][["list"]]
+      exoVarNames <- names(exoEffects)
+      exoEffNames <- sapply(exoEffects, names)
+      outExoList <- as.list(paste0(exoEffNames, "('", exoVarNames, "')"))
+      # sender
+      exoEffectsSender<- exoOut[["sender"]][["list"]]
+      exoVarNamesSender <- names(exoEffectsSender)
+      exoEffNamesSender <- sapply(exoEffectsSender, names)
+      if (length(exoVarNamesSender) > 0)
+        outExoListSender <- as.list(paste0(exoEffNamesSender, "('", exoVarNamesSender, "')"))
+    }
+
+  }
 
   # handle the endo effects to add to the interactions field
   endos <- options[["endogenousEffects"]]
@@ -208,17 +226,42 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     if (x[["includeEndoEffect"]]) x[["value"]] else NULL
   })
   specEndos <- which(!sapply(endosSave, is.null))
-  outEndoList <- lapply(endos[specEndos], function(x) x[["value"]])
+  outEndoList <- lapply(endos[specEndos], function(x) x[["translatedName"]])
 
-  if ((length(outExoList) + length(outEndoList)) < 2) return()
+  if ((length(outExoList) + length(outEndoList)) >= 2) {
 
-  combList <- c(unlist(outExoList), unlist(outEndoList) == 0)
-  interTmp <- combn(c(unlist(outExoList), unlist(outEndoList)), m = 2)
-  inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
+    combList <- c(unlist(outExoList), unlist(outEndoList) == 0)
+    interTmp <- combn(c(unlist(outExoList), unlist(outEndoList)), m = 2)
+    inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
 
-  possibleInteractionEffectsFromR <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
-  possibleInteractionEffectsFromR$dependOn(c("endogenousEffects", "specifiedExogenousEffects"))
-  jaspResults[["possibleInteractionEffectsFromR"]] <- possibleInteractionEffectsFromR
+    possibleInteractionEffectsFromR <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
+    possibleInteractionEffectsFromR$dependOn(c("endogenousEffects", "specifiedExogenousEffects"))
+    jaspResults[["possibleInteractionEffectsFromR"]] <- possibleInteractionEffectsFromR
+  }
+
+
+  if (options[["orientation"]] == "actor") {
+
+    endosSender <- options[["endogenousEffectsSender"]]
+    endosSaveSender <- lapply(endosSender, function(x) {
+      if (x[["includeEndoEffectSender"]]) x[["value"]] else NULL
+    })
+    specEndosSender <- which(!sapply(endosSaveSender, is.null))
+    outEndoListSender <- lapply(endosSender[specEndosSender], function(x) x[["translatedNameSender"]])
+
+    if ((length(outExoListSender) + length(outEndoListSender)) >= 2) {
+
+      combListSender <- c(unlist(outExoListSender), unlist(outEndoListSender) == 0)
+      interTmpSender <- combn(c(unlist(outExoListSender), unlist(outEndoListSender)), m = 2)
+      intersSender <- as.list(paste0(interTmpSender[1, ], " * ", interTmpSender[2, ]))
+
+      possibleInteractionEffectsFromRSender <- createJaspQmlSource("possibleInteractionEffectsFromRSender", intersSender)
+      possibleInteractionEffectsFromRSender$dependOn(c("endogenousEffectsSender", "specifiedExogenousEffectsSender"))
+      jaspResults[["possibleInteractionEffectsFromRSender"]] <- possibleInteractionEffectsFromRSender
+    }
+
+  }
+
 
   return()
 }
@@ -320,9 +363,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                   model = options[["orientation"]],
                                   riskset = options[["riskset"]]))
 
-
-
-
   remifyResultState <- createJaspState(rehObject)
   remifyResultState$dependOn(c("eventDirection", "eventSequence",
                                "orientation", "riskset", "naAction", "weightVariable"))
@@ -351,28 +391,49 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   effectsText <- Reduce(paste, deparse(effectsForm))
   effectsText <- gsub("+", "+\n", effectsText, fixed = TRUE)
 
-  # show the effects above the output
-  outText <- createJaspHtml(text = gettextf("The effects were specified as: \n%s",
-                                            effectsText))
-  outText$position <- 0.5
+  recText <- ""
+  if (options[["orientation"]] == "actor") {
+    effectsFormSender <- effectsObj$effectsSender
+    effectsTextSender <- Reduce(paste, deparse(effectsFormSender))
+    effectsTextSender <- gsub("+", "+\n", effectsTextSender, fixed = TRUE)
+    # show the effects above the output
+    outTextSender <- createJaspHtml(text = gettextf("The sender effects were specified as: \n%s",
+                                                    effectsTextSender))
+    outTextSender$position <- 0.1
+    jaspResults[["mainContainer"]][["effectsCall"]] <- outTextSender
+    recText <- "receiver"
+  }
+
+  outText <- createJaspHtml(text = gettextf("The %s effects were specified as: \n%s",
+                                            recText, effectsText))
+  outText$position <- 0.6
   jaspResults[["mainContainer"]][["effectsCall"]] <- outText
+
+  # print(effectsForm)
+  # print(effectsFormSender)
 
   # prepare the data for remstats, aka, assign the attributes to objects so they are present for remstats
   dtExo <- .prepareCovariateData(jaspResults, dataset, options)
 
-  # do the model conditions once here:
-
+  # do the model conditions here:
+  ties <- NULL
+  sender <- NULL
+  receiver <- NULL
+  if (options[["orientation"]] == "tie") {
+    ties <- effectsForm
+  } else { # orientation = actor
+    receivers <- effectsForm$receiver
+    senders <- effectsForm$sender
+  }
 
   # check if there is already a statsObject in storage, if null we are in the first round of calculations
   # or maybe the user did not choose to save the samples
   if (is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object) ||
       !options[["oldEffectsSaved"]]) {
 
-    # this weird thing makes sure the correct effects are filled in
-    conds[[which(!sapply(conds, is.null))]] <- effectsForm
     # in the first round both states are created
-    statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = conds[[1]], sender_effects = conds[[2]],
-                                          receiver_effects = conds[[3]], attr_actors = dtExo))
+    statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
+                                          receiver_effects = receivers, attr_actors = dtExo))
 
     if (!isTryError(statsObject)) {
       # specify a new attribute to save the formula, since the actor oriented object does not have the same
@@ -403,17 +464,21 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     # return the "new" effects,
     effsOut <- .matchEffectsForStats(formulaOld, effectsObj, dimNamesOld)
 
+    if (options[["orientation"]] == "tie") {
+      ties <- effsOut$form
+    } else { # orientation = actor
+      receivers <- effsOut$form$receiver
+      senders <- effsOut$form$sender
+    }
+
 
     if (is.null(effsOut$form)) { # if no new effects, we can just continue with the old object and calculate nothing new
       statsObjectCombined <- statsObject <- statsObjectOld
 
     } else { # some effects that have not been calculated in the past
 
-      # this weird thing makes sure the correct effects are filled in
-      conds[[which(!sapply(conds, is.null))]] <- effsOut$form
-
-      statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = conds[[1]], sender_effects = conds[[2]],
-                                          receiver_effects = conds[[3]], attr_actors = dtExo))
+      statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
+                                          receiver_effects = receivers, attr_actors = dtExo))
 
       # add the jasp-detailed dimnames to the whole thing.
       if (!isTryError(statsObject)) {
@@ -687,128 +752,108 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 .translateEffects <- function(jaspResults, options) {
 
+  # the following code processes the tie model effects as well as the actor model receiver effects,
+  # the actor model sender effects are dealt with at the end of the function
   effects <- "~1"
   # endogenous effects:
-  endoEffectsSave <- NULL
   endos <- options[["endogenousEffects"]]
   endosSave <- lapply(endos, function(x) {
     if (x[["includeEndoEffect"]]) x[["value"]] else NULL
       })
   specEndos <- which(!sapply(endosSave, is.null))
 
+  endoObj <- NULL
   if (length(specEndos) > 0) {
     endoObj <- .processEndoEffects(endos[specEndos])
-    print(str(endoObj))
-    # we need the R and translated jasp names of the endo effects later
-    endosMatrix <- matrix(c(endosR, endosJasp), nrow = length(endosR), ncol = 2)
+    effects <- paste(effects, "+", endoObj$effects)
+
+    # we need the R and translated jasp names of the endo effects in the coefficients table later
+    endosMatrix <- matrix(c(endoObj$rNames, endoObj$jaspNames), nrow = length(endoObj$rNames), ncol = 2)
     endosState <- createJaspState(endosMatrix)
     jaspResults[["mainContainer"]][["endoEffectsState"]] <- endosState
 
   }
 
-
   # exogenous effects
-  exoEffectsSave2 <- NULL
-  exoDims <- c() # also save the dimnames to later assign to the statsObject slices
+  exoObj <- NULL
   if (length(options[["specifiedExogenousEffects"]]) > 0) {
     exos <- options[["specifiedExogenousEffects"]]
-    exoEffects <- sapply(exos, function(x) x[["value"]])
-    exoEffectsSave1 <- exoEffects
-    exoEffects <- gsub(")", "", exoEffects)
-    exoScaling <- sapply(exos, function(x) x[["exogenousEffectsScaling"]])
-    exoAbsolute <- sapply(exos, function(x) x[["absolute"]])
-
-    for (ii in 1:length(exoEffects)) {
-
-      #  create the proper dimname for the effect
-      dimstmp <- exoEffectsSave1[ii]
-      dimstmp <- gsub("('", "_", dimstmp, fixed = TRUE)
-      dimstmp <- gsub("')", "", dimstmp, fixed = TRUE)
-
-      if (!(exoScaling[ii] %in% c("none", ""))) {
-        exoEffects[ii] <- paste0(exoEffects[ii], ", scaling = '", exoScaling[ii], "'")
-        dimstmp <- paste0(dimstmp, ".", exoScaling[ii])
-      }
-
-      if (exoAbsolute[ii]) {
-        exoEffects[ii] <- paste0(exoEffects[ii], ", absolute = ", exoAbsolute[ii])
-        dimstmp <- paste0(dimstmp, ".", "absolute")
-      }
-
-      # deal with the event effects
-      if (startsWith(exoEffects[ii], "event")) {
-        ma <- regexpr("'(.*?)'", exoEffects[ii])
-        eventName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
-        exoEffects[ii] <- sub("\\(", paste0("(", eventName, ", "), exoEffects[ii])
-      }
-
-      # deal with the tie effects
-      if (startsWith(exoEffects[ii], "tie")) {
-        ma <- regexpr("'(.*?)'", exoEffects[ii])
-        tieName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
-        exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", tieName), exoEffects[ii])
-      }
-
-      exoDims <- append(exoDims, dimstmp)
-    }
-
-    exoEffects <- paste0(exoEffects, ")")
-
-    exoEffectsSave2 <- exoEffects
-    exoEffects <- paste0(exoEffects, collapse = " + ")
-    effects <- paste(effects, "+", exoEffects)
+    exoObj <- .processExoEffects(exos)
+    effects <- paste(effects, "+", exoObj$effects)
   }
 
   # interactions
-  interEffectsSave <- NULL
-  interDims <- c()
+  interObj <- NULL
+  # does the interactions table even have elements:
   if (length(options[["interactionEffects"]]) > 0) {
 
     interEffects <- sapply(options[["interactionEffects"]], function(x) if (x[["includeInteractionEffect"]]) x[["value"]] else NULL)
     interEffects[sapply(interEffects, is.null)] <- NULL
 
+    # are any of the interactions in the table included, aka, checked?
     if (length(interEffects) > 0) {
-
-      interEffects <- unlist(interEffects)
-      interDims[1:length(interEffects)] <- interEffects
-
-      # work the endo effects
-      if (length(specEndos) > 0) {
-        for (ee in 1:length(endosR)) {
-          ind <- grep(endosJasp[ee], interEffects, fixed = TRUE)
-          if (length(ind) > 0) {
-            interEffects[ind] <- gsub(endosJasp[ee], endoEffectsSave[ee], interEffects[ind], fixed = TRUE)
-            interDims[ind] <- gsub(endosJasp[ee], endoDims[ee], interDims[ind], fixed = TRUE)
-          }
-        }
-      }
-
-      # work the exo effects
-      if (length(options[["specifiedExogenousEffects"]]) > 0) {
-        for (eee in 1:length(exos)) {
-          ind <- grep(exoEffectsSave1[eee], interEffects, fixed = TRUE)
-          if (length(ind) > 0) {
-            interEffects[ind] <- gsub(exoEffectsSave1[eee], exoEffectsSave2[eee], interEffects[ind], fixed = TRUE)
-            interDims[ind] <- gsub(exoEffectsSave1[eee], exoDims[eee], interDims[ind], fixed = TRUE)
-          }
-        }
-      }
-
-      interEffects <- gsub(" * ", ":", interEffects, fixed = TRUE)
-      interEffectsSave <- interEffects
-      interEffects <- paste0(interEffects, collapse = " + ")
-
-      interDims <- gsub(" * ", ":", interDims, fixed = TRUE)
-
-      effects <- paste0(effects, " + ", interEffects)
+      interObj <- .processInterEffects(interEffects, endoObj, exoObj)
+      effects <- paste0(effects, " + ", interObj$effects)
     }
   }
 
   effects <- eval(parse(text = effects))
 
-  dimNms <- c("baseline", endoDims, exoDims, interDims)
+  dimNms <- c("baseline", endoObj$dims, exoObj$dims, interObj$dims)
 
-  return(list(effects = effects, dimNames = dimNms))
+  # now do the sender model stuff
+  effectsSender <- NULL
+  dimNmsSender <- NULL
+  if (options[["orientation"]] == "actor") {
+
+    effectsSender <- "~1"
+    # endogenous effects:
+    endosSender <- options[["endogenousEffectsSender"]]
+    endosSaveSender <- lapply(endosSender, function(x) {
+      if (x[["includeEndoEffectSender"]]) x[["value"]] else NULL
+    })
+    specEndosSender <- which(!sapply(endosSaveSender, is.null))
+
+    endoObjSender <- NULL
+    if (length(specEndosSender) > 0) {
+      endoObjSender <- .processEndoEffects(endos[specEndosSender])
+      effectsSender <- paste(effectsSender, "+", endoObjSender$effects)
+
+      # we need the R and translated jasp names of the endo effects in the coefficients table later
+      endosMatrixSender <- matrix(c(endoObjSender$rNames, endoObjSender$jaspNames), nrow = length(endoObjSender$rNames), ncol = 2)
+      endosSenderState <- createJaspState(endosMatrixSender)
+      jaspResults[["mainContainer"]][["endoEffectsSenderState"]] <- endosSenderState
+
+    }
+
+    # exogenous effects
+    exoObjSender <- NULL
+    if (length(options[["specifiedExogenousEffectsSender"]]) > 0) {
+      exosSender <- options[["specifiedExogenousEffectsSender"]]
+      exoObjSender <- .processExoEffects(exosSender)
+      effectsSender <- paste(effectsSender, "+", exoObjSender$effects)
+    }
+
+    # interactions
+    interObjSender <- NULL
+    # does the interactions table even have elements:
+    if (length(options[["interactionEffectsSender"]]) > 0) {
+
+      interEffectsSender <- sapply(options[["interactionEffectsSender"]], function(x) if (x[["includeInteractionEffectSender"]]) x[["value"]] else NULL)
+      interEffectsSender[sapply(interEffectsSender, is.null)] <- NULL
+
+      # are any of the interactions in the table included, aka, checked?
+      if (length(interEffectsSender) > 0) {
+        interObjSender <- .processInterEffects(interEffectsSender, endoObjSender, exoObjSender)
+        effectsSender <- paste0(effectsSender, " + ", interObjSender$effects)
+      }
+    }
+
+    effectsSender <- eval(parse(text = effectsSender))
+    dimNmsSender <- c("baseline", endoObjSender$dims, exoObjSender$dims, interObjSender$dims)
+  }
+
+  return(list(effects = effects, dimNames = dimNms, effectsSender = effectsSender, dimNamesSender = dimNmsSender))
 }
 
 
@@ -848,8 +893,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     exoList <- jaspResults[["exoEffectsState"]][["object"]][["list"]]
 
-
-    # for the event and tie effects we need the event related columns form the main data, the actor attributes data
+    # for the event and tie effects we need the event related columns from the main data, the actor attributes data
     # and dyad attributes data to be present in the environment:
 
     # first the event effect
@@ -995,7 +1039,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   endoUnique <- sapply(endos, function(x) x[["endogenousEffectsUnique"]])
   endoEffects <- paste0(endosR, "(")
 
-
   for (i in 1:length(endosR)) {
 
     # create the proper dimname
@@ -1016,12 +1059,135 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
     endoDims <- append(endoDims, dimstmp)
   }
+
   endoEffects <- paste0(endoEffects, ")")
   endoEffects <- gsub(", )", ")", endoEffects)
   endoEffectsSave <- endoEffects
 
   endoEffects <- paste(endoEffects, collapse = " + ")
-  effects <- paste(effects, "+", endoEffects)
 
-  return(list(effects = effects, effectsSave = endoEffectsSave, dims = endoDims))
+  return(list(effects = endoEffects, effectsSave = endoEffectsSave, dims = endoDims,
+              jaspNames = endosJasp, rNames = endosR))
 }
+
+
+.processExoEffects <- function(exos) {
+
+  exoDims <- c() # also save the dimnames to later assign to the statsObject slices
+  exoEffects <- sapply(exos, function(x) x[["value"]])
+  exoEffectsSave1 <- exoEffects
+  exoEffects <- gsub(")", "", exoEffects)
+  exoScaling <- sapply(exos, function(x) x[["exogenousEffectsScaling"]])
+  exoAbsolute <- sapply(exos, function(x) x[["absolute"]])
+
+  for (ii in 1:length(exoEffects)) {
+
+    #  create the proper dimname for the effect
+    dimstmp <- exoEffectsSave1[ii]
+    dimstmp <- gsub("('", "_", dimstmp, fixed = TRUE)
+    dimstmp <- gsub("')", "", dimstmp, fixed = TRUE)
+
+    if (!(exoScaling[ii] %in% c("none", ""))) {
+      exoEffects[ii] <- paste0(exoEffects[ii], ", scaling = '", exoScaling[ii], "'")
+      dimstmp <- paste0(dimstmp, ".", exoScaling[ii])
+    }
+
+    if (exoAbsolute[ii]) {
+      exoEffects[ii] <- paste0(exoEffects[ii], ", absolute = ", exoAbsolute[ii])
+      dimstmp <- paste0(dimstmp, ".", "absolute")
+    }
+
+    # deal with the event effects
+    if (startsWith(exoEffects[ii], "event")) {
+      ma <- regexpr("'(.*?)'", exoEffects[ii])
+      eventName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
+      exoEffects[ii] <- sub("\\(", paste0("(", eventName, ", "), exoEffects[ii])
+    }
+
+    # deal with the tie effects
+    if (startsWith(exoEffects[ii], "tie")) {
+      ma <- regexpr("'(.*?)'", exoEffects[ii])
+      tieName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
+      exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", tieName), exoEffects[ii])
+    }
+
+    exoDims <- append(exoDims, dimstmp)
+  }
+
+  exoEffects <- paste0(exoEffects, ")")
+
+  exoEffectsSave2 <- exoEffects
+  exoEffects <- paste0(exoEffects, collapse = " + ")
+
+  return(list(effects = exoEffects, dims = exoDims, saveShort = exoEffectsSave1, saveLong = exoEffectsSave2))
+}
+
+
+.processInterEffects <- function(interEffects, endoObj, exoObj) {
+
+  interDims <- c()
+
+  interEffects <- unlist(interEffects)
+  interDims[1:length(interEffects)] <- interEffects
+
+  # work the endo effects
+  if (length(endoObj$rNames) > 0) {
+    for (ee in 1:length(endoObj$rNames)) {
+      ind <- grep(endoObj$jaspNames[ee], interEffects, fixed = TRUE)
+      if (length(ind) > 0) {
+        interEffects[ind] <- gsub(endoObj$jaspNames[ee], endoObj$effectsSave[ee], interEffects[ind], fixed = TRUE)
+        interDims[ind] <- gsub(endoObj$jaspNames[ee], endoObj$dims[ee], interDims[ind], fixed = TRUE)
+      }
+    }
+  }
+
+  # work the exo effects
+  if (length(exoObj$saveShort) > 0) {
+    for (eee in 1:length(exoObj$saveShort)) {
+      ind <- grep(exoObj$saveShort[eee], interEffects, fixed = TRUE)
+      if (length(ind) > 0) {
+        interEffects[ind] <- gsub(exoObj$saveShort[eee], exoObj$saveLong[eee], interEffects[ind], fixed = TRUE)
+        interDims[ind] <- gsub(exoObj$saveShort[eee], exoObj$dims[eee], interDims[ind], fixed = TRUE)
+      }
+    }
+  }
+
+  interEffects <- gsub(" * ", ":", interEffects, fixed = TRUE)
+  interEffects <- paste0(interEffects, collapse = " + ")
+
+  interDims <- gsub(" * ", ":", interDims, fixed = TRUE)
+
+  return(list(effects = interEffects, dims = interDims))
+
+}
+
+
+.exogenousEffectsHelper <- function(exoTable) {
+
+  if (length(exoTable) == 0) return()
+
+  varNames <- sapply(exoTable, function(x) x[["value"]])
+  exoEffectsList <- c("Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie")
+
+  exoInds <- vector("list", length(varNames))
+  names(exoInds) <- varNames
+  for (i in 1:length(exoTable)) {
+    exoInds[[i]] <- which(sapply(exoTable[[i]], function(x) isTRUE(x)))
+  }
+
+  if (length(unlist(exoInds)) == 0)
+    return()
+
+  exoInds[sapply(exoInds, function(x) length(x) == 0)] <- NULL
+
+  specExoEffects <- list()
+  specExoEffects[["variableNames"]] <- jaspBase::encodeColNames(names(exoInds))
+  specExoEffects[["list"]] <- exoInds
+
+  exoVarNames <- names(exoInds)
+  exoEffNames <- sapply(exoInds, names)
+  exoEffectsForQml <- as.list(paste0(exoEffNames, "('", exoVarNames, "')"))
+
+  return(list(specifiedEffects = specExoEffects, qmlNames = exoEffectsForQml))
+}
+
