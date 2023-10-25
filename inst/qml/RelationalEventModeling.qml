@@ -203,10 +203,11 @@ Form
 				property var varsActorReceiver: ["indegreeReceiver", "inertia", "isp", "itp", "osp", "otp",
 					"outdegreeReceiver", "recencyContinue", "recencyReceiveReceiver",
 					"recencySendReceiver", "reciprocity", "rrankReceive", "rrankSend",
-					"totaldegreeReceiver", "userStat"];
+					"totaldegreeReceiver", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA",
+					"psABXB", "psABXY"];
 
 				// thw whole matched list of the effect variables R names and translations
-				property var translated: {
+property var translated: {
 					"indegreeReceiver": qsTr("Indegree receiver"),
 					"indegreeSender": qsTr("Indegree sender"), 
 					"inertia": qsTr("Inertia"),
@@ -223,6 +224,9 @@ Form
 					"psABXA": qsTr("Pshift AB-XA"),
 					"psABXB": qsTr("Pshift AB-XB"),
 					"psABXY": qsTr("Pshift AB-XY"),
+					"psABA": qsTr("Pshift AB-A"), 
+					"psABB": qsTr("Pshift AB-B"), 
+					"psABX": qsTr("Pshift AB-X"),
 					"recencyContinue": qsTr("Recency continue"), 
 					"recencyReceiveReceiver": qsTr("Recency receive of receiver"), 
 					"recencyReceiveSender": qsTr("Recency receive of sender"),
@@ -306,7 +310,7 @@ Form
 
 				// variables for the actor sender model
 				property var varsActorSender: ["indegreeSender", "outdegreeSender", "recencySendSender", "recencyReceiveSender",
-					"totaldegreeSender", "userStat"];
+					"totaldegreeSender", "psABA", "psABB", "psABX"];
 
 				// thw whole matched list of the effect variables R names and translations
 				property var translated: {
@@ -326,6 +330,9 @@ Form
 					"psABXA": qsTr("Pshift AB-XA"),
 					"psABXB": qsTr("Pshift AB-XB"),
 					"psABXY": qsTr("Pshift AB-XY"),
+					"psABA": qsTr("Pshift AB-A"), 
+					"psABB": qsTr("Pshift AB-B"), 
+					"psABX": qsTr("Pshift AB-X"),
 					"recencyContinue": qsTr("Recency continue"), 
 					"recencyReceiveReceiver": qsTr("Recency receive of receiver"), 
 					"recencyReceiveSender": qsTr("Recency receive of sender"),
@@ -349,9 +356,12 @@ Form
 				property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
 				// variables that have no scaling arguments
 				property var varsScalingNone: 
-					["ccp", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", 
+					["ccp", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", "psABA", "psABB", "psABX",
 					"recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender", "recencySendReceiver", "recencySendSender", 
 					"rrankReceive", "rrankSend", "userStat"];
+
+				// variables that do not have a consider-type argument 
+				property var varsNotConsiderType: ["psABA", "psABB", "psABX"]
 
 				// variables to use in the scaling column
 				property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
@@ -360,16 +370,27 @@ Form
 				source: [{ values: varsActorSender }] 
 				name: "endogenousEffectsSender"
 				id: endogenousEffectsSender
-				titles: ["", qsTr("Include"), qsTr("Scaling")]
+				titles: ["", "", qsTr("Include"), qsTr("Scaling")]
 				rowComponent: RowLayout {
 					Text{Layout.preferredWidth: 200; text: endogenousEffectsSender.translated[rowValue]}
 					TextField{ name: "translatedNameSender"; value: endogenousEffectsSender.translated[rowValue]; visible: false}
-					CheckBox{ name: "includeEndoEffectSender"; label: ""; Layout.preferredWidth: 80; id: inclEndoEff}
+					CheckBox{ name: "includeEndoEffectSender"; label: ""; Layout.preferredWidth: 80; id: inclEndoEffSend}
 					DropDown {
 						name: "endogenousEffectsScalingSender"; 
 						Layout.preferredWidth: 50
 						values: endogenousEffectsSender.varsScalingTwo.includes(rowValue) ? endogenousEffectsSender.scalingTwo : endogenousEffectsSender.scalingAll
-						enabled: !endogenousEffectsSender.varsScalingNone.includes(rowValue) & inclEndoEff.checked
+						enabled: !endogenousEffectsSender.varsScalingNone.includes(rowValue) & inclEndoEffSend.checked
+					}
+					CheckBox {
+						name: "endogenousEffectsConsiderTypeSender"
+						Layout.preferredWidth: 80
+						visible: !endogenousEffectsSender.varsNotConsiderType.includes(rowValue)
+						enabled: inclEndoEffSend.checked
+					}
+					// this checkbox is useful so that the options form this box align with the options from the above box in R
+					CheckBox {
+						name: "endogenousEffectsUniqueSender"
+						visible: false
 					}
 				}
 			}
@@ -384,7 +405,8 @@ Form
 			{
 				id: exogenousEffectsTable
 				name: "exogenousEffectsTable"
-				titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
+				titles: orientation.value == "tie" ? [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")] : 
+					[qsTr("Average"), qsTr("Difference"), "", qsTr("Receive"), qsTr("Same"), "", qsTr("Tie")]
 				// maybe translate that?
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 600 * preferencesModel.uiScale
@@ -394,12 +416,12 @@ Form
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
 					// TextField { visible: false; name: "text1"; value: rowValue + "average"}
 					CheckBox {Layout.preferredWidth: 50; name: "difference"}
-					CheckBox {Layout.preferredWidth: 25; name: "event"}
-					CheckBox {Layout.preferredWidth: 45; name: "maximum"}
-					CheckBox {Layout.preferredWidth: 45; name: "minimum"}
+					CheckBox {Layout.preferredWidth: 35; name: "event"; visible: orientation.value == "tie"}
+					CheckBox {Layout.preferredWidth: 45; name: "maximum"; visible: orientation.value == "tie"}
+					CheckBox {Layout.preferredWidth: 45; name: "minimum"; visible: orientation.value == "tie"}
 					CheckBox {Layout.preferredWidth: 40; name: "receive"}
 					CheckBox {Layout.preferredWidth: 30; name: "same"}
-					CheckBox {Layout.preferredWidth: 30; name: "send"}
+					CheckBox {Layout.preferredWidth: 30; name: "send"; visible: orientation.value == "tie"}
 					CheckBox {Layout.preferredWidth: 30; name: "tie"}
 				}
 			}
@@ -415,23 +437,23 @@ Form
 			{
 				id: exogenousEffectsTableSender
 				name: "exogenousEffectsTableSender"
-				titles: ["Average", "Difference", "Event", "Maximum", "Minimum", "Receive", "Same", "Send", "Tie"]
+				titles: ["", "", "", "", "", "", "", "", qsTr("Send")]
 				// maybe translate that?
 				implicitHeight: 100 * preferencesModel.uiScale
-				implicitWidth: 600 * preferencesModel.uiScale
+				implicitWidth: 400 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
 				rowComponent: RowLayout { 
-					Text{Layout.preferredWidth: 110; text: rowValue} 
-					CheckBox {Layout.preferredWidth: 40; name: "average"}
+					Text{Layout.preferredWidth: 140; text: rowValue} 
+					CheckBox {Layout.preferredWidth: 40; name: "average"; visible: false}
 					// TextField { visible: false; name: "text1"; value: rowValue + "average"}
-					CheckBox {Layout.preferredWidth: 50; name: "difference"}
-					CheckBox {Layout.preferredWidth: 25; name: "event"}
-					CheckBox {Layout.preferredWidth: 45; name: "maximum"}
-					CheckBox {Layout.preferredWidth: 45; name: "minimum"}
-					CheckBox {Layout.preferredWidth: 40; name: "receive"}
-					CheckBox {Layout.preferredWidth: 30; name: "same"}
+					CheckBox {Layout.preferredWidth: 50; name: "difference"; visible: false}
+					CheckBox {Layout.preferredWidth: 25; name: "event"; visible: false}
+					CheckBox {Layout.preferredWidth: 45; name: "maximum"; visible: false}
+					CheckBox {Layout.preferredWidth: 45; name: "minimum"; visible: false}
+					CheckBox {Layout.preferredWidth: 40; name: "receive"; visible: false}
+					CheckBox {Layout.preferredWidth: 30; name: "same"; visible: false}
 					CheckBox {Layout.preferredWidth: 30; name: "send"}
-					CheckBox {Layout.preferredWidth: 30; name: "tie"}
+					CheckBox {Layout.preferredWidth: 30; name: "tie"; visible: false}
 				}
 			}
 		}
@@ -445,13 +467,13 @@ Form
 				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
 				rSource: "specifiedExoEffectsFromR"
-				// source: [{name: "exogenousEffectsTable.text1", condition: "average == true"}]
+				// source: [{name: "exogenousEffectsTable", condition: "average"}]
 
-				titles: ["", qsTr("Scaling"), qsTr("Absolute")]
+				titles: orientation.value == "tie" ? ["", qsTr("Scaling"), qsTr("Absolute")] : [qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
-					Text{Layout.preferredWidth: 250; text: rowValue } 
+					Text{Layout.preferredWidth: 250; text: rowValue} 
 					DropDown {
 						name: "exogenousEffectsScaling"; 
 						values: [{ label: qsTr("none"), value : "none"}, { label: qsTr("std"), value : "std" }]
@@ -460,7 +482,7 @@ Form
 					}
 					CheckBox {
 						Layout.preferredWidth: 100
-						name: "absolute"
+						name: "exogenousEffectsAbsolute"
 						visible: rowValue.startsWith("difference")
 					}
 				}
@@ -479,7 +501,7 @@ Form
 				rSource: "specifiedExoEffectsFromRSender"
 				// source: [{name: "exogenousEffectsTableSender.text1", condition: "average == true"}]
 
-				titles: ["", qsTr("Scaling"), qsTr("Absolute")]
+				titles: qsTr("Scaling")
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
@@ -492,8 +514,8 @@ Form
 					}
 					CheckBox {
 						Layout.preferredWidth: 100
-						name: "absoluteSender"
-						visible: rowValue.startsWith("difference")
+						name: "exogenousEffectsAbsoluteSender"
+						visible: false
 					}
 				}
 			}
@@ -566,5 +588,7 @@ Form
 	}
 
 }
+
+
 
 
