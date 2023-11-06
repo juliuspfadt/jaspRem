@@ -13,6 +13,8 @@ Form
 		AssignedVariablesList	{	name:	"timeVariable";			title: qsTr("Time Variable");		suggestedColumns: ["scale","ordinal", "nominal"];	singleVariable: true	; id: assignedVariableTime}
 		AssignedVariablesList	{	name:	"actorVariables";		title: qsTr("Actor Variables");	suggestedColumns: ["scale","ordinal", "nominal"]; singleVariable: false; height: 75 * preferencesModel.uiScale}
 		AssignedVariablesList	{	name:	"weightVariable";		title: qsTr("Weight Variable");	suggestedColumns: ["scale"];	singleVariable: true	}
+		AssignedVariablesList	{	name:	"typeVariable";			title: qsTr("Type Variable");	suggestedColumns: ["nominal"];	singleVariable: true	}
+
 		
 		// AssignedVariablesList	{	name:	"covariates";				title: qsTr("Covariates");		suggestedColumns: ["scale","ordinal", "nominal"];	singleVariable: false	; height: 115 * preferencesModel.uiScale; id: covariates}
 		CheckBox
@@ -72,6 +74,28 @@ Form
 				}
 			}
 		}
+
+		// ComponentsList
+		// {
+		// 	name: "userDataList"
+		// 	title: qsTr("Upload user statistics attributes")
+		// 	implicitHeight: 90 * preferencesModel.uiScale // about 3 rows
+		// 	minimumItems: 1
+		// 	rowComponent: 
+		// 	RowLayout
+		// 	{
+		// 		FileSelector
+		// 		{
+		// 			id:										userData
+		// 			name:									"userData"
+		// 			label:								""
+		// 			placeholderText:			qsTr("e.g., home/Data/userData.csv")
+		// 			filter:								"*.csv"
+		// 			save:									false
+		// 			fieldWidth:						180 * preferencesModel.uiScale
+		// 		}
+		// 	}
+		// }
 
 	}
 	
@@ -192,7 +216,7 @@ Form
 					"totaldegreeDyad", "totaldegreeReceiver", "totaldegreeSender", "userStat"];
 				
 				// variables for the tie undirected model
-				property var varsTieUndirected: ["ccp", "degreeDiff", "degreeMax", "degreeMin", "inertia", "psABAB",
+				property var varsTieUndirected: ["degreeDiff", "degreeMax", "degreeMin", "inertia", "psABAB",
 					"psABAY", "recencyContinue", "sp", "totaldegreeDyad", "userStat"];
 				
 				// variables for the actor sender model
@@ -207,7 +231,7 @@ Form
 					"psABXB", "psABXY"];
 
 				// thw whole matched list of the effect variables R names and translations
-property var translated: {
+				property var translated: {
 					"indegreeReceiver": qsTr("Indegree receiver"),
 					"indegreeSender": qsTr("Indegree sender"), 
 					"inertia": qsTr("Inertia"),
@@ -238,8 +262,6 @@ property var translated: {
 					"totaldegreeDyad": qsTr("Total degree dyad"),
 					"totaldegreeReceiver": qsTr("Total degree receiver"),
 					"totaldegreeSender": qsTr("Total degree sender"),
-					"userStat": qsTr("User statistics"),
-					"ccp": qsTr("Current common partner "),
 					"degreeDiff": qsTr("Degree difference"),
 					"degreeMax": qsTr("Degree maximum"),
 					"degreeMin": qsTr("Degree minimum"), 
@@ -250,12 +272,10 @@ property var translated: {
 				property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
 				// variables that have no scaling arguments
 				property var varsScalingNone: 
-					["ccp", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", 
+					["psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", 
 					"recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender", "recencySendReceiver", "recencySendSender", 
-					"rrankReceive", "rrankSend", "userStat"];
+					"rrankReceive", "rrankSend"];
 
-				// variables that do not have a consider-type argument 
-				property var varsNotConsiderType: ["ccp", "userStat"]
 				// variables that have a unique argument
 				property var varsUnique: ["isp", "itp", "osp", "otp", "sp"]
 
@@ -284,7 +304,7 @@ property var translated: {
 					CheckBox {
 						name: "endogenousEffectsConsiderType"
 						Layout.preferredWidth: 80
-						visible: !endogenousEffects.varsNotConsiderType.includes(rowValue)
+						// visible: !endogenousEffects.varsNotConsiderType.includes(rowValue)
 						enabled: inclEndoEff.checked
 					}
 					CheckBox {
@@ -344,8 +364,6 @@ property var translated: {
 					"totaldegreeDyad": qsTr("Total degree dyad"),
 					"totaldegreeReceiver": qsTr("Total degree receiver"),
 					"totaldegreeSender": qsTr("Total degree sender"),
-					"userStat": qsTr("User statistics"),
-					"ccp": qsTr("Current common partner "),
 					"degreeDiff": qsTr("Degree difference"),
 					"degreeMax": qsTr("Degree maximum"),
 					"degreeMin": qsTr("Degree minimum"), 
@@ -356,9 +374,9 @@ property var translated: {
 				property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
 				// variables that have no scaling arguments
 				property var varsScalingNone: 
-					["ccp", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", "psABA", "psABB", "psABX",
+					["psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", "psABA", "psABB", "psABX",
 					"recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender", "recencySendReceiver", "recencySendSender", 
-					"rrankReceive", "rrankSend", "userStat"];
+					"rrankReceive", "rrankSend"];
 
 				// variables that do not have a consider-type argument 
 				property var varsNotConsiderType: ["psABA", "psABB", "psABX"]
@@ -405,7 +423,8 @@ property var translated: {
 			{
 				id: exogenousEffectsTable
 				name: "exogenousEffectsTable"
-				titles: orientation.value == "tie" ? [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")] : 
+				titles: orientation.value == "tie" ? (eventDirection.value == "directed" ? [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")] : 
+						[qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Same"), "",  qsTr("Tie")]) : 
 					[qsTr("Average"), qsTr("Difference"), "", qsTr("Receive"), qsTr("Same"), "", qsTr("Tie")]
 				// maybe translate that?
 				implicitHeight: 100 * preferencesModel.uiScale
@@ -414,14 +433,14 @@ property var translated: {
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 110; text: rowValue} 
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
-					// TextField { visible: false; name: "text1"; value: rowValue + "average"}
+					// TextField { visible: false; name: "text1"; value: rowValue}
 					CheckBox {Layout.preferredWidth: 50; name: "difference"}
-					CheckBox {Layout.preferredWidth: 35; name: "event"; visible: orientation.value == "tie"}
+					CheckBox {Layout.preferredWidth: 35; name: "event"; visible: orientation.value == "tie"  }
 					CheckBox {Layout.preferredWidth: 45; name: "maximum"; visible: orientation.value == "tie"}
 					CheckBox {Layout.preferredWidth: 45; name: "minimum"; visible: orientation.value == "tie"}
-					CheckBox {Layout.preferredWidth: 40; name: "receive"}
+					CheckBox {Layout.preferredWidth: 40; name: "receive"; visible: !(orientation.value == "tie" && eventDirection.value == "undirected")}
 					CheckBox {Layout.preferredWidth: 30; name: "same"}
-					CheckBox {Layout.preferredWidth: 30; name: "send"; visible: orientation.value == "tie"}
+					CheckBox {Layout.preferredWidth: 30; name: "send"; visible: orientation.value == "tie" && eventDirection.value == "directed"}
 					CheckBox {Layout.preferredWidth: 30; name: "tie"}
 				}
 			}
@@ -467,7 +486,7 @@ property var translated: {
 				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
 				rSource: "specifiedExoEffectsFromR"
-				// source: [{name: "exogenousEffectsTable", condition: "average"}]
+				// source: [{name: "exogenousEffectsTable.text1", condition: "average"}]
 
 				titles: orientation.value == "tie" ? ["", qsTr("Scaling"), qsTr("Absolute")] : [qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale
