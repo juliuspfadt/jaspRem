@@ -19,9 +19,9 @@
 # Main function ----
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
-
-  # sink(file="~/Downloads/log.txt")
-  # on.exit(sink(NULL))
+#
+#   sink(file="~/Downloads/log.txt")
+#   on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
@@ -56,10 +56,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   if (!is.null(jaspResults[["mainContainer"]])) return()
   mainContainer <- createJaspContainer()
-  mainContainer$dependOn(c("timeVariable", "actorVariables", "weightVariable"))
+  mainContainer$dependOn(c("timeVariable", "actorVariables", "weightVariable", "typeVariable"))
   jaspResults[["mainContainer"]] <- mainContainer
-
-  # mainContainer$setError("ERROR")
 
 
   return()
@@ -277,17 +275,18 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(dataset))
     return(dataset)
 
-  if (options$weightVariable == "") {
-    variables  <- c(options$timeVariable, options$actorVariables)
-  } else {
-    variables  <- c(options$timeVariable, options$actorVariables, options$weightVariable)
+  variables <- c(options$timeVariable, options$actorVariables)
+  if (options$weightVariable != "") {
+    variables  <- c(variables, options$weightVariable)
+  }
+  if (options$typeVariable != "") {
+    variables  <- c(variables, options$typeVariable)
   }
 
   exoEffects <- jaspResults[["exoEffectsState"]][["object"]][["list"]]
 
   if (options[["orientation"]] == "actor") {
-    exoEffects <- append(exoEffects,
-                         jaspResults[["exoEffectsState"]][["object"]][["listSender"]])
+    exoEffects <- append(exoEffects, jaspResults[["exoEffectsState"]][["object"]][["listSender"]])
   }
 
   if (length(exoEffects) > 0) {
@@ -298,6 +297,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   dataset <- .readDataSetToEnd(columns = variables)
+
   return(dataset)
 }
 
@@ -343,23 +343,26 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["mainContainer"]][["remifyResultState"]]$object))
     return()
 
-  # the first three columns should always contain the time and actors variables.
-  # the following column needs to be named "weight"
-  # what though if the actors are switched? that shouldnt be an issue, should it?
-  if ("weight" %in% colnames(dataset)) {
-    dt <- cbind(dataset[, 1:3], dataset[, "weight"])
-  } else {
-    dt <- dataset[, 1:3]
-  }
-
   # is there any other naAction even possible?
   if (anyNA(dataset)) {
-    dt <- dt[complete.cases(dt), ]
+    dataset <- dataset[complete.cases(dataset), ]
   }
 
-  if (is.factor(dt[, 1]) || is.character(dt[, 1])) {
-    dt[, 1] <- as.character(dt[, 1])
-    dt[, 1] <- as.POSIXct(dt[, 1])
+  # could be the time is in a weird format:
+  if (is.factor(dataset[, 1]) || is.character(dataset[, 1])) {
+    dataset[, 1] <- as.character(dataset[, 1])
+    dataset[, 1] <- as.POSIXct(dataset[, 1])
+  }
+
+  # handle the weight and type variables
+  colnames(dataset) <- decodeColNames(colnames(dataset))
+
+  if (options[["weightVariable"]] != "") {
+    colnames(dataset)[colnames(dataset) == decodeColNames(options[["weightVariable"]])] <- "weight"
+  }
+
+  if (options[["typeVariable"]] != "") {
+    colnames(dataset)[colnames(dataset) == decodeColNames(options[["typeVariable"]])] <- "type"
   }
 
   if (options[["eventDirection"]] == "undirected" && options[["orientation"]] == "tie") {
@@ -367,7 +370,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   } else {
     directed <- TRUE
   }
-  rehObject <- try(remify::remify(edgelist = dt,
+
+  rehObject <- try(remify::remify(edgelist = dataset,
                                   directed = directed,
                                   ordinal = options[["eventSequence"]] == "orderOnly",
                                   model = options[["orientation"]],
@@ -421,7 +425,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   # or maybe the user did not choose to save the samples
   if (is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object) ||
       !options[["oldEffectsSaved"]]) {
-
 
     # in the first round both states are created
     statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
