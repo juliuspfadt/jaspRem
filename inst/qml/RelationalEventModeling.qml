@@ -197,6 +197,89 @@ Form
 	{
 		title: qsTr("Effects")
 		columns: 1
+		id: effects
+		/*
+		So first comes a list of endogenous variables that are needed later as sources for several ComponentsLists
+		If oyou wish to update and add effects, do that here
+		*/
+
+		// thw whole matched list of the effect variables R names and translations
+		property var translated: {
+			"indegreeReceiver": qsTr("Indegree receiver"),
+			"indegreeSender": qsTr("Indegree sender"), 
+			"inertia": qsTr("Inertia"),
+			"isp": qsTr("Incoming shared partners"), 
+			"itp": qsTr("Incoming two-path"), 
+			"osp": qsTr("Outgoing shared partners"),
+			"otp": qsTr("Outgoing two-path"),
+			"outdegreeReceiver": qsTr("Outdegree receiver"),
+			"outdegreeSender": qsTr("Outdegree sender"),
+			"psABAB": qsTr("Pshift AB-AB"),
+			"psABAY": qsTr("Pshift AB-AY"),
+			"psABBA": qsTr("Pshift AB-BA"),
+			"psABBY": qsTr("Pshift AB-BY"),
+			"psABXA": qsTr("Pshift AB-XA"),
+			"psABXB": qsTr("Pshift AB-XB"),
+			"psABXY": qsTr("Pshift AB-XY"),
+			"psABA": qsTr("Pshift AB-A"), 
+			"psABB": qsTr("Pshift AB-B"), 
+			"psABX": qsTr("Pshift AB-X"),
+			"recencyContinue": qsTr("Recency continue"), 
+			"recencyReceiveReceiver": qsTr("Recency receive of receiver"), 
+			"recencyReceiveSender": qsTr("Recency receive of sender"),
+			"recencySendReceiver": qsTr("Recency send of receiver"),
+			"recencySendSender": qsTr("Recency send of sender"),
+			"reciprocity": qsTr("Reciprocity"),
+			"rrankReceive": qsTr("Recency rank receive"),
+			"rrankSend": qsTr("Recency rank send"),
+			"totaldegreeDyad": qsTr("Total degree dyad"),
+			"totaldegreeReceiver": qsTr("Total degree receiver"),
+			"totaldegreeSender": qsTr("Total degree sender"),
+			"degreeDiff": qsTr("Degree difference"),
+			"degreeMax": qsTr("Degree maximum"),
+			"degreeMin": qsTr("Degree minimum"), 
+			"sp": qsTr("Shared partners")
+			};
+
+			// variables for the tie directed model
+		property var varsTieDirected: ["indegreeReceiver", "indegreeSender", "inertia", "isp", "itp", "osp", "otp",
+			"outdegreeReceiver", "outdegreeSender", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA",
+			"psABXB", "psABXY", "recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender",
+			"recencySendReceiver", "recencySendSender", "reciprocity", "rrankReceive", "rrankSend",
+			"totaldegreeDyad", "totaldegreeReceiver", "totaldegreeSender"];
+		
+		// variables for the tie undirected model
+		property var varsTieUndirected: ["degreeDiff", "degreeMax", "degreeMin", "inertia", "psABAB",
+			"psABAY", "recencyContinue", "sp", "totaldegreeDyad"];
+		
+		// variables for the actor receiver model
+		property var varsActorReceiver: ["indegreeReceiver", "inertia", "isp", "itp", "osp", "otp",
+			"outdegreeReceiver", "recencyContinue", "recencyReceiveReceiver",
+			"recencySendReceiver", "reciprocity", "rrankReceive", "rrankSend",
+			"totaldegreeReceiver", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA",
+			"psABXB", "psABXY"];
+
+		// variables for the actor sender model
+		property var varsActorSender: ["indegreeSender", "outdegreeSender", "recencySendSender", "recencyReceiveSender",
+			"totaldegreeSender", "psABA", "psABB", "psABX"];
+
+		// variables that only have two scaling arguments 
+		property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
+		// variables that have no scaling arguments
+		property var varsScalingNone: 
+			["psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", "psABA", "psABB", "psABX",
+			"recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender", "recencySendReceiver", "recencySendSender", 
+			"rrankReceive", "rrankSend"];
+
+		// variables that do not have a consider-type argument 
+		property var varsNotConsiderType: ["psABA", "psABB", "psABX"]
+
+		// variables that have a unique argument
+		property var varsUnique: ["isp", "itp", "osp", "otp", "sp"]
+
+		// variables to use in the scaling column
+		property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
+		property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
 
 		Group 
 		{
@@ -206,111 +289,36 @@ Form
 			ComponentsList 
 			{ 
 				implicitHeight: 120 * preferencesModel.uiScale
-				implicitWidth: 600 * preferencesModel.uiScale
-
-				// variables for the tie directed model
-				property var varsTieDirected: ["indegreeReceiver", "indegreeSender", "inertia", "isp", "itp", "osp", "otp",
-					"outdegreeReceiver", "outdegreeSender", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA",
-					"psABXB", "psABXY", "recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender",
-					"recencySendReceiver", "recencySendSender", "reciprocity", "rrankReceive", "rrankSend",
-					"totaldegreeDyad", "totaldegreeReceiver", "totaldegreeSender", "userStat"];
-				
-				// variables for the tie undirected model
-				property var varsTieUndirected: ["degreeDiff", "degreeMax", "degreeMin", "inertia", "psABAB",
-					"psABAY", "recencyContinue", "sp", "totaldegreeDyad", "userStat"];
-				
-				// variables for the actor sender model
-				property var varsActorSender: ["indegreeSender", "outdegreeSender", "recencySendSender", "recencyReceiveSender",
-					"totaldegreeSender", "userStat"];
-				
-				// variables for the actor receiver model
-				property var varsActorReceiver: ["indegreeReceiver", "inertia", "isp", "itp", "osp", "otp",
-					"outdegreeReceiver", "recencyContinue", "recencyReceiveReceiver",
-					"recencySendReceiver", "reciprocity", "rrankReceive", "rrankSend",
-					"totaldegreeReceiver", "psABAB", "psABAY", "psABBA", "psABBY", "psABXA",
-					"psABXB", "psABXY"];
-
-				// thw whole matched list of the effect variables R names and translations
-				property var translated: {
-					"indegreeReceiver": qsTr("Indegree receiver"),
-					"indegreeSender": qsTr("Indegree sender"), 
-					"inertia": qsTr("Inertia"),
-					"isp": qsTr("Incoming shared partners"), 
-					"itp": qsTr("Incoming two-path"), 
-					"osp": qsTr("Outgoing shared partners"),
-					"otp": qsTr("Outgoing two-path"),
-					"outdegreeReceiver": qsTr("Outdegree receiver"),
-					"outdegreeSender": qsTr("Outdegree sender"),
-					"psABAB": qsTr("Pshift AB-AB"),
-					"psABAY": qsTr("Pshift AB-AY"),
-					"psABBA": qsTr("Pshift AB-BA"),
-					"psABBY": qsTr("Pshift AB-BY"),
-					"psABXA": qsTr("Pshift AB-XA"),
-					"psABXB": qsTr("Pshift AB-XB"),
-					"psABXY": qsTr("Pshift AB-XY"),
-					"psABA": qsTr("Pshift AB-A"), 
-					"psABB": qsTr("Pshift AB-B"), 
-					"psABX": qsTr("Pshift AB-X"),
-					"recencyContinue": qsTr("Recency continue"), 
-					"recencyReceiveReceiver": qsTr("Recency receive of receiver"), 
-					"recencyReceiveSender": qsTr("Recency receive of sender"),
-					"recencySendReceiver": qsTr("Recency send of receiver"),
-					"recencySendSender": qsTr("Recency send of sender"),
-					"reciprocity": qsTr("Reciprocity"),
-					"rrankReceive": qsTr("Recency rank receive"),
-					"rrankSend": qsTr("Recency rank send"),
-					"totaldegreeDyad": qsTr("Total degree dyad"),
-					"totaldegreeReceiver": qsTr("Total degree receiver"),
-					"totaldegreeSender": qsTr("Total degree sender"),
-					"degreeDiff": qsTr("Degree difference"),
-					"degreeMax": qsTr("Degree maximum"),
-					"degreeMin": qsTr("Degree minimum"), 
-					"sp": qsTr("Shared partners")
-					};
-
-				// variables that only have two scaling arguments 
-				property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
-				// variables that have no scaling arguments
-				property var varsScalingNone: 
-					["psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", 
-					"recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender", "recencySendReceiver", "recencySendSender", 
-					"rrankReceive", "rrankSend"];
-
-				// variables that have a unique argument
-				property var varsUnique: ["isp", "itp", "osp", "otp", "sp"]
-
-				// variables to use in the scaling column
-				property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
-				property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
+				implicitWidth: 590 * preferencesModel.uiScale
 
 				source: [{ 
 						values: orientation.value == "tie" ? 
-							(eventDirection.value == "undirected" ? varsTieUndirected : varsTieDirected) : 
-							(varsActorReceiver)
+							(eventDirection.value == "undirected" ? effects.varsTieUndirected : effects.varsTieDirected) : 
+							(effects.varsActorReceiver)
 						}] 
 				name: "endogenousEffects"
 				id: endogenousEffects
 				titles: ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]
 				rowComponent: RowLayout {
-					Text{Layout.preferredWidth: 200; text: endogenousEffects.translated[rowValue]}
-					TextField{ name: "translatedName"; value: endogenousEffects.translated[rowValue]; visible: false}
-					CheckBox{ name: "includeEndoEffect"; label: ""; Layout.preferredWidth: 80; id: inclEndoEff}
+					Text{Layout.preferredWidth: 180; text: effects.translated[rowValue]}
+					TextField{ name: "translatedName"; value: effects.translated[rowValue]; visible: false}
+					CheckBox{ name: "includeEndoEffect"; label: ""; Layout.preferredWidth: 60; id: inclEndoEff}
 					DropDown {
 						name: "endogenousEffectsScaling"; 
 						Layout.preferredWidth: 50
-						values: endogenousEffects.varsScalingTwo.includes(rowValue) ? endogenousEffects.scalingTwo : endogenousEffects.scalingAll
-						enabled: !endogenousEffects.varsScalingNone.includes(rowValue) & inclEndoEff.checked
+						values: effects.varsScalingTwo.includes(rowValue) ? effects.scalingTwo : effects.scalingAll
+						enabled: !effects.varsScalingNone.includes(rowValue) & inclEndoEff.checked
 					}
-					CheckBox {
+					DropDown {
 						name: "endogenousEffectsConsiderType"
-						Layout.preferredWidth: 80
-						// visible: !endogenousEffects.varsNotConsiderType.includes(rowValue)
+						Layout.preferredWidth: 50
+						values: [{ label: qsTr("No"), value : "no"}, { label: qsTr("Yes"), value : "yes" }, { label: qsTr("Both"), value : "both" }]
 						enabled: inclEndoEff.checked
 					}
 					CheckBox {
 						name: "endogenousEffectsUnique"
-						Layout.preferredWidth: 50
-						visible: endogenousEffects.varsUnique.includes(rowValue)
+						Layout.preferredWidth: 60
+						visible: effects.varsUnique.includes(rowValue)
 						enabled: inclEndoEff.checked
 					}
 				}
@@ -326,83 +334,28 @@ Form
 			ComponentsList 
 			{ 
 				implicitHeight: 80 * preferencesModel.uiScale
-				implicitWidth: 600 * preferencesModel.uiScale
+				implicitWidth: 590 * preferencesModel.uiScale
 
-				// variables for the actor sender model
-				property var varsActorSender: ["indegreeSender", "outdegreeSender", "recencySendSender", "recencyReceiveSender",
-					"totaldegreeSender", "psABA", "psABB", "psABX"];
 
-				// thw whole matched list of the effect variables R names and translations
-				property var translated: {
-					"indegreeReceiver": qsTr("Indegree receiver"),
-					"indegreeSender": qsTr("Indegree sender"), 
-					"inertia": qsTr("Inertia"),
-					"isp": qsTr("Incoming shared partners"), 
-					"itp": qsTr("Incoming two-path"), 
-					"osp": qsTr("Outgoing shared partners"),
-					"otp": qsTr("Outgoing two-path"),
-					"outdegreeReceiver": qsTr("Outdegree receiver"),
-					"outdegreeSender": qsTr("Outdegree sender"),
-					"psABAB": qsTr("Pshift AB-AB"),
-					"psABAY": qsTr("Pshift AB-AY"),
-					"psABBA": qsTr("Pshift AB-BA"),
-					"psABBY": qsTr("Pshift AB-BY"),
-					"psABXA": qsTr("Pshift AB-XA"),
-					"psABXB": qsTr("Pshift AB-XB"),
-					"psABXY": qsTr("Pshift AB-XY"),
-					"psABA": qsTr("Pshift AB-A"), 
-					"psABB": qsTr("Pshift AB-B"), 
-					"psABX": qsTr("Pshift AB-X"),
-					"recencyContinue": qsTr("Recency continue"), 
-					"recencyReceiveReceiver": qsTr("Recency receive of receiver"), 
-					"recencyReceiveSender": qsTr("Recency receive of sender"),
-					"recencySendReceiver": qsTr("Recency send of receiver"),
-					"recencySendSender": qsTr("Recency send of sender"),
-					"reciprocity": qsTr("Reciprocity"),
-					"rrankReceive": qsTr("Recency rank receive"),
-					"rrankSend": qsTr("Recency rank send"),
-					"totaldegreeDyad": qsTr("Total degree dyad"),
-					"totaldegreeReceiver": qsTr("Total degree receiver"),
-					"totaldegreeSender": qsTr("Total degree sender"),
-					"degreeDiff": qsTr("Degree difference"),
-					"degreeMax": qsTr("Degree maximum"),
-					"degreeMin": qsTr("Degree minimum"), 
-					"sp": qsTr("Shared partners")
-					};
 
-				// variables that only have two scaling arguments 
-				property var varsScalingTwo: ["degreeDiff", "isp", "itp", "osp", "otp", "sp"];
-				// variables that have no scaling arguments
-				property var varsScalingNone: 
-					["psABAB", "psABAY", "psABBA", "psABBY", "psABXA", "psABXB", "psABXY", "psABA", "psABB", "psABX",
-					"recencyContinue", "recencyReceiveReceiver", "recencyReceiveSender", "recencySendReceiver", "recencySendSender", 
-					"rrankReceive", "rrankSend"];
-
-				// variables that do not have a consider-type argument 
-				property var varsNotConsiderType: ["psABA", "psABB", "psABX"]
-
-				// variables to use in the scaling column
-				property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
-				property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
-
-				source: [{ values: varsActorSender }] 
+				source: [{ values: effects.varsActorSender }] 
 				name: "endogenousEffectsSender"
 				id: endogenousEffectsSender
 				titles: ["", "", qsTr("Include"), qsTr("Scaling")]
 				rowComponent: RowLayout {
-					Text{Layout.preferredWidth: 200; text: endogenousEffectsSender.translated[rowValue]}
-					TextField{ name: "translatedNameSender"; value: endogenousEffectsSender.translated[rowValue]; visible: false}
+					Text{Layout.preferredWidth: 200; text: effects.translated[rowValue]}
+					TextField{ name: "translatedNameSender"; value: effects.translated[rowValue]; visible: false}
 					CheckBox{ name: "includeEndoEffectSender"; label: ""; Layout.preferredWidth: 80; id: inclEndoEffSend}
 					DropDown {
 						name: "endogenousEffectsScalingSender"; 
 						Layout.preferredWidth: 50
-						values: endogenousEffectsSender.varsScalingTwo.includes(rowValue) ? endogenousEffectsSender.scalingTwo : endogenousEffectsSender.scalingAll
-						enabled: !endogenousEffectsSender.varsScalingNone.includes(rowValue) & inclEndoEffSend.checked
+						values: effects.varsScalingTwo.includes(rowValue) ? effects.scalingTwo : effects.scalingAll
+						enabled: !effects.varsScalingNone.includes(rowValue) & inclEndoEffSend.checked
 					}
 					CheckBox {
 						name: "endogenousEffectsConsiderTypeSender"
 						Layout.preferredWidth: 80
-						visible: !endogenousEffectsSender.varsNotConsiderType.includes(rowValue)
+						visible: !effects.varsNotConsiderType.includes(rowValue)
 						enabled: inclEndoEffSend.checked
 					}
 					// this checkbox is useful so that the options form this box align with the options from the above box in R
@@ -417,7 +370,7 @@ Form
 		Group
 		{
 			title: orientation.value == "tie" ? qsTr("Exogenous effects") : qsTr("Exogenous effects receiver model")
-			implicitHeight: 140 * preferencesModel.uiScale
+			implicitHeight: 400 * preferencesModel.uiScale
 
 			ComponentsList
 			{
@@ -428,12 +381,11 @@ Form
 					[qsTr("Average"), qsTr("Difference"), "", qsTr("Receive"), qsTr("Same"), "", qsTr("Tie")]
 				// maybe translate that?
 				implicitHeight: 100 * preferencesModel.uiScale
-				implicitWidth: 600 * preferencesModel.uiScale
+				implicitWidth: 590 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 110; text: rowValue} 
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
-					// TextField { visible: false; name: "text1"; value: rowValue}
 					CheckBox {Layout.preferredWidth: 50; name: "difference"}
 					CheckBox {Layout.preferredWidth: 35; name: "event"; visible: orientation.value == "tie"  }
 					CheckBox {Layout.preferredWidth: 45; name: "maximum"; visible: orientation.value == "tie"}
@@ -442,6 +394,15 @@ Form
 					CheckBox {Layout.preferredWidth: 30; name: "same"}
 					CheckBox {Layout.preferredWidth: 30; name: "send"; visible: orientation.value == "tie" && eventDirection.value == "directed"}
 					CheckBox {Layout.preferredWidth: 30; name: "tie"}
+					// TextField { visible: false; name: "text1"; value: rowValue}
+					// TextField { visible: false; name: "text2"; value: rowValue}
+					// TextField { visible: false; name: "text3"; value: rowValue + "event"}
+					// TextField { visible: false; name: "text4"; value: rowValue + "maximum"}
+					// TextField { visible: false; name: "text5"; value: rowValue + "minimum"}
+					// TextField { visible: false; name: "text6"; value: rowValue + "receive"}
+					// TextField { visible: false; name: "text7"; value: rowValue + "same"}
+					// TextField { visible: false; name: "text8"; value: rowValue + "send"}
+					// TextField { visible: false; name: "text9"; value: rowValue + "tie"}
 				}
 			}
 		}
@@ -486,7 +447,15 @@ Form
 				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
 				rSource: "specifiedExoEffectsFromR"
-				// source: [{name: "exogenousEffectsTable.text1", condition: "average"}]
+				// source: [{name: "exogenousEffectsTable.text1", condition: "average"},
+				// 				 {name: "exogenousEffectsTable.text2", condition: "difference"},
+				// 				 {name: "exogenousEffectsTable.text3", condition: "event"},
+				// 				 {name: "exogenousEffectsTable.text4", condition: "maximum"},
+				// 				 {name: "exogenousEffectsTable.text5", condition: "minimum"},
+				// 				 {name: "exogenousEffectsTable.text6", condition: "receive"},
+				// 				 {name: "exogenousEffectsTable.text7", condition: "same"},
+				// 				 {name: "exogenousEffectsTable.text8", condition: "send"},
+				// 				 {name: "exogenousEffectsTable.text9", condition: "tie"}]
 
 				titles: orientation.value == "tie" ? ["", qsTr("Scaling"), qsTr("Absolute")] : [qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale

@@ -19,7 +19,7 @@
 # Main function ----
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
-#
+
 #   sink(file="~/Downloads/log.txt")
 #   on.exit(sink(NULL))
 
@@ -976,31 +976,56 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   endoScaling <- sapply(endos, function(x) {
     x[[paste0("endogenousEffectsScaling", sender)]]
   })
-  endoType <- sapply(endos, function(x) {
-    x[[paste0("endogenousEffectsConsiderType", sender)]]
-  })
   endoUnique <- sapply(endos, function(x) {
     x[[paste0("endogenousEffectsUnique", sender)]]
   })
+  endoType <- sapply(endos, function(x) {
+    x[[paste0("endogenousEffectsConsiderType", sender)]]
+  })
 
-  endoEffects <- paste0(endosR, "(")
+  # see if the consider_type argument is somewhere specified as "both"
+  # because then we need a longer effects vector since we semi-duplicate one effect
+  indBoth <- which(endoType == "both")
 
-  for (i in 1:length(endosR)) {
+  if (length(indBoth) > 0) {
+    # create vectors that fit the duplicated effects for the "both" consider type arg
+    endosX <- vector("character", length = length(endosR) + length(indBoth))
+    newInd <- sort(c(indBoth + seq_len(length(indBoth)), indBoth + seq_len(length(indBoth)) - 1))
+    endosX[newInd] <- rep(endosR[indBoth], each = 2)
+    endosX[-newInd] <- endosR[-indBoth]
+
+    endoScalingX <- vector("character", length = length(endoScaling) + length(indBoth))
+    endoScalingX[newInd] <- rep(endoScaling[indBoth], each = 2)
+    endoScalingX[-newInd] <- endoScaling[-indBoth]
+
+    endoUniqueX <- vector("character", length = length(endoUnique) + length(indBoth))
+    endoUniqueX[newInd] <- rep(endoUnique[indBoth], each = 2)
+    endoUniqueX[-newInd] <- endoUnique[-indBoth]
+
+    endoTypeX <- vector("character", length = length(endoType) + length(indBoth))
+    endoTypeX[newInd] <- c("no", "yes")
+    endoTypeX[-newInd] <- endoType[-indBoth]
+  }
+
+  endoEffects <- paste0(endosX, "(")
+
+  for (i in 1:length(endosX)) {
 
     # create the proper dimname
-    dimstmp <- endosR[i]
+    dimstmp <- endosX[i]
 
-    if (!(endoScaling[i] %in% c("none", ""))) {
-      endoEffects[i] <- paste0(endoEffects[i], "scaling = '", endoScaling[i], "', ")
+    if (!(endoScalingX[i] %in% c("none", ""))) {
+      endoEffects[i] <- paste0(endoEffects[i], "scaling = '", endoScalingX[i], "', ")
       dimstmp <- paste0(dimstmp, ".", endoScaling[i])
     }
-    if (endoUnique[i]) {
-      endoEffects[i] <- paste0(endoEffects[i], "unique = ", endoUnique[i], ", ")
+    if (endoUniqueX[i]) {
+      endoEffects[i] <- paste0(endoEffects[i], "unique = ", endoUniqueX[i], ", ")
       dimstmp <- paste0(dimstmp, ".unique")
-
     }
-    if (endoType[i])  {
-      endoEffects[i] <- paste0(endoEffects[i], "consider_type = ", endoType[i], ", ")
+
+    # consider type is a bit special given we can also have an endo effect with consider type and one without
+    if (endoTypeX[i] == "yes") {
+      endoEffects[i] <- paste0(endoEffects[i], "consider_type = TRUE, ")
       dimstmp <- paste0(dimstmp, ".type")
     }
     endoDims <- append(endoDims, dimstmp)
