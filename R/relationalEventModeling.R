@@ -31,7 +31,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .feedbackInteractionEffects(jaspResults, options)
 
 
-  ready <- (options[["timeVariable"]] != "") && (length(options[["actorVariables"]]) > 1) &&
+  ready <- (options[["timeVariable"]] != "") && (options[["actorVariableSender"]] != "") && (options[["actorVariableReceiver"]] != "") &&
     options[["syncAnalysisBox"]]
 
   if (!ready) return()
@@ -56,7 +56,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   if (!is.null(jaspResults[["mainContainer"]])) return()
   mainContainer <- createJaspContainer()
-  mainContainer$dependOn(c("timeVariable", "actorVariables", "weightVariable", "typeVariable"))
+  mainContainer$dependOn(c("timeVariable", "actorVariableSender", "actorVariableReceiver", "weightVariable", "typeVariable"))
   jaspResults[["mainContainer"]] <- mainContainer
 
 
@@ -229,11 +229,25 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   })
   specEndos <- which(!sapply(endosSave, is.null))
   outEndoList <- lapply(endos[specEndos], function(x) x[["translatedName"]])
+  outEndoListX <- outEndoList
+  # does any endo effect have type = both
+  endoType <- sapply(endos[specEndos], function(x) {
+    x[["endogenousEffectsConsiderType"]]
+  })
+  indBoth <- which(endoType == "both")
+  if (length(indBoth) > 0) {
+    newInd <- sort(c(indBoth + seq_len(length(indBoth)), indBoth + seq_len(length(indBoth)) - 1))
+    outEndoListX <- vector("character", length = length(outEndoList) + length(indBoth))
+    tmp <- rep(outEndoList[indBoth], each = 2)
+    tmp[seq(2, length(newInd), by = 2)] <- paste0(tmp[seq(2, length(newInd), by = 2)], "(type)")
+    outEndoListX[newInd] <- tmp
+    outEndoListX[-newInd] <- outEndoList[-indBoth]
+  }
 
-  if ((length(outExoList) + length(outEndoList)) >= 2) {
+  if ((length(outExoList) + length(outEndoListX)) >= 2) {
 
-    combList <- c(unlist(outExoList), unlist(outEndoList) == 0)
-    interTmp <- combn(c(unlist(outExoList), unlist(outEndoList)), m = 2)
+    combList <- c(unlist(outExoList), unlist(outEndoListX) == 0)
+    interTmp <- combn(c(unlist(outExoList), unlist(outEndoListX)), m = 2)
     inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
 
     possibleInteractionEffectsFromR <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
@@ -250,11 +264,25 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     })
     specEndosSender <- which(!sapply(endosSaveSender, is.null))
     outEndoListSender <- lapply(endosSender[specEndosSender], function(x) x[["translatedNameSender"]])
+    outEndoListXSender <- outEndoListSender
+    # does any endo effect have type = both
+    endoTypeSender <- sapply(endosSender[specEndosSender], function(x) {
+      x[["endogenousEffectsConsiderTypeSender"]]
+    })
+    indBothSender <- which(endoTypeSender == "both")
+    if (length(indBothSender) > 0) {
+      newIndSender <- sort(c(indBothSender + seq_len(length(indBothSender)), indBothSender + seq_len(length(indBothSender)) - 1))
+      outEndoListXSender <- vector("character", length = length(outEndoListSender) + length(indBothSender))
+      tmpSender <- rep(outEndoListSender[indBothSender], each = 2)
+      tmpSender[seq(2, length(newIndSender), by = 2)] <- paste0(tmpSender[seq(2, length(newIndSender), by = 2)], "(type)")
+      outEndoListXSender[newIndSender] <- tmpSender
+      outEndoListXSender[-newIndSender] <- outEndoListSender[-indBothSender]
+    }
 
-    if ((length(outExoListSender) + length(outEndoListSender)) >= 2) {
+    if ((length(outExoListSender) + length(outEndoListXSender)) >= 2) {
 
-      combListSender <- c(unlist(outExoListSender), unlist(outEndoListSender) == 0)
-      interTmpSender <- combn(c(unlist(outExoListSender), unlist(outEndoListSender)), m = 2)
+      combListSender <- c(unlist(outExoListSender), unlist(outEndoListXSender) == 0)
+      interTmpSender <- combn(c(unlist(outExoListSender), unlist(outEndoListXSender)), m = 2)
       intersSender <- as.list(paste0(interTmpSender[1, ], " * ", interTmpSender[2, ]))
 
       possibleInteractionEffectsFromRSender <- createJaspQmlSource("possibleInteractionEffectsFromRSender", intersSender)
@@ -275,7 +303,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(dataset))
     return(dataset)
 
-  variables <- c(options$timeVariable, options$actorVariables)
+  variables <- c(options$timeVariable, options$actorVariableSender, options$actorVariableReceiver)
   if (options$weightVariable != "") {
     variables  <- c(variables, options$weightVariable)
   }
@@ -298,8 +326,11 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   dataset <- .readDataSetToEnd(columns = variables)
 
+  colnames(dataset)[1:3] <- jaspBase::encodeColNames(c("time", "actor1", "actor2"))
+
   return(dataset)
 }
+
 
 
 .remErrorHandling <- function(jaspResults, dataset, options) {
@@ -331,9 +362,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
   }
 
-
   # first three variables should be time actors and maybe weight
-  # seperator variables should be there
 }
 
 
@@ -982,6 +1011,11 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   endoType <- sapply(endos, function(x) {
     x[[paste0("endogenousEffectsConsiderType", sender)]]
   })
+  endosX <- endosR
+  endoScalingX <- endoScaling
+  endoUniqueX <- endoUnique
+  endoTypeX <- endoType
+  endosJaspX <- endosJasp
 
   # see if the consider_type argument is somewhere specified as "both"
   # because then we need a longer effects vector since we semi-duplicate one effect
@@ -1005,18 +1039,21 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     endoTypeX <- vector("character", length = length(endoType) + length(indBoth))
     endoTypeX[newInd] <- c("no", "yes")
     endoTypeX[-newInd] <- endoType[-indBoth]
+
+    endosJaspX <- vector("character", length = length(endosJasp) + length(indBoth))
+    endosJaspX[newInd] <- rep(endosJasp[indBoth], each = 2)
+    endosJaspX[-newInd] <- endosJasp[-indBoth]
   }
 
   endoEffects <- paste0(endosX, "(")
 
   for (i in 1:length(endosX)) {
-
     # create the proper dimname
     dimstmp <- endosX[i]
 
     if (!(endoScalingX[i] %in% c("none", ""))) {
       endoEffects[i] <- paste0(endoEffects[i], "scaling = '", endoScalingX[i], "', ")
-      dimstmp <- paste0(dimstmp, ".", endoScaling[i])
+      dimstmp <- paste0(dimstmp, ".", endoScalingX[i])
     }
     if (endoUniqueX[i]) {
       endoEffects[i] <- paste0(endoEffects[i], "unique = ", endoUniqueX[i], ", ")
@@ -1027,6 +1064,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     if (endoTypeX[i] == "yes") {
       endoEffects[i] <- paste0(endoEffects[i], "consider_type = TRUE, ")
       dimstmp <- paste0(dimstmp, ".type")
+      endosJaspX[i] <- paste0(endosJaspX[i], "(type)")
+      endosX[i] <- paste0(endosX[i], ".type")
     }
     endoDims <- append(endoDims, dimstmp)
   }
@@ -1038,7 +1077,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   endoEffects <- paste(endoEffects, collapse = " + ")
 
   return(list(effects = endoEffects, effectsSave = endoEffectsSave, dims = endoDims,
-              jaspNames = endosJasp, rNames = endosR))
+              jaspNames = endosJaspX, rNames = endosX))
 }
 
 

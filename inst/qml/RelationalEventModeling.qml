@@ -11,7 +11,9 @@ Form
 		preferredHeight: 300 * preferencesModel.uiScale
 		AvailableVariablesList{	name:	"allVariables"; id: allVariables}
 		AssignedVariablesList	{	name:	"timeVariable";			title: qsTr("Time Variable");		suggestedColumns: ["scale","ordinal", "nominal"];	singleVariable: true	; id: assignedVariableTime}
-		AssignedVariablesList	{	name:	"actorVariables";		title: qsTr("Actor Variables");	suggestedColumns: ["scale","ordinal", "nominal"]; singleVariable: false; height: 75 * preferencesModel.uiScale}
+		AssignedVariablesList	{	name:	"actorVariableSender";		title: qsTr("Actor Variable Sender");	suggestedColumns: ["scale","ordinal", "nominal"]; singleVariable: true}
+		AssignedVariablesList	{	name:	"actorVariableReceiver";		title: qsTr("Actor Variable Receiver");	suggestedColumns: ["scale","ordinal", "nominal"]; singleVariable: true}
+
 		AssignedVariablesList	{	name:	"weightVariable";		title: qsTr("Weight Variable");	suggestedColumns: ["scale"];	singleVariable: true	}
 		AssignedVariablesList	{	name:	"typeVariable";			title: qsTr("Type Variable");	suggestedColumns: ["nominal"];	singleVariable: true	}
 
@@ -370,7 +372,7 @@ Form
 		Group
 		{
 			title: orientation.value == "tie" ? qsTr("Exogenous effects") : qsTr("Exogenous effects receiver model")
-			implicitHeight: 400 * preferencesModel.uiScale
+			implicitHeight: 150 * preferencesModel.uiScale
 
 			ComponentsList
 			{
