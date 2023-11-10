@@ -119,7 +119,7 @@
     },
     "RcppArmadillo": {
       "Package": "RcppArmadillo",
-      "Version": "0.12.6.4.0",
+      "Version": "0.12.6.6.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -129,7 +129,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "cafeccdc6577a445a15ce98b6a1805cf"
+      "Hash": "aabc6cb0f0953d0442d3c82d8a9d2610"
     },
     "RcppProgress": {
       "Package": "RcppProgress",
@@ -1009,7 +1009,7 @@
     },
     "lifecycle": {
       "Package": "lifecycle",
-      "Version": "1.0.3",
+      "Version": "1.0.4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -1018,7 +1018,7 @@
         "glue",
         "rlang"
       ],
-      "Hash": "001cecbeac1cff9301bdc3775ee46a86"
+      "Hash": "b8552d117e1b808b09a832f589b79035"
     },
     "magrittr": {
       "Package": "magrittr",
@@ -1436,14 +1436,14 @@
       "RemoteHost": "api.github.com",
       "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRepo": "remify",
-      "RemoteRef": "master",
-      "RemoteSha": "0466247bc83f2c1510e9437247f7f392e167a431",
+      "RemoteRef": "02dc957326ea356b4e1efa308c991fd6ef7f5b52",
+      "RemoteSha": "02dc957326ea356b4e1efa308c991fd6ef7f5b52",
       "Requirements": [
         "R",
         "Rcpp",
         "RcppArmadillo"
       ],
-      "Hash": "e5d9c09f154157bb302420186f9d79d2"
+      "Hash": "3359a293e34abbd37735200ff9790093"
     },
     "remotes": {
       "Package": "remotes",
@@ -1461,14 +1461,14 @@
     },
     "remstats": {
       "Package": "remstats",
-      "Version": "3.1.7.1",
+      "Version": "3.1.8",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRepo": "remstats",
-      "RemoteRef": "master",
-      "RemoteSha": "d43c65d04507f49dfbc0fc5a1e332908afa1f41e",
+      "RemoteUsername": "TilburgNetworkGroup",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "6bbb7a9ce746e8ec7f4928a57f1a02fbf4850453",
       "Requirements": [
         "R",
         "Rcpp",
@@ -1478,7 +1478,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "37b58a95d040f839cc5f83e09fb8e4b0"
+      "Hash": "09efa6517091a110697cfe0963eacaac"
     },
     "remstimate": {
       "Package": "remstimate",
@@ -1538,14 +1538,14 @@
     },
     "rlang": {
       "Package": "rlang",
-      "Version": "1.1.1",
+      "Version": "1.1.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
         "utils"
       ],
-      "Hash": "a85c767b55f0bf9b7ad16c6d7baee5bb"
+      "Hash": "50a6dbdc522936ca35afc5e2082ea91b"
     },
     "rmarkdown": {
       "Package": "rmarkdown",

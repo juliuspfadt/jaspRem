@@ -20,8 +20,8 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-#   sink(file="~/Downloads/log.txt")
-#   on.exit(sink(NULL))
+  # sink(file="~/Downloads/log.txt")
+  # on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
@@ -384,14 +384,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   # handle the weight and type variables
-  colnames(dataset) <- decodeColNames(colnames(dataset))
+  colnames(dataset) <- jaspBase::decodeColNames(colnames(dataset))
 
   if (options[["weightVariable"]] != "") {
-    colnames(dataset)[colnames(dataset) == decodeColNames(options[["weightVariable"]])] <- "weight"
+    colnames(dataset)[colnames(dataset) == jaspBase::decodeColNames(options[["weightVariable"]])] <- "weight"
   }
 
   if (options[["typeVariable"]] != "") {
-    colnames(dataset)[colnames(dataset) == decodeColNames(options[["typeVariable"]])] <- "type"
+    colnames(dataset)[colnames(dataset) == jaspBase::decodeColNames(options[["typeVariable"]])] <- "type"
   }
 
   if (options[["eventDirection"]] == "undirected" && options[["orientation"]] == "tie") {
@@ -400,6 +400,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     directed <- TRUE
   }
 
+  saveRDS(dataset, file = "~/Downloads/dt.rds")
   rehObject <- try(remify::remify(edgelist = dataset,
                                   directed = directed,
                                   ordinal = options[["eventSequence"]] == "orderOnly",
