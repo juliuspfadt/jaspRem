@@ -1430,20 +1430,21 @@
     },
     "remify": {
       "Package": "remify",
-      "Version": "3.1.0",
+      "Version": "3.2.0",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRepo": "remify",
-      "RemoteRef": "02dc957326ea356b4e1efa308c991fd6ef7f5b52",
-      "RemoteSha": "02dc957326ea356b4e1efa308c991fd6ef7f5b52",
+      "RemoteUsername": "TilburgNetworkGroup",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "9db0ead5c032c91eb7f212d641376e8f5f9a1bec",
       "Requirements": [
         "R",
         "Rcpp",
-        "RcppArmadillo"
+        "RcppArmadillo",
+        "igraph"
       ],
-      "Hash": "3359a293e34abbd37735200ff9790093"
+      "Hash": "9f89cda0a29c4163f2987f5c48aeb79b"
     },
     "remotes": {
       "Package": "remotes",
@@ -1461,24 +1462,22 @@
     },
     "remstats": {
       "Package": "remstats",
-      "Version": "3.1.8",
+      "Version": "3.2.0",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "remstats",
       "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRef": "HEAD",
-      "RemoteSha": "6bbb7a9ce746e8ec7f4928a57f1a02fbf4850453",
+      "RemoteSha": "64d1607576991e7cbd0e5aec36e4eabbe9a64827",
       "Requirements": [
         "R",
         "Rcpp",
         "RcppArmadillo",
         "RcppProgress",
-        "remify",
-        "stats",
-        "utils"
+        "stats"
       ],
-      "Hash": "09efa6517091a110697cfe0963eacaac"
+      "Hash": "025197e5b770259208b9ebbbde299d0c"
     },
     "remstimate": {
       "Package": "remstimate",

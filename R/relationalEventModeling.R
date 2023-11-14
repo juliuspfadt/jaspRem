@@ -400,7 +400,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     directed <- TRUE
   }
 
-  saveRDS(dataset, file = "~/Downloads/dt.rds")
   rehObject <- try(remify::remify(edgelist = dataset,
                                   directed = directed,
                                   ordinal = options[["eventSequence"]] == "orderOnly",
