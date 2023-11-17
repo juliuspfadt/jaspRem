@@ -17,16 +17,15 @@ Form
 		AssignedVariablesList	{	name:	"weightVariable";		title: qsTr("Weight Variable");	suggestedColumns: ["scale"];	singleVariable: true	}
 		AssignedVariablesList	{	name:	"typeVariable";			title: qsTr("Type Variable");	suggestedColumns: ["nominal"];	singleVariable: true	}
 
-		
-		// AssignedVariablesList	{	name:	"covariates";				title: qsTr("Covariates");		suggestedColumns: ["scale","ordinal", "nominal"];	singleVariable: false	; height: 115 * preferencesModel.uiScale; id: covariates}
 		CheckBox
 		{
 			id: 						syncAnalysisBox
 			name: 					"syncAnalysisBox"
 			label: 					qsTr("<b>Sync Analysis</b>")
-			visible: 				true
-			checked: 				true
+			checked: 				false
 		}
+		Text {text: qsTr("You need to check this box for the analysis to run"); horizontalAlignment:	Text.AlignHCenter; verticalAlignment:		Text.AlignVCenter}
+
 	}
 	// // in order to have access to all variables in the data set even though they might not be assigned, 
 // // this section is hidden

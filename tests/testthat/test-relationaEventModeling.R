@@ -21,15 +21,15 @@ results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, mak
 test_that("Coefficient estimates tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTableTie"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -8.42918896411138, 0, 0, 0.00928196673781619, -908.125314624275
+                                 list("baseline", -6.54902255758944, 0, 0, 0.0318950466054745, -205.330396239815
                                  ))
 })
 
 test_that("Model fit tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTableTie"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list(11607, 218889.192612882, "Null deviance", "", 11606, 218889.192612882,
-                                      "Residual deviance", "", 1, 0, "Chi^2", 1, "", 218891.192612882,
-                                      "AIC", "", "", 218891.192957561, "AICC", "", "", 218898.551976525,
+                                 list(983, 14841.3783482209, "Null deviance", "", 982, 14841.3783482209,
+                                      "Residual deviance", "", 1, 0, "Chi^2", 1, "", 14843.3783482209,
+                                      "AIC", "", "", 14843.3824256928, "AICC", "", "", 14848.268957341,
                                       "BIC", ""))
 })
