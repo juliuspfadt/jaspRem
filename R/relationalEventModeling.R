@@ -20,8 +20,6 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  # sink(file="~/Downloads/log.txt")
-  # on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
@@ -31,8 +29,15 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .feedbackInteractionEffects(jaspResults, options)
 
 
-  ready <- (options[["timeVariable"]] != "") && (options[["actorVariableSender"]] != "") && (options[["actorVariableReceiver"]] != "") &&
-    options[["syncAnalysisBox"]]
+  ready <- (options[["timeVariable"]] != "") && (options[["actorVariableSender"]] != "") && (options[["actorVariableReceiver"]] != "")
+
+  if (ready && !options[["syncAnalysisBox"]]) {
+    syncText <- createJaspHtml(text = gettext("<b>Check the 'Sync Analysis' box to run the analysis</b>"))
+    jaspResults[["syncText"]] <- syncText
+    syncText$dependOn("syncAnalysisBox")
+    syncText$position <- 0.01
+    return()
+  }
 
   if (!ready) return()
 
@@ -65,16 +70,29 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 .remUploadActorData <- function(jaspResults, options) {
 
-  if (options[["actorData"]] == "") return()
+  actorDataPaths <- sapply(options[["actorDataList"]], function(x) x[["actorData"]])
+  if (all(actorDataPaths == "")) return()
 
-  if (!is.null(jaspResults[["actorDataState"]])) return()
+  if (!is.null(jaspResults[["actorDataState"]]$object)) return()
 
-  actorDt <- read.csv(options[["actorData"]])
+  actorOut <- list()
+  for (i in 1:length(actorDataPaths)) {
 
-  actorDataState <- createJaspState(actorDt)
-  actorDataState$dependOn("actorData")
+    if (actorDataPaths[i] != "") {
+      actorDt <- read.csv(options[["actorDataList"]][[i]][["actorData"]], row.names = NULL, check.names = FALSE)
+      actorDataName <- basename(options[["actorDataList"]][[i]][["actorData"]])
+      actorDataName <- gsub("\\..*","", actorDataName)
+
+      actorOut[[actorDataName]] <- actorDt
+
+    } else {
+      actorOut[[i]] <- NULL
+    }
+  }
+
+  actorDataState <- createJaspState(actorOut)
+  actorDataState$dependOn("actorDataList")
   jaspResults[["actorDataState"]] <- actorDataState
-
 
   return()
 }
@@ -121,15 +139,17 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   vars <- jaspBase::decodeColNames(options[["allVariablesHidden"]])
   vars <- vars[!grepl("weight", vars)]
+  vars <- vars[!grepl("type", vars)]
   vars <- as.list(vars)
 
   if (!is.null(jaspResults[["actorDataState"]])) {
-    actorDt <- jaspResults[["actorDataState"]]$object
-    actorVars <- colnames(actorDt)
-    actorVars <- actorVars[!grepl("time", actorVars)]
-    actorVars <- actorVars[!grepl("name", actorVars)]
-    actorVars <- as.list(actorVars)
-    vars <- append(vars, actorVars)
+    actorDataList <- jaspResults[["actorDataState"]]$object
+    for (i in 1:length(actorDataList)) {
+      actnms <- colnames(actorDataList[[i]])
+      actnms <- actnms[!grepl("time", actnms)]
+      actnms <- actnms[!grepl("name", actnms)]
+      vars <- append(vars, actnms)
+    }
   }
 
   if (!is.null(jaspResults[["dyadDataState"]])) {
@@ -139,7 +159,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   src <- createJaspQmlSource("exoTableVariablesR", vars)
-  src$dependOn(c("allVariablesHidden", "actorData", "dyadDataList"))
+  src$dependOn(c("allVariablesHidden", "actorDataList", "dyadDataList"))
   jaspResults[["exoTableVariablesR"]] <- src
 
   return()
@@ -229,11 +249,17 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   })
   specEndos <- which(!sapply(endosSave, is.null))
   outEndoList <- lapply(endos[specEndos], function(x) x[["translatedName"]])
-  outEndoListX <- outEndoList
   # does any endo effect have type = both
   endoType <- sapply(endos[specEndos], function(x) {
     x[["endogenousEffectsConsiderType"]]
   })
+  # first add the "type" string to all the type-yes instances
+  indYes <- which(endoType == "yes")
+  if (length(indYes) > 0)
+    outEndoList[indYes] <- paste0(outEndoList[indYes], "(type)")
+
+  outEndoListX <- outEndoList
+  # now take care of the type-both instances
   indBoth <- which(endoType == "both")
   if (length(indBoth) > 0) {
     newInd <- sort(c(indBoth + seq_len(length(indBoth)), indBoth + seq_len(length(indBoth)) - 1))
@@ -343,10 +369,24 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   evnames <- evnames[! evnames == "time"]
 
   if (!is.null(jaspResults[["actorDataState"]]$object)) {
-    attrnames <- colnames(jaspResults[["actorDataState"]]$object)
-    if (length(c(evnames, attrnames)) != length(unique(c(evnames, attrnames)))) {
-      .quitAnalysis(gettext("Duplicate variable names have been detected, please rename them"))
+    actorDataList <- jaspResults[["actorDataState"]]$object
+    attrnames <- c()
+    for (i in 1:length(actorDataList)) {
+      actnms <- colnames(actorDataList[[i]])
+      actnms <- actnms[!grepl("time", actnms)]
+      actnms <- actnms[!grepl("name", actnms)]
+      attrnames <- c(attrnames, actnms)
     }
+
+    if (length(attrnames) != length(unique(attrnames)))
+      .quitAnalysis(gettext("Duplicate variable names in the actor attributes have been detected, please rename them."))
+
+    if (length(c(evnames, attrnames)) != length(unique(c(evnames, attrnames))))
+      .quitAnalysis(gettext("Duplicate variable names have been detected, please rename them."))
+
+    nrows <- sapply(actorDataList, nrow)
+    if (length(nrows) == length(unique(nrows)))
+      .quitAnalysis(gettext("The actor attributes data frames differ in row length. Please align."))
   }
 
   if (!is.null(jaspResults[["dyadDataState"]]$object)) {
@@ -808,8 +848,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   effectsText <- Reduce(paste, deparse(effects))
   effectsText <- gsub("+", "+\n", effectsText, fixed = TRUE)
 
-  outText <- createJaspHtml(text = gettextf("The %s effects were specified as: \n%s",
-                                            recText, effectsText))
+  outText <- createJaspHtml(text = gettextf("The %1$s effects were specified as: \n%2$s", recText, effectsText))
   outText$position <- pos
   jaspResults[["mainContainer"]][[paste0("effectsCall", sender)]] <- outText
 
@@ -847,17 +886,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     exoEffects <- append(exoEffects, jaspResults[["exoEffectsState"]][["object"]][["listSender"]])
   }
 
-
-  evnames <- jaspBase::decodeColNames(colnames(dataset))
-  evnames <- evnames[! evnames == "time"]
-  if (!is.null(jaspResults[["actorDataState"]]$object)) {
-    attrnames <- colnames(jaspResults[["actorDataState"]]$object)
-  }
-
-  if (!is.null(jaspResults[["dyadDataState"]]$object)) {
-    dyadnames <- names(jaspResults[["dyadDataState"]]$object)
-  }
-
   if (!is.null(exoVariablesDec)) { # exo effects specified
 
     # for the event and tie effects we need the event related columns from the main data, the actor attributes data
@@ -881,6 +909,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     # dyadic attributes data
     if (!is.null(jaspResults[["dyadDataState"]]$object)) {
+      dyadnames <- names(jaspResults[["dyadDataState"]]$object)
       dyInds <- which(dyadnames %in% exoVariablesDec)
       if (length(dyInds) > 0) {
         for (iii in 1:length(dyInds)) {
@@ -891,11 +920,22 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     # the actor attributes data
     if (!is.null(jaspResults[["actorDataState"]]$object)) {
-      # is there any exo effects specified for a variable in the attributes data
-      if (any(!is.na(match(attrnames, exoVariablesDec)))) {
-        dt <- jaspResults[["actorDataState"]]$object
-        return(dt)
+      actorDataList <- jaspResults[["actorDataState"]]$object
+      dt <- data.frame(matrix(NA, nrow(actorDataList[[1]]), 0))
+      for (i in 1:length(actorDataList)) {
+        actnms <- colnames(actorDataList[[i]])
+        if (i > 1) { # do not duplicate the time and name variable, for other attr data than the first
+          actnms <- actnms[!grepl("time", actnms)]
+          actnms <- actnms[!grepl("name", actnms)]
+        }
+        if (any(!is.na(match(actnms, exoVariablesDec)))) {
+          dt <- cbind(dt, actorDataList[[i]])
+        }
       }
+      if (ncol(dt) == 0)
+        return()
+      else
+        return(dt)
     }
   }
   return()
@@ -1146,13 +1186,19 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   # work the endo effects
   if (length(endoObj$rNames) > 0) {
-    for (ee in 1:length(endoObj$rNames)) {
-      ind <- grep(endoObj$jaspNames[ee], interEffects, fixed = TRUE)
-      if (length(ind) > 0) {
-        interEffects[ind] <- gsub(endoObj$jaspNames[ee], endoObj$effectsSave[ee], interEffects[ind], fixed = TRUE)
-        interDims[ind] <- gsub(endoObj$jaspNames[ee], endoObj$dims[ee], interDims[ind], fixed = TRUE)
+    interTmps <- strsplit(interEffects, " * ", fixed = TRUE)
+    interDimsTmps <- strsplit(interDims, " * ", fixed = TRUE)
+    for (ii in 1:length(interTmps)) {
+      for (ee in 1:length(endoObj$rNames)) {
+        ind <- which(endoObj$jaspNames[ee] == interTmps[[ii]])
+        if (length(ind) > 0) {
+          interTmps[[ii]][ind] <- gsub(endoObj$jaspNames[ee], endoObj$effectsSave[ee], interTmps[[ii]][ind], fixed = TRUE)
+          interDimsTmps[[ii]][ind] <- gsub(endoObj$jaspNames[ee], endoObj$dims[ee], interDimsTmps[[ii]][ind], fixed = TRUE)
+        }
       }
     }
+    interEffects <- sapply(interTmps, function(x) paste0(x, collapse = " * "))
+    interDims <- sapply(interDimsTmps, function(x) paste0(x, collapse = " * "))
   }
 
   # work the exo effects

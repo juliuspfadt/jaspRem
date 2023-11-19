@@ -24,7 +24,7 @@ Form
 			label: 					qsTr("<b>Sync Analysis</b>")
 			checked: 				false
 		}
-		Text {text: qsTr("You need to check this box for the analysis to run"); horizontalAlignment:	Text.AlignHCenter; verticalAlignment:		Text.AlignVCenter}
+		// Text {text: qsTr("You need to check this box for the analysis to run"); horizontalAlignment:	Text.AlignHCenter; verticalAlignment:		Text.AlignVCenter}
 
 	}
 	// // in order to have access to all variables in the data set even though they might not be assigned, 
@@ -39,19 +39,29 @@ Form
 		columns: 1
 		title: qsTr("Upload Covariates Data")
 
-		Group
+
+		ComponentsList
 		{
-			columns: 2
-			FileSelector
+			name: "actorDataList"
+			title: qsTr("Upload actor attributes")
+			implicitHeight: 90 * preferencesModel.uiScale // about 3 rows
+			minimumItems: 1
+			rowComponent: 
+			RowLayout
 			{
-				name:									"actorData"
-				label:								qsTr("Upload actor attributes")
-				placeholderText:			qsTr("e.g., home/Data/actorData.csv")
-				filter:								"*.csv"
-				save:									false
-				fieldWidth:						180 * preferencesModel.uiScale
+				FileSelector
+				{
+					name:									"actorData"
+					id: 									actorData
+					label:								""
+					placeholderText:			qsTr("e.g., home/Data/actorData.csv")
+					filter:								"*.csv"
+					save:									false
+					fieldWidth:						180 * preferencesModel.uiScale
+				}
 			}
 		}
+		
 
 
 		ComponentsList
@@ -75,28 +85,6 @@ Form
 				}
 			}
 		}
-
-		// ComponentsList
-		// {
-		// 	name: "userDataList"
-		// 	title: qsTr("Upload user statistics attributes")
-		// 	implicitHeight: 90 * preferencesModel.uiScale // about 3 rows
-		// 	minimumItems: 1
-		// 	rowComponent: 
-		// 	RowLayout
-		// 	{
-		// 		FileSelector
-		// 		{
-		// 			id:										userData
-		// 			name:									"userData"
-		// 			label:								""
-		// 			placeholderText:			qsTr("e.g., home/Data/userData.csv")
-		// 			filter:								"*.csv"
-		// 			save:									false
-		// 			fieldWidth:						180 * preferencesModel.uiScale
-		// 		}
-		// 	}
-		// }
 
 	}
 	
@@ -124,7 +112,7 @@ Form
 				{
 					name: "eventDirection"
 					id: eventDirection
-					title: qsTr("")
+					title: ""
 					radioButtonsOnSameRow: false
 
 					RadioButton
