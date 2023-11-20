@@ -81,7 +81,7 @@ options$interactionEffects <- list(
 
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red", options)
-results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = F)
+# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = F)
 
 test_that("Coefficient estimates tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTableTie"]][["data"]]

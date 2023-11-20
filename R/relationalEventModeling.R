@@ -21,6 +21,9 @@
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
 
+  # sink("~/Downloads/log.txt")
+  # on.exit(sink(NULL))
+
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
 
@@ -79,9 +82,15 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   for (i in 1:length(actorDataPaths)) {
 
     if (actorDataPaths[i] != "") {
-      actorDt <- read.csv(options[["actorDataList"]][[i]][["actorData"]], row.names = NULL, check.names = FALSE)
-      actorDataName <- basename(options[["actorDataList"]][[i]][["actorData"]])
-      actorDataName <- gsub("\\..*","", actorDataName)
+      bsName <- basename(options[["actorDataList"]][[i]][["actorData"]])
+      actorDataName <- gsub("\\..*","", bsName)
+      ending <- sub(".*(\\..*)", "\\1", bsName)
+
+      if (ending == ".csv") {
+        actorDt <- read.csv(options[["actorDataList"]][[i]][["actorData"]], row.names = NULL, check.names = FALSE)
+      } else if (ending == ".txt") {
+        actorDt <- read.delim(options[["actorDataList"]][[i]][["actorData"]], row.names = NULL, check.names = FALSE)
+      }
 
       actorOut[[actorDataName]] <- actorDt
 
@@ -110,10 +119,21 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   for (i in 1:length(dyadDataPaths)) {
 
     if (dyadDataPaths[i] != "") {
-      dyadDt <- read.csv(options[["dyadDataList"]][[i]][["dyadData"]], row.names = NULL, check.names = FALSE)
-      rownames(dyadDt) <- colnames(dyadDt)
-      attrName <- basename(options[["dyadDataList"]][[i]][["dyadData"]])
-      attrName <- gsub("\\..*","", attrName)
+
+      bsName <- basename(options[["dyadDataList"]][[i]][["dyadData"]])
+      attrName <- gsub("\\..*","", bsName)
+      ending <- sub(".*(\\..*)", "\\1", bsName)
+
+      if (ending == ".csv") {
+        dyadDt <- read.csv(options[["dyadDataList"]][[i]][["dyadData"]], row.names = NULL, check.names = FALSE)
+      } else if (ending == ".txt") {
+        dyadDt <- read.delim(options[["dyadDataList"]][[i]][["dyadData"]], row.names = NULL, check.names = FALSE)
+      }
+
+      # this is only necessary for the symmetric matrix format...
+      if (isSymmetric(as.matrix(dyadDt))) {
+        rownames(dyadDt) <- colnames(dyadDt)
+      }
 
       dyadOut[[attrName]] <- dyadDt
 
@@ -373,6 +393,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     attrnames <- c()
     for (i in 1:length(actorDataList)) {
       actnms <- colnames(actorDataList[[i]])
+      if (!("name" %in% actnms))
+        .quitAnalysis(gettextf("The actor attributes data file  %1$s does not contain a 'name' variable", names(actorDataList)[i]))
       actnms <- actnms[!grepl("time", actnms)]
       actnms <- actnms[!grepl("name", actnms)]
       attrnames <- c(attrnames, actnms)
@@ -384,9 +406,12 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     if (length(c(evnames, attrnames)) != length(unique(c(evnames, attrnames))))
       .quitAnalysis(gettext("Duplicate variable names have been detected, please rename them."))
 
-    nrows <- sapply(actorDataList, nrow)
-    if (length(nrows) == length(unique(nrows)))
-      .quitAnalysis(gettext("The actor attributes data frames differ in row length. Please align."))
+    if (length(actorDataList) > 1) {
+      nrows <- sapply(actorDataList, nrow)
+      if (length(nrows) == length(unique(nrows)))
+        .quitAnalysis(gettext("The actor attributes data frames differ in row length. Please align."))
+    }
+
   }
 
   if (!is.null(jaspResults[["dyadDataState"]]$object)) {
@@ -449,6 +474,19 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (isTryError(rehObject)) {
     .quitAnalysis(gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(rehObject)))
   }
+
+  if (!is.null(jaspResults[["actorDataState"]]$object)) {
+    actorDataList <- jaspResults[["actorDataState"]]$object
+    actorNames <- attr(rehObject, "dictionary")$actors$actorName
+    for (i in 1:length(actorDataList)) {
+      nameVar <- actorDataList[[i]][, "name"]
+      if (!all(actorNames %in% nameVar))
+        .quitAnalysis(gettextf("The actor attributes data %1$s file does not contain all actor names",
+                                names(actorDataList)[i]))
+
+    }
+  }
+
 
   remifyResultState <- createJaspState(rehObject)
   remifyResultState$dependOn(c("eventDirection", "eventSequence",

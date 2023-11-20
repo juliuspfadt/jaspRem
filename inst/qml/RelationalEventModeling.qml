@@ -55,7 +55,7 @@ Form
 					id: 									actorData
 					label:								""
 					placeholderText:			qsTr("e.g., home/Data/actorData.csv")
-					filter:								"*.csv"
+					filter:								"*.csv, *.txt"
 					save:									false
 					fieldWidth:						180 * preferencesModel.uiScale
 				}
@@ -79,7 +79,7 @@ Form
 					name:									"dyadData"
 					label:								""
 					placeholderText:			qsTr("e.g., home/Data/dyadData.csv")
-					filter:								"*.csv"
+					filter:								"*.csv, *.txt"
 					save:									false
 					fieldWidth:						180 * preferencesModel.uiScale
 				}
