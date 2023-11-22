@@ -23,8 +23,11 @@ Form
 			name: 					"syncAnalysisBox"
 			label: 					qsTr("<b>Sync Analysis</b>")
 			checked: 				false
+			Component.onCompleted:
+        {
+            background.color = "#ff8600"
+        }
 		}
-		// Text {text: qsTr("You need to check this box for the analysis to run"); horizontalAlignment:	Text.AlignHCenter; verticalAlignment:		Text.AlignVCenter}
 
 	}
 	// // in order to have access to all variables in the data set even though they might not be assigned, 
@@ -55,7 +58,7 @@ Form
 					id: 									actorData
 					label:								""
 					placeholderText:			qsTr("e.g., home/Data/actorData.csv")
-					filter:								"*.csv, *.txt"
+					filter:								"*.csv *.txt"
 					save:									false
 					fieldWidth:						180 * preferencesModel.uiScale
 				}
@@ -79,7 +82,7 @@ Form
 					name:									"dyadData"
 					label:								""
 					placeholderText:			qsTr("e.g., home/Data/dyadData.csv")
-					filter:								"*.csv, *.txt"
+					filter:								"*.csv *.txt"
 					save:									false
 					fieldWidth:						180 * preferencesModel.uiScale
 				}
@@ -330,7 +333,7 @@ Form
 				source: [{ values: effects.varsActorSender }] 
 				name: "endogenousEffectsSender"
 				id: endogenousEffectsSender
-				titles: ["", "", qsTr("Include"), qsTr("Scaling")]
+				titles: ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type")]
 				rowComponent: RowLayout {
 					Text{Layout.preferredWidth: 200; text: effects.translated[rowValue]}
 					TextField{ name: "translatedNameSender"; value: effects.translated[rowValue]; visible: false}
@@ -543,12 +546,85 @@ Form
 	{
 		title: qsTr("Estimation Options")
 
+		Group 
+		{
+		title: qsTr("Estimation method")
 		RadioButtonGroup {
-			title: qsTr("Estimation method")
 			name: "method"
 			RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
 			RadioButton { value: "BSIR" ; label: qsTr("Bayesian importance resampling"); checked: false}
 		}
+		}
+
+
+		Group 
+		{
+			title: qsTr("REM statistics options")
+
+			DropDown {
+				id: eventHistory
+				label: qsTr("Consider event history")
+				name: "eventHistory";
+				values: [{ label: qsTr("Full"), value : "full"}, 
+							 	 { label: qsTr("Window"), value : "window" },
+							 	 { label: qsTr("Interval"), value : "interval" },
+							 	 { label: qsTr("Decay"), value : "decay" }]
+			}
+
+			IntegerField {
+				visible: eventHistory.value == "window" || eventHistory.value == "decay"
+				name: "eventHistorySingleInput"
+				fieldWidth: 40
+				label: eventHistory.value == "window" ? qsTr("     Time units in window") : qsTr("     Half-life time")
+				defaultValue: 100
+			}
+
+
+			RowLayout 
+			{
+				visible: eventHistory.value == "interval"
+				Label {	text: qsTr("     Interval from")}
+				IntegerField
+				{
+					name:			"eventHistoryIntervalInputLower"
+					label:			""
+					defaultValue:	50
+					min:			0
+					fieldWidth: 	40
+				}
+				Label {	text: qsTr("to")}
+				IntegerField
+				{
+					name:			"eventHistoryIntervalInputUpper"
+					label:			""
+					defaultValue:	100
+					min:			0
+					fieldWidth: 	40
+				}
+			}
+
+			RowLayout
+			{
+				Label {	text: qsTr("Compute statistics from timepoint")}
+				IntegerField
+				{
+					name:			"timepointInputLower"
+					label:			""
+					min:			1
+					defaultValue: 1
+					fieldWidth: 	40
+				}
+				Label {	text: qsTr("to")}
+				TextField
+				{
+					name:			"timepointInputUpper"
+					label:			""
+					defaultValue: "Inf"
+					fieldWidth: 	40
+				}
+			}
+		}
+
 	}
 
 	Section
