@@ -20,8 +20,8 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  # sink("~/Downloads/log.txt")
-  # on.exit(sink(NULL))
+  sink("~/Downloads/log.txt")
+  on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
@@ -30,31 +30,29 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .feedbackExoEffectsSpecified(jaspResults, options)
   .feedbackInteractionEffects(jaspResults, options)
 
-
   ready <- (options[["timeVariable"]] != "") && (options[["actorVariableSender"]] != "") && (options[["actorVariableReceiver"]] != "")
 
   if (ready && !options[["syncAnalysisBox"]]) {
     syncText <- createJaspHtml(text = gettext("<b>Check the 'Sync Analysis' box to run the analysis</b>"))
     jaspResults[["syncText"]] <- syncText
-    syncText$dependOn("syncAnalysisBox")
+    syncText$dependOn(c("syncAnalysisBox", "timeVariable", "actorVariableSender", "actorVariableReceiver"))
     syncText$position <- 0.01
-    return()
   }
 
-  if (!ready) return()
+  if (ready && options[["syncAnalysisBox"]]) {
+    dataset <- .remReadData(jaspResults, dataset, options)
 
-  dataset <- .remReadData(jaspResults, dataset, options)
+    .remErrorHandling(jaspResults, dataset, options)
+    .remMainContainer(jaspResults, options)
 
-  .remErrorHandling(jaspResults, dataset, options)
-  .remMainContainer(jaspResults, options)
+    .remRemify(jaspResults, dataset, options)
+    .remCheckActorAttributes(jaspResults, dataset, options)
+    .remRemstats(jaspResults, dataset, options)
+    .remRemstimate(jaspResults, dataset, options)
+  }
 
-  .remRemify(jaspResults, dataset, options)
-  .remCheckActorAttributes(jaspResults, dataset, options)
-  .remRemstats(jaspResults, dataset, options)
-  .remRemstimate(jaspResults, dataset, options)
-
-  .remModelFitTable(jaspResults, options)
-  .remCoefficientsTable(jaspResults, options)
+  .remModelFitTable(jaspResults, options, ready)
+  .remCoefficientsTable(jaspResults, options, ready)
 
   return()
 }
@@ -63,9 +61,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   if (!is.null(jaspResults[["mainContainer"]])) return()
   mainContainer <- createJaspContainer()
-  mainContainer$dependOn(c("timeVariable", "actorVariableSender", "actorVariableReceiver", "weightVariable", "typeVariable"))
+  mainContainer$dependOn(c("timeVariable", "actorVariableSender", "actorVariableReceiver", "weightVariable", "typeVariable",
+                           "syncAnalysisBox"))
   jaspResults[["mainContainer"]] <- mainContainer
-
 
   return()
 }
@@ -734,7 +732,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 
 # -------------- Output functions ---------------
-.remModelFitTable <- function(jaspResults, options) {
+.remModelFitTable <- function(jaspResults, options, ready) {
 
   if (!is.null(jaspResults[["mainContainer"]][["modelFitContainer"]])) return()
 
@@ -742,48 +740,64 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   modelFitContainer$dependOn(c(.remCommonDependencies(), "method"))
   jaspResults[["mainContainer"]][["modelFitContainer"]] <- modelFitContainer
 
-  remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
-  # we need N for calculating the BIC for BSIR method
-  N <- jaspResults[["mainContainer"]][["remifyResultState"]]$object$M
+  if (!ready || !options[["syncAnalysisBox"]]) { # create empty table
 
-  if (options[["orientation"]] == "tie") {
+    modTable <- .modelFitTableHelper(res = NULL, method = NULL, npar = NULL, N = NULL, empty = TRUE)
+    modTable$title <- gettext("Model fit")
 
-    res <- summary(remResults)
-    modTableTie <- .modelFitTableHelper(res, method = options[["method"]],
-                                        npar = ncol(res$coefsTab), N)
-    modTableTie$title <- gettext("Model fit tie model")
-    modTableTie$position <- 1
-    modelFitContainer[["modelFitTableTie"]] <- modTableTie
+    # somehow it does not work to save the empty table in the same container as a non-empty table
+    # I suspect it is overwritten somehwere...
+    # meaning this does not work: modelFitContainer[["modelFitTable"]] <- modTable
+    # but this does:
+    jaspResults[["emptyModel"]] <- modTable
 
   } else {
+    # delete the empty table from before again
+    jaspResults[["emptyModel"]] <- NULL
 
-    resTmp <- summary(remResults)
+    remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
+    # we need N for calculating the BIC for BSIR method
+    N <- jaspResults[["mainContainer"]][["remifyResultState"]]$object$M
 
-    resRec <- resTmp[["receiver_model"]]
-    if (!is.null(resRec)) {
-      modTableRec <- .modelFitTableHelper(resRec, method = options[["method"]],
-                                          npar = ncol(res$coefsTab$receiver_model), N)
-      modTableRec$title <- gettext("Model fit receiver model")
-      modTableRec$position <- 1
-      modelFitContainer[["modelFitTableReceiver"]] <- modTableRec
+    if (options[["orientation"]] == "tie") {
+
+      res <- summary(remResults)
+      modTable <- .modelFitTableHelper(res, method = options[["method"]],
+                                       npar = ncol(res$coefsTab), N)
+      modTable$title <- gettext("Model fit tie model")
+      modTable$position <- 1
+      modelFitContainer[["modelFitTable"]] <- modTable
+
+    } else {
+
+      resTmp <- summary(remResults)
+
+      resRec <- resTmp[["receiver_model"]]
+      if (!is.null(resRec)) {
+        modTable <- .modelFitTableHelper(resRec, method = options[["method"]],
+                                         npar = ncol(res$coefsTab$receiver_model), N)
+        modTable$title <- gettext("Model fit receiver model")
+
+        modTable$position <- 1
+        modelFitContainer[["modelFitTable"]] <- modTable
+      }
+
+      resSend <- resTmp[["sender_model"]]
+      if (!is.null(resSend)) {
+        modTableSend <- .modelFitTableHelper(resSend, method = options[["method"]],
+                                             npar = ncol(res$coefsTab$sender_model), N)
+        modTableSend$title <- gettext("Model fit sender model")
+        modTableSend$position <- 1.1
+        modelFitContainer[["modelFitTableSender"]] <- modTableSend
+      }
     }
-
-    resSend <- resTmp[["sender_model"]]
-    if (!is.null(resSend)) {
-      modTableSend <- .modelFitTableHelper(resSend, method = options[["method"]],
-                                           npar = ncol(res$coefsTab$sender_model), N)
-      modTableSend$title <- gettext("Model fit sender model")
-      modTableSend$position <- 1.1
-      modelFitContainer[["modelFitTableSender"]] <- modTableSend
-    }
-
   }
 
   return()
 }
 
 
-.remCoefficientsTable <- function(jaspResults, options) {
+.remCoefficientsTable <- function(jaspResults, options, ready) {
 
   if (!is.null(jaspResults[["mainContainer"]][["coefficientsContainer"]])) return()
 
@@ -791,46 +805,60 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   coefficientsContainer$dependOn(c(.remCommonDependencies(), "method"))
   jaspResults[["mainContainer"]][["coefficientsContainer"]] <- coefficientsContainer
 
-  remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
-  ctab <- summary(remResults)[["coefsTab"]]
+  if (!ready || !options[["syncAnalysisBox"]]) { # empty table if we are not ready
+    coefTable <- .coefTableHelper(ctab = NULL, coefNames = NULL, method = NULL, empty = TRUE)
+    coefTable$title <- gettext("Coefficient estimates")
 
-  if (options[["orientation"]] == "tie") {
-
-    rwnames <- rownames(ctab)
-    coefNames <- .transformCoefficientNames(rwnames, options, jaspResults)
-
-    coefTableTie <- .coefTableHelper(ctab, coefNames, options[["method"]])
-    coefTableTie$title <- gettext("Coefficient estimates tie model")
-    coefTableTie$position <- 2
-    coefficientsContainer[["coefficientsTableTie"]] <- coefTableTie
+    jaspResults[["emptyCoeffs"]] <- coefTable
 
   } else {
+    # delete the empty table from before again
+    jaspResults[["emptyCoeffs"]] <- NULL
 
-    ctabRec <- ctab[["receiver_model"]]
-    if (!is.null(ctabRec)) {
+    remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
+    ctab <- summary(remResults)[["coefsTab"]]
 
-      rwnames <- rownames(ctabRec)
+    if (options[["orientation"]] == "tie") {
+
+      rwnames <- rownames(ctab)
       coefNames <- .transformCoefficientNames(rwnames, options, jaspResults)
 
-      coefTableRec <- .coefTableHelper(ctabRec, coefNames, options[["method"]])
-      coefTableRec$title <- gettext("Coefficient estimates receiver model")
-      coefTableRec$position <- 2
-      coefficientsContainer[["coefficientsTableReceiver"]] <- coefTableRec
+      coefTable <- .coefTableHelper(ctab, coefNames, options[["method"]])
+      coefTable$title <- gettext("Coefficient estimates tie model")
+
+      coefTable$position <- 2
+      coefficientsContainer[["coefficientsTable"]] <- coefTable
+
+    } else {
+
+      ctabRec <- ctab[["receiver_model"]]
+      if (!is.null(ctabRec)) {
+
+        rwnames <- rownames(ctabRec)
+        coefNames <- .transformCoefficientNames(rwnames, options, jaspResults)
+
+        coefTable <- .coefTableHelper(ctabRec, coefNames, options[["method"]])
+        coefTable$title <- gettext("Coefficient estimates receiver model")
+
+        coefTable$position <- 2
+        coefficientsContainer[["coefficientsTable"]] <- coefTable
+      }
+
+      ctabSend <- ctab[["sender_model"]]
+      if (!is.null(ctabSend)) {
+
+        rwnames <- rownames(ctabSend)
+        coefNames <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "Sender")
+
+        coefTableSend <- .coefTableHelper(ctabSend, coefNames, options[["method"]])
+        coefTableSend$title <- gettext("Coefficient estimates sender model")
+        coefTableSend$position <- 2
+        coefficientsContainer[["coefficientsTableSender"]] <- coefTableSend
+      }
     }
-
-    ctabSend <- ctab[["sender_model"]]
-    if (!is.null(ctabSend)) {
-
-      rwnames <- rownames(ctabSend)
-      coefNames <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "Sender")
-
-      coefTableSend <- .coefTableHelper(ctabSend, coefNames, options[["method"]])
-      coefTableSend$title <- gettext("Coefficient estimates sender model")
-      coefTableSend$position <- 2
-      coefficientsContainer[["coefficientsTableSender"]] <- coefTableSend
-    }
-
   }
+
+
 
   return()
 }
@@ -1316,45 +1344,53 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
-.modelFitTableHelper <- function(res, method, npar, N) {
+.modelFitTableHelper <- function(res, method, npar, N, empty = FALSE) {
 
   modelFitTable <- createJaspTable()
 
-    if (method == "MLE") {
+  modelFitTable$addColumnInfo(name = "fitmeasure",     title = gettext("Statistic"), type= "string")
+  modelFitTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type = "number")
 
-      modelFitTable$addColumnInfo(name = "fitmeasure",     title = gettext("Statistic"), type= "string")
-      modelFitTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
-      modelFitTable$addColumnInfo(name = "df",   title = gettext("df"),  type= "number")
-      modelFitTable$addColumnInfo(name = "pvalue",   title = gettext("p"),     type= "number")
+  if (empty) return(modelFitTable)
 
-      dtFill <- data.frame(fitmeasure = c("Null deviance", "Residual deviance", "Chi^2", "AIC", "AICC", "BIC"))
-      dtFill$estimate <- c(res$null.deviance, res$residual.deviance, res$model.deviance, res$AIC, res$AICC, res$BIC)
-      dtFill$df <- c(res$df.null, res$df.residual, res$df.model, NA_real_, NA_real_, NA_real_)
-      dtFill$pvalue <- c(NA_real_, NA_real_, res$chiP, NA_real_, NA_real_, NA_real_)
+  if (method == "MLE") {
 
-      modelFitTable$setData(dtFill)
+    modelFitTable$addColumnInfo(name = "df",   title = gettext("df"),  type= "number")
+    modelFitTable$addColumnInfo(name = "pvalue",   title = gettext("p"),     type= "number")
 
-    } else { # method = BSIR
+    dtFill <- data.frame(fitmeasure = c("Null deviance", "Residual deviance", "Chi^2", "AIC", "AICC", "BIC"))
+    dtFill$estimate <- c(res$null.deviance, res$residual.deviance, res$model.deviance, res$AIC, res$AICC, res$BIC)
+    dtFill$df <- c(res$df.null, res$df.residual, res$df.model, NA_real_, NA_real_, NA_real_)
+    dtFill$pvalue <- c(NA_real_, NA_real_, res$chiP, NA_real_, NA_real_, NA_real_)
 
-      modelFitTable$addColumnInfo(name = "fitmeasure",     title = gettext("statistic"), type= "string")
-      modelFitTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type = "number")
+    modelFitTable$setData(dtFill)
 
-      BIC <- -2 * res$loglik + npar * log(N)
+  } else { # method = BSIR
 
-      dtFill <- data.frame(fitmeasure = "BIC")
-      dtFill$estimate <- BIC
-      modelFitTable$setData(dtFill)
+    BIC <- -2 * res$loglik + npar * log(N)
 
-    }
+    dtFill <- data.frame(fitmeasure = "BIC")
+    dtFill$estimate <- BIC
+    modelFitTable$setData(dtFill)
+
+  }
 
   return(modelFitTable)
 
 }
 
 
-.coefTableHelper <- function(ctab, coefNames, method) {
+.coefTableHelper <- function(ctab, coefNames, method, empty = FALSE) {
+
 
   coefficientsTable <- createJaspTable()
+  coefficientsTable$addColumnInfo(name = "coef", title = gettext("Coefficient"), type= "string")
+
+  if (empty) {
+    coefficientsTable$addColumnInfo(name = "estimate", title = gettext("Estimate"), type= "number")
+    return(coefficientsTable)
+  }
+
 
   dtFill <- data.frame(ctab)
 
@@ -1362,9 +1398,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   dtFill <- dtFill[, c(ncol(dtFill), 1:(ncol(dtFill) - 1))]
 
   if (method == "MLE") {
-
-    coefficientsTable$addColumnInfo(name = "coef",     title = gettext("Coefficient"), type= "string")
-    coefficientsTable$addColumnInfo(name = "estimate", title = gettext("Estimate"),    type= "number")
+    coefficientsTable$addColumnInfo(name = "estimate", title = gettext("Estimate"), type= "number")
     coefficientsTable$addColumnInfo(name = "stdErr",   title = gettext("Std. Error"),  type= "number")
     coefficientsTable$addColumnInfo(name = "zValue",   title = gettext("z-value"),     type= "number")
     coefficientsTable$addColumnInfo(name = "prZ",      title = gettext("p"),     type= "number")
@@ -1373,15 +1407,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     colnames(dtFill) <- c("coef", "estimate", "stdErr", "zValue", "prZ", "pr0")
 
   } else { # method = BSIR
-    coefficientsTable$addColumnInfo(name = "coef",     title = gettext("Coefficient"), type= "string")
-    coefficientsTable$addColumnInfo(name = "postMode",     title = gettext("Posterior Mode"), type= "number")
-    coefficientsTable$addColumnInfo(name = "postSD", title = gettext("Posterior SD"),    type= "number")
+    coefficientsTable$addColumnInfo(name = "estimate",     title = gettext("Posterior Mode"), type= "number")
+    coefficientsTable$addColumnInfo(name = "stdErr", title = gettext("Posterior SD"),    type= "number")
     coefficientsTable$addColumnInfo(name = "q2.5",   title = gettext("2.5% Quantile"),  type= "number")
     coefficientsTable$addColumnInfo(name = "q50",   title = gettext("50% Quantile"),     type= "number")
     coefficientsTable$addColumnInfo(name = "q97.5",      title = gettext("97.5% Quantile"),     type= "number")
     coefficientsTable$addColumnInfo(name = "pr0",      title = gettext("p(=0|y)"),       type= "number")
 
-    colnames(dtFill) <- c("coef", "postMode", "postSD", "q2.5", "q50", "q97.5", "pr0")
+    colnames(dtFill) <- c("coef", "estimate", "stdErr", "q2.5", "q50", "q97.5", "pr0")
 
   }
 

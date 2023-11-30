@@ -1431,21 +1431,21 @@
     },
     "remify": {
       "Package": "remify",
-      "Version": "3.2.0",
+      "Version": "3.2.2",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "remify",
       "RemoteUsername": "TilburgNetworkGroup",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "f2ec51e59b13b21da730e398002eaf5e70e819c8",
+      "RemoteRepo": "remify",
+      "RemoteRef": "master",
+      "RemoteSha": "7e0e36a66763af660635ad71eec6efc5ce3e3751",
       "Requirements": [
         "R",
         "Rcpp",
         "RcppArmadillo",
         "igraph"
       ],
-      "Hash": "a0cb3da7fa3ecfe0b76fa1d767c939be"
+      "Hash": "ebc3f9a993472c91ac055ce7936b07d9"
     },
     "remotes": {
       "Package": "remotes",
@@ -1467,10 +1467,10 @@
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "remstats",
       "RemoteUsername": "TilburgNetworkGroup",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "9da3fe73bdddb62c0b106bb49890f8e8c447f755",
+      "RemoteRepo": "remstats",
+      "RemoteRef": "master",
+      "RemoteSha": "9e2bd3459cf827182caf66d6a91a67504599a162",
       "Requirements": [
         "R",
         "Rcpp",
@@ -1478,19 +1478,19 @@
         "RcppProgress",
         "stats"
       ],
-      "Hash": "2d6cf4f360b0e343d762f8a0261b29b4"
+      "Hash": "7c6a97c856787d17b365b5cacb758efb"
     },
     "remstimate": {
       "Package": "remstimate",
-      "Version": "2.2.0.1",
+      "Version": "2.3.0",
       "Source": "GitHub",
-      "Remotes": "TilburgNetworkGroup/remify, TilburgNetworkGroup/remstats",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
+      "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRepo": "remstimate",
-      "RemoteUsername": "juliuspfadt",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "51b705cda10346bbef417bd39b0a773228b854cf",
+      "RemoteRef": "remstimate2.3",
+      "RemoteSha": "aeaabe6d11b8ed7e8271e4430bfdcc0e03649981",
+      "Remotes": "TilburgNetworkGroup/remify, TilburgNetworkGroup/remstats",
       "Requirements": [
         "R",
         "Rcpp",
@@ -1501,7 +1501,7 @@
         "remstats",
         "trust"
       ],
-      "Hash": "b18cb2c14a444a286f12d57dc3eaf8aa"
+      "Hash": "656a6bd1cfa8246f447f55478f6b4351"
     },
     "renv": {
       "Package": "renv",

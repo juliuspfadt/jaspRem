@@ -90,7 +90,7 @@ Form
 		}
 
 	}
-	
+
 
 
 	Section
@@ -293,6 +293,7 @@ Form
 				titles: ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]
 				rowComponent: RowLayout {
 					Text{Layout.preferredWidth: 180; text: effects.translated[rowValue]}
+					// we need the invisible translated field to get the translated names into R
 					TextField{ name: "translatedName"; value: effects.translated[rowValue]; visible: false}
 					CheckBox{ name: "includeEndoEffect"; label: ""; Layout.preferredWidth: 60; id: inclEndoEff}
 					DropDown {
@@ -549,11 +550,11 @@ Form
 		Group 
 		{
 		title: qsTr("Estimation method")
-		RadioButtonGroup {
-			name: "method"
-			RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
-			RadioButton { value: "BSIR" ; label: qsTr("Bayesian importance resampling"); checked: false}
-		}
+			RadioButtonGroup {
+				name: "method"
+				RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
+				RadioButton { value: "BSIR" ; label: qsTr("Bayesian importance resampling"); checked: false}
+			}
 		}
 
 
