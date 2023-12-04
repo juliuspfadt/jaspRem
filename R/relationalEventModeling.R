@@ -27,7 +27,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .remUploadDyadData(jaspResults, options)
 
   .feedbackExoTableVariables(jaspResults, options)
-  .feedbackExoEffectsSpecified(jaspResults, options)
   .feedbackInteractionEffects(jaspResults, options)
 
   ready <- (options[["timeVariable"]] != "") && (options[["actorVariableSender"]] != "") && (options[["actorVariableReceiver"]] != "")
@@ -40,6 +39,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   if (ready && options[["syncAnalysisBox"]]) {
+    # process the exo effects from the table
+    .exoEffectsSpecified(jaspResults, options)
     dataset <- .remReadData(jaspResults, dataset, options)
 
     .remErrorHandling(jaspResults, dataset, options)
@@ -62,7 +63,12 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["mainContainer"]])) return()
   mainContainer <- createJaspContainer()
   mainContainer$dependOn(c("timeVariable", "actorVariableSender", "actorVariableReceiver", "weightVariable", "typeVariable",
-                           "syncAnalysisBox"))
+                           "syncAnalysisBox", "eventDirection", "eventSequence", "orientation", "riskset",
+                           "naAction", "endogenousEffects", "specifiedExogenousEffects",
+                           "interactionEffects", "endogenousEffectsSender", "exogenousEffectsSender",
+                           "interactionEffectsSender", "eventHistory", "eventHistorySingleInput",
+                           "eventHistoryIntervalInputLower", "eventHistoryIntervalInputUpper", "timepointInputLower",
+                           "timepointInputUpper"))
   jaspResults[["mainContainer"]] <- mainContainer
 
   return()
@@ -198,47 +204,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   return()
 }
 
-.feedbackExoEffectsSpecified <- function(jaspResults, options) {
-
-  if (!is.null(jaspResults[["exoEffectsState"]])) {
-    return()
-  }
-
-  exoOut <- .exogenousEffectsHelper(options[["exogenousEffectsTable"]])
-  specExoEffects <- exoOut$specifiedEffects
-  exoEffectsForQml <- exoOut$qmlNames
-
-  # fill the rSource for the specified exo effects
-  if (!is.null(exoEffectsForQml)) {
-    specifiedExoEffectsFromR <- createJaspQmlSource("specifiedExoEffectsFromR", exoEffectsForQml)
-    specifiedExoEffectsFromR$dependOn("exogenousEffectsTable")
-    jaspResults[["specifiedExoEffectsFromR"]] <- specifiedExoEffectsFromR
-  }
-
-
-  if (options[["orientation"]] == "actor") {
-
-    exoOutSender <- .exogenousEffectsHelper(options[["exogenousEffectsTableSender"]])
-    if (!is.null(exoOutSender)) {
-      specExoEffectsSender <- exoOutSender$specifiedEffects
-      names(specExoEffectsSender) <- paste0(names(specExoEffectsSender), "Sender")
-      specExoEffects <- append(specExoEffects, specExoEffectsSender)
-      # rSource filling:
-      specifiedExoEffectsFromRSender <- createJaspQmlSource("specifiedExoEffectsFromRSender", exoOutSender$qmlName)
-      specifiedExoEffectsFromRSender$dependOn("exogenousEffectsTableSender")
-      jaspResults[["specifiedExoEffectsFromRSender"]] <- specifiedExoEffectsFromRSender
-    }
-
-  }
-
-  exoEffectsState <- createJaspState(specExoEffects)
-  exoEffectsState$dependOn(c("exogenousEffectsTable", "exogenousEffectsTableSender"))
-  jaspResults[["exoEffectsState"]] <- exoEffectsState
-
-  return()
-
-}
-
 .feedbackInteractionEffects <- function(jaspResults, options) {
 
   if (!is.null(jaspResults[["possibleInteractionEffectsFromR"]]) &&
@@ -356,6 +321,36 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
+.exoEffectsSpecified <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["exoEffectsState"]])) {
+    return()
+  }
+
+  exoOut <- .exogenousEffectsHelper(options[["exogenousEffectsTable"]])
+  specExoEffects <- exoOut$specifiedEffects
+
+  if (options[["orientation"]] == "actor") {
+
+    exoOutSender <- .exogenousEffectsHelper(options[["exogenousEffectsTableSender"]])
+    if (!is.null(exoOutSender)) {
+      specExoEffectsSender <- exoOutSender$specifiedEffects
+      names(specExoEffectsSender) <- paste0(names(specExoEffectsSender), "Sender")
+      specExoEffects <- append(specExoEffects, specExoEffectsSender)
+    }
+
+  }
+
+  exoEffectsState <- createJaspState(specExoEffects)
+  exoEffectsState$dependOn(c("exogenousEffectsTable", "exogenousEffectsTableSender"))
+  jaspResults[["exoEffectsState"]] <- exoEffectsState
+
+  return()
+
+}
+
+
+
 # ----------- Main analysis -------------
 .remReadData <- function(jaspResults, dataset, options) {
 
@@ -447,7 +442,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 .remRemify <- function(jaspResults, dataset, options) {
 
-  if (!is.null(jaspResults[["mainContainer"]][["remifyResultState"]]$object))
+  if (!is.null(jaspResults[["remifyResultState"]]$object))
     return()
 
   # is there any other naAction even possible?
@@ -485,14 +480,16 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                   riskset = options[["riskset"]]))
 
   if (isTryError(rehObject)) {
-    .quitAnalysis(gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(rehObject)))
+    jaspResults[["mainContainer"]]$setError(gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(rehObject)))
   }
 
   remifyResultState <- createJaspState(rehObject)
   remifyResultState$dependOn(c("eventDirection", "eventSequence",
-                               "orientation", "riskset", "naAction", "weightVariable"))
+                               "orientation", "riskset", "naAction", "weightVariable",
+                               "timeVariable", "actorVariableSender", "actorVariableReceiver", "weightVariable",
+                               "typeVariable", "syncAnalysisBox"))
 
-  jaspResults[["mainContainer"]][["remifyResultState"]] <- remifyResultState
+  jaspResults[["remifyResultState"]] <- remifyResultState
 
   return()
 }
@@ -508,18 +505,21 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   orderedActorDataList <- list()
   actorDataList <- jaspResults[["actorDataState"]]$object
-  rehObject <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
-  actorNames <- attr(rehObject, "dictionary")[["actors"]][["actorName"]]
+  rehObject <- jaspResults[["remifyResultState"]]$object
 
-  for (i in 1:length(actorDataList)) {
-    nameVar <- actorDataList[[i]][, "name"]
-    if (!all(actorNames %in% nameVar)) {
-      .quitAnalysis(gettextf("The actor attributes data file %1$s does not contain all actor names",
-                             names(actorDataList)[i]))
+  if ((length(actorDataList) > 0) && !isTryError(rehObject)) {
+    actorNames <- attr(rehObject, "dictionary")[["actors"]][["actorName"]]
+    for (i in 1:length(actorDataList)) {
+      nameVar <- actorDataList[[i]][, "name"]
+      if (!all(actorNames %in% nameVar)) {
+        .quitAnalysis(gettextf("The actor attributes data file %1$s does not contain all actor names",
+                               names(actorDataList)[i]))
+      }
+      orderedActorDataList[[i]] <- actorDataList[[i]][match(actorNames, nameVar), ]
     }
-    orderedActorDataList[[i]] <- actorDataList[[i]][match(actorNames, nameVar), ]
+    names(orderedActorDataList) <- names(actorDataList)
   }
-  names(orderedActorDataList) <- names(actorDataList)
+
   actorDataStateNew <- createJaspState(orderedActorDataList)
   actorDataStateNew$dependOn("actorDataList")
   jaspResults[["actorDataStateNew"]] <- actorDataStateNew
@@ -533,7 +533,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["mainContainer"]][["remstatsResultStateStorage"]]$object) &&
       !is.null(jaspResults[["mainContainer"]][["remstatsResultState"]]$object)) return()
 
-  rehObject <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
+  rehObject <- jaspResults[["remifyResultState"]]$object
 
   if (isTryError(rehObject)) {
     return()
@@ -573,8 +573,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       !options[["oldEffectsSaved"]]) {
 
     # when model is ordinal, and no effects are specified, there is no baseline so we need an error
-    if (all(sapply(c(ties, senders, receivers), is.null)))
-      .quitAnalysis(gettext("No effects were specified."))
+    if (all(sapply(c(ties, senders, receivers), is.null))) {
+      jaspResults[["mainContainer"]]$setError(gettext("No effects were specified."))
+      return()
+    }
     # in the first round both states are created
     statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
                                           receiver_effects = receivers,
@@ -583,8 +585,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                           stop = as.numeric(options[["timepointInputUpper"]])))
 
     if (isTryError(statsObject)) {
-      .quitAnalysis(gettextf("Remstats failed. Internal error message: %s", .extractErrorMessage(statsObject)))
-
+      jaspResults[["mainContainer"]]$setError(gettextf("Remstats failed. Internal error message: %s",
+                                                       .extractErrorMessage(statsObject)))
+      return()
     } else {
       # specify a new attribute to save the formula, since the actor oriented object does not have the same
       # formula structure as the tie oriented
@@ -630,7 +633,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
         # add the jasp-detailed dimnames to the whole thing.
         if (isTryError(statsObject)) {
-          .quitAnalysis(gettextf("Remstats failed. Internal error message: %s", .extractErrorMessage(statsObject)))
+          jaspResults[["mainContainer"]]$setError(gettextf("Remstats failed. Internal error message: %s",
+                                                           .extractErrorMessage(statsObject)))
+          return()
         } else {
           attr(statsObject, "formulaJasp") <- effsMatched$form
           dimnames(statsObject)[[3]] <- effsMatched$dimNamesNew
@@ -677,7 +682,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
         # add the jasp-detailed dimnames to the whole thing.
         if (isTryError(statsObject)) {
-          .quitAnalysis(gettextf("Remstats failed. Internal error message: %s", .extractErrorMessage(statsObject)))
+          jaspResults[["mainContainer"]]$setError(gettextf("Remstats failed. Internal error message: %s",
+                                                           .extractErrorMessage(statsObject)))
+          return()
 
         } else {
           attr(statsObject, "formulaJasp") <- effsMatched$form
@@ -715,7 +722,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   }
 
-  remstatsResultState$dependOn(c(.remCommonDependencies(), "oldEffectsSaved"))
+  remstatsResultState$dependOn("oldEffectsSaved")
   jaspResults[["mainContainer"]][["remstatsResultState"]] <- remstatsResultState
 
   return()
@@ -728,17 +735,18 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["mainContainer"]][["remstimateResultState"]]$object))
     return()
 
-  rehObject <- jaspResults[["mainContainer"]][["remifyResultState"]]$object
+  rehObject <- jaspResults[["remifyResultState"]]$object
   statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
 
   fit <- try(remstimate::remstimate(reh = rehObject, stats = statsObject, method = options[["method"]]))
 
   if (isTryError(fit)) { # try error
-    .quitAnalysis(gettextf("Remstimate failed. Internal error message: %s", .extractErrorMessage(fit)))
+    jaspResults[["mainContainer"]]$setError(gettextf("Remstimate failed. Internal error message: %s", .extractErrorMessage(fit)))
+    return()
   }
 
   remstimateResultState <- createJaspState(fit)
-  remstimateResultState$dependOn(c(.remCommonDependencies(), "method"))
+  remstimateResultState$dependOn("method")
 
   jaspResults[["mainContainer"]][["remstimateResultState"]] <- remstimateResultState
 
@@ -752,10 +760,11 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["mainContainer"]][["modelFitContainer"]])) return()
 
   modelFitContainer <- createJaspContainer()
-  modelFitContainer$dependOn(c(.remCommonDependencies(), "method"))
+  modelFitContainer$dependOn("method")
   jaspResults[["mainContainer"]][["modelFitContainer"]] <- modelFitContainer
 
-  if (!ready || !options[["syncAnalysisBox"]]) { # create empty table
+
+  if (!ready || !options[["syncAnalysisBox"]] || jaspResults[["mainContainer"]]$getError()) { # create empty table
 
     modTable <- .modelFitTableHelper(res = NULL, method = NULL, npar = NULL, N = NULL, empty = TRUE)
     modTable$title <- gettext("Model fit")
@@ -764,15 +773,15 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     # I suspect it is overwritten somehwere...
     # meaning this does not work: modelFitContainer[["modelFitTable"]] <- modTable
     # but this does:
-    jaspResults[["emptyModel"]] <- modTable
+    jaspResults[["mainContainer"]][["emptyModel"]] <- modTable
 
   } else {
     # delete the empty table from before again
-    jaspResults[["emptyModel"]] <- NULL
+    jaspResults[["mainContainer"]][["emptyModel"]] <- NULL
 
     remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
     # we need N for calculating the BIC for BSIR method
-    N <- jaspResults[["mainContainer"]][["remifyResultState"]]$object$M
+    N <- jaspResults[["remifyResultState"]]$object$M
 
     if (options[["orientation"]] == "tie") {
 
@@ -817,18 +826,18 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["mainContainer"]][["coefficientsContainer"]])) return()
 
   coefficientsContainer <- createJaspContainer()
-  coefficientsContainer$dependOn(c(.remCommonDependencies(), "method"))
+  coefficientsContainer$dependOn("method")
   jaspResults[["mainContainer"]][["coefficientsContainer"]] <- coefficientsContainer
 
-  if (!ready || !options[["syncAnalysisBox"]]) { # empty table if we are not ready
+  if (!ready || !options[["syncAnalysisBox"]] || jaspResults[["mainContainer"]]$getError()) { # empty table if we are not ready
     coefTable <- .coefTableHelper(ctab = NULL, coefNames = NULL, method = NULL, empty = TRUE)
     coefTable$title <- gettext("Coefficient estimates")
 
-    jaspResults[["emptyCoeffs"]] <- coefTable
+    jaspResults[["mainContainer"]][["emptyCoeffs"]] <- coefTable
 
   } else {
     # delete the empty table from before again
-    jaspResults[["emptyCoeffs"]] <- NULL
+    jaspResults[["mainContainer"]][["emptyCoeffs"]] <- NULL
 
     remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
     ctab <- summary(remResults)[["coefsTab"]]
@@ -1033,6 +1042,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     # the actor attributes data
     if (!is.null(jaspResults[["actorDataStateNew"]]$object)) {
       actorDataList <- jaspResults[["actorDataStateNew"]]$object
+
       actorVarNames <- lapply(actorDataList, colnames)
       actorDataNames <- names(actorDataList)
       # is there any exo effects specified for a variable in the attributes data
@@ -1473,11 +1483,3 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 
 
-.remCommonDependencies <- function() {
-  return(c("eventDirection", "eventSequence", "orientation", "riskset",
-           "naAction", "endogenousEffects", "specifiedExogenousEffects",
-           "interactionEffects", "endogenousEffectsSender", "exogenousEffectsSender",
-           "interactionEffectsSender", "eventHistory", "eventHistorySingleInput", "eventHistoryIntervalInputLower",
-           "eventHistoryIntervalInputUpper", "timepointInputLower", "timepointInputUpper"
-  ))
-}

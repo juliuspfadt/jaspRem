@@ -327,13 +327,13 @@
     },
     "cpp11": {
       "Package": "cpp11",
-      "Version": "0.4.6",
+      "Version": "0.4.7",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
-      "Hash": "707fae4bbf73697ec8d85f9d7076c061"
+      "Hash": "5a295d7d963cc5035284dcdbaf334f4e"
     },
     "crayon": {
       "Package": "crayon",
@@ -1484,13 +1484,13 @@
       "Package": "remstimate",
       "Version": "2.3.0",
       "Source": "GitHub",
+      "Remotes": "TilburgNetworkGroup/remify, TilburgNetworkGroup/remstats",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRepo": "remstimate",
-      "RemoteRef": "remstimate2.3",
-      "RemoteSha": "aeaabe6d11b8ed7e8271e4430bfdcc0e03649981",
-      "Remotes": "TilburgNetworkGroup/remify, TilburgNetworkGroup/remstats",
+      "RemoteUsername": "TilburgNetworkGroup",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "72e40a0080843d15cb51042b9f542d9d17d1d294",
       "Requirements": [
         "R",
         "Rcpp",
@@ -1501,7 +1501,7 @@
         "remstats",
         "trust"
       ],
-      "Hash": "656a6bd1cfa8246f447f55478f6b4351"
+      "Hash": "3a8a851efc1b68013ab9360f5a7d261c"
     },
     "renv": {
       "Package": "renv",

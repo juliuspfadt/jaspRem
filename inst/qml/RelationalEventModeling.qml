@@ -351,7 +351,7 @@ Form
 						visible: !effects.varsNotConsiderType.includes(rowValue)
 						enabled: inclEndoEffSend.checked
 					}
-					// this checkbox is useful so that the options form this box align with the options from the above box in R
+					// this checkbox is useful so that the options from this box align with the options from the above box in R
 					CheckBox {
 						name: "endogenousEffectsUniqueSender"
 						visible: false
@@ -387,15 +387,15 @@ Form
 					CheckBox {Layout.preferredWidth: 30; name: "same"}
 					CheckBox {Layout.preferredWidth: 30; name: "send"; visible: orientation.value == "tie" && eventDirection.value == "directed"}
 					CheckBox {Layout.preferredWidth: 30; name: "tie"}
-					// TextField { visible: false; name: "text1"; value: rowValue}
-					// TextField { visible: false; name: "text2"; value: rowValue}
-					// TextField { visible: false; name: "text3"; value: rowValue + "event"}
-					// TextField { visible: false; name: "text4"; value: rowValue + "maximum"}
-					// TextField { visible: false; name: "text5"; value: rowValue + "minimum"}
-					// TextField { visible: false; name: "text6"; value: rowValue + "receive"}
-					// TextField { visible: false; name: "text7"; value: rowValue + "same"}
-					// TextField { visible: false; name: "text8"; value: rowValue + "send"}
-					// TextField { visible: false; name: "text9"; value: rowValue + "tie"}
+					TextField { visible: false; name: "text1"; value: "average('" + rowValue + "')"}
+					TextField { visible: false; name: "text2"; value: "difference('" + rowValue + "')"}
+					TextField { visible: false; name: "text3"; value: "event('" + rowValue + "')"}
+					TextField { visible: false; name: "text4"; value: "maximum('" + rowValue + "')"}
+					TextField { visible: false; name: "text5"; value: "minimum('" + rowValue + "')"}
+					TextField { visible: false; name: "text6"; value: "receive('" + rowValue + "')"}
+					TextField { visible: false; name: "text7"; value: "same('" + rowValue + "')"}
+					TextField { visible: false; name: "text8"; value: "send('" + rowValue + "')"}
+					TextField { visible: false; name: "text9"; value: "tie('" + rowValue + "')"}
 				}
 			}
 		}
@@ -418,7 +418,6 @@ Form
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 140; text: rowValue} 
 					CheckBox {Layout.preferredWidth: 40; name: "average"; visible: false}
-					// TextField { visible: false; name: "text1"; value: rowValue + "average"}
 					CheckBox {Layout.preferredWidth: 50; name: "difference"; visible: false}
 					CheckBox {Layout.preferredWidth: 25; name: "event"; visible: false}
 					CheckBox {Layout.preferredWidth: 45; name: "maximum"; visible: false}
@@ -427,6 +426,8 @@ Form
 					CheckBox {Layout.preferredWidth: 30; name: "same"; visible: false}
 					CheckBox {Layout.preferredWidth: 30; name: "send"}
 					CheckBox {Layout.preferredWidth: 30; name: "tie"; visible: false}
+					TextField { visible: false; name: "text8"; value: "send('" + rowValue + "')"}
+
 				}
 			}
 		}
@@ -439,16 +440,16 @@ Form
 			{
 				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
-				rSource: "specifiedExoEffectsFromR"
-				// source: [{name: "exogenousEffectsTable.text1", condition: "average"},
-				// 				 {name: "exogenousEffectsTable.text2", condition: "difference"},
-				// 				 {name: "exogenousEffectsTable.text3", condition: "event"},
-				// 				 {name: "exogenousEffectsTable.text4", condition: "maximum"},
-				// 				 {name: "exogenousEffectsTable.text5", condition: "minimum"},
-				// 				 {name: "exogenousEffectsTable.text6", condition: "receive"},
-				// 				 {name: "exogenousEffectsTable.text7", condition: "same"},
-				// 				 {name: "exogenousEffectsTable.text8", condition: "send"},
-				// 				 {name: "exogenousEffectsTable.text9", condition: "tie"}]
+				// rSource: "specifiedExoEffectsFromR"
+				source: [{name: "exogenousEffectsTable.text1", condition: "average"},
+								 {name: "exogenousEffectsTable.text2", condition: "difference"},
+								 {name: "exogenousEffectsTable.text3", condition: "event"},
+								 {name: "exogenousEffectsTable.text4", condition: "maximum"},
+								 {name: "exogenousEffectsTable.text5", condition: "minimum"},
+								 {name: "exogenousEffectsTable.text6", condition: "receive"},
+								 {name: "exogenousEffectsTable.text7", condition: "same"},
+								 {name: "exogenousEffectsTable.text8", condition: "send"},
+								 {name: "exogenousEffectsTable.text9", condition: "tie"}]
 
 				titles: orientation.value == "tie" ? ["", qsTr("Scaling"), qsTr("Absolute")] : [qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale
@@ -479,8 +480,8 @@ Form
 			{
 				name: "specifiedExogenousEffectsSender"
 				id: specifiedExoEffectsSender
-				rSource: "specifiedExoEffectsFromRSender"
-				// source: [{name: "exogenousEffectsTableSender.text1", condition: "average == true"}]
+				// rSource: "specifiedExoEffectsFromRSender"
+				source: [{name: "exogenousEffectsTableSender.text8", condition: "send"}]
 
 				titles: qsTr("Scaling")
 				implicitHeight: 100 * preferencesModel.uiScale
