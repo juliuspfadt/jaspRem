@@ -20,8 +20,8 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  sink("~/Downloads/log.txt")
-  on.exit(sink(NULL))
+  # sink("~/Downloads/log.txt")
+  # on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
@@ -127,8 +127,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         dyadDt <- read.delim(options[["dyadDataList"]][[i]][["dyadData"]], row.names = NULL, check.names = FALSE)
       }
 
-      # this is only necessary for the symmetric matrix format...
-      if (isSymmetric(as.matrix(dyadDt))) {
+      # this is only necessary for the wide format...
+      if (ncol(dyadDt) == nrow(dyadDt)) {
         rownames(dyadDt) <- colnames(dyadDt)
       }
 
@@ -172,7 +172,23 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["dyadDataState"]])) {
     dyadDataList <- jaspResults[["dyadDataState"]]$object
     dyadVars <- names(dyadDataList)
-    vars <- append(vars, dyadVars)
+    # create a list that records the variable names and where to find them,
+    # so we dont have to do the checking for wide and long format and recording the names multiple times
+    dyadFind <- list()
+    # so now we need to distinguish between long and wide format
+    for (ii in 1:length(dyadDataList)) {
+      if (ncol(dyadDataList[[ii]]) == nrow(dyadDataList[[ii]])) { # wide format
+        vars <- append(vars, dyadVars[ii])
+        dyadFind$name[[ii]] <- dyadFind$file[[ii]] <- dyadVars[ii]
+      } else {
+        longNames <- colnames(dyadDataList[[ii]])[-c(1, 2)] # actor1 and actor2 are in cols 1 and 2
+        vars <- append(vars, longNames)
+        dyadFind$name[[ii]] <- longNames
+        dyadFind$file[[ii]] <- dyadVars[[ii]]
+      }
+    }
+    dyadFindState <- createJaspState(dyadFind)
+    jaspResults[["dyadFindState"]] <- dyadFindState
   }
 
   src <- createJaspQmlSource("exoTableVariablesR", vars)
@@ -503,7 +519,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
     orderedActorDataList[[i]] <- actorDataList[[i]][match(actorNames, nameVar), ]
   }
-
+  names(orderedActorDataList) <- names(actorDataList)
   actorDataStateNew <- createJaspState(orderedActorDataList)
   actorDataStateNew$dependOn("actorDataList")
   jaspResults[["actorDataStateNew"]] <- actorDataStateNew
@@ -540,7 +556,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   # prepare the data for remstats, aka, assign the attributes to objects so they are present for remstats
-  dtExo <- .prepareCovariateData(jaspResults, dataset, options)
+  .prepareCovariateData(jaspResults, dataset, options)
 
 
   # prepare some more options for remstats
@@ -561,7 +577,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       .quitAnalysis(gettext("No effects were specified."))
     # in the first round both states are created
     statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
-                                          receiver_effects = receivers, attr_actors = dtExo,
+                                          receiver_effects = receivers,
                                           memory = options[["eventHistory"]], memory_value = memoryValues,
                                           start = options[["timepointInputLower"]],
                                           stop = as.numeric(options[["timepointInputUpper"]])))
@@ -577,7 +593,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         dimnames(statsObject)[[3]] <- effectsObj$dimNames
 
       } else {
-
         attr(statsObject, "formulaJaspSender") <- effectsObjSender$effects
         dimnames(statsObject[["sender_stats"]])[[3]] <- effectsObjSender$dimNames
         # somehow the baseline is only part of the sender model
@@ -608,7 +623,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
       } else {
 
-        statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, attr_actors = dtExo,
+        statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties,
                                               memory = options[["eventHistory"]], memory_value = memoryValues,
                                               start = options[["timepointInputLower"]],
                                               stop = options[["timepointInputUpper"]]))
@@ -655,7 +670,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       } else {
 
         statsObject <- try(remstats::remstats(reh = rehObject, receiver_effects = receiversNew,
-                                              sender_effects = sendersNew, attr_actors = dtExo,
+                                              sender_effects = sendersNew,
                                               memory = options[["eventHistory"]], memory_value = memoryValues,
                                               start = options[["timepointInputLower"]],
                                               stop = options[["timepointInputUpper"]]))
@@ -894,7 +909,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   exoObj <- NULL
   if (length(options[[paste0("specifiedExogenousEffects", sender)]]) > 0) {
     exos <- options[[paste0("specifiedExogenousEffects", sender)]]
-    exoObj <- .processExoEffects(exos, sender)
+    exoObj <- .processExoEffects(exos, sender, jaspResults)
     effects <- paste(effects, "+", exoObj$effects)
   }
 
@@ -915,7 +930,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   # receiver model has no baseline, as does the model when ordinal=TRUE
-  if (receiver || options[["eventSequence"]] == "orderOnly") {
+  if (receiver || (options[["orientation"]] == "tie" && options[["eventSequence"]] == "orderOnly")) {
     effects <- sub("1 + ", "", effects, fixed = TRUE)
     if (effects == "~ 1") {
       effects <- NULL
@@ -960,6 +975,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 }
 
+# for remstats covariate variables need to be present in the environment for the corresponding effects to work:
 .prepareCovariateData <- function(jaspResults, dataset, options) {
 
   exoVariablesEnc <- jaspBase::encodeColNames(unique(unlist(jaspResults[["exoEffectsState"]][["object"]][["variableNames"]])))
@@ -990,18 +1006,26 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     if (length(eventNames) > 0) {
       eventVariables <- jaspBase::decodeColNames(eventNames)
+
       for (ii in 1:length(eventVariables)) {
+        # this makes the variable with the according name "present" in the environment so remstats can find it
         assign(eventVariables[ii], dataset[, eventVariables[ii]], pos = 1) # dont know why pos=1 is working....
       }
     }
 
     # dyadic attributes data
     if (!is.null(jaspResults[["dyadDataState"]]$object)) {
-      dyadnames <- names(jaspResults[["dyadDataState"]]$object)
-      dyInds <- which(dyadnames %in% exoVariablesDec)
-      if (length(dyInds) > 0) {
+      dyadObj <- jaspResults[["dyadFindState"]]$object
+      dyadVarNames <- dyadObj[["name"]]
+      dyadFileNames <- dyadObj[["file"]]
+      # dyInds records the match between specified exoEffects and dyad attributes variables
+      dyInds <- lapply(dyadVarNames, function(x) which(x %in% exoVariablesDec))
+      if (length(unlist(dyInds)) > 0) {
         for (iii in 1:length(dyInds)) {
-          assign(dyadnames[iii], as.matrix(jaspResults[["dyadDataState"]][["object"]][[dyadnames[iii]]]), pos = 1)
+          if (length(dyInds[[iii]]) > 0) {# because there are some integer(0) elements sometimes
+            # seems like remstats needs as.matrix()
+            assign(dyadFileNames[[iii]], as.matrix(jaspResults[["dyadDataState"]][["object"]][[dyadFileNames[[iii]]]]), pos = 1)
+          }
         }
       }
     }
@@ -1009,23 +1033,21 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     # the actor attributes data
     if (!is.null(jaspResults[["actorDataStateNew"]]$object)) {
       actorDataList <- jaspResults[["actorDataStateNew"]]$object
-      dt <- data.frame(matrix(NA, nrow(actorDataList[[1]]), 0))
-      for (i in 1:length(actorDataList)) {
-        actnms <- colnames(actorDataList[[i]])
-        if (i > 1) { # do not duplicate the time and name variable, for other attr data than the first
-          actnms <- actnms[!grepl("time", actnms)]
-          actnms <- actnms[!grepl("name", actnms)]
-        }
-        if (any(!is.na(match(actnms, exoVariablesDec)))) {
-          dt <- cbind(dt, actorDataList[[i]])
+      actorVarNames <- lapply(actorDataList, colnames)
+      actorDataNames <- names(actorDataList)
+      # is there any exo effects specified for a variable in the attributes data
+      actInds <- lapply(actorVarNames, function(x) which(x %in% exoVariablesDec))
+
+      if (length(unlist(actInds)) > 0) {
+        for (a in 1:length(actInds)) {
+          if (length(actInds[[a]]) > 0) {# because there are some integer(0) elements sometimes
+            assign(actorDataNames[[a]], jaspResults[["actorDataStateNew"]][["object"]][[actorDataNames[[a]]]], pos = 1)
+          }
         }
       }
-      if (ncol(dt) == 0)
-        return()
-      else
-        return(dt)
     }
   }
+
   return()
 }
 
@@ -1209,7 +1231,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
-.processExoEffects <- function(exos, sender = "") {
+.processExoEffects <- function(exos, sender = "", jaspResults) {
 
   exoDims <- c() # also save the dimnames to later assign to the statsObject slices
   exoEffects <- sapply(exos, function(x) x[["value"]])
@@ -1221,6 +1243,18 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   exoAbsolute <- sapply(exos, function(x) {
     x[[paste0("exogenousEffectsAbsolute", sender)]]
     })
+
+  # prepare the dyad data for the possible tie effects:
+  dyadObj <- jaspResults[["dyadFindState"]]$object
+  dyadVarNames <- dyadObj[["name"]]
+  dyadFileNames <- dyadObj[["file"]]
+
+  # prepare the actors data for possible effects
+  actorDataList <- jaspResults[["actorDataStateNew"]]$object
+  if (!is.null(actorDataList)) {
+    actorVarNames <- lapply(actorDataList, colnames)
+    actorDataNames <- names(actorDataList)
+  }
 
   for (ii in 1:length(exoEffects)) {
 
@@ -1244,20 +1278,34 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       ma <- regexpr("'(.*?)'", exoEffects[ii])
       eventName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
       exoEffects[ii] <- sub("\\(", paste0("(", eventName, ", "), exoEffects[ii])
-    }
 
-    # deal with the tie effects
-    if (startsWith(exoEffects[ii], "tie")) {
+    } else if (startsWith(exoEffects[ii], "tie")) {
+      # deal with the tie effects
+      # we need to write the filename into the effect string
       ma <- regexpr("'(.*?)'", exoEffects[ii])
       tieName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
-      exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", tieName), exoEffects[ii])
+      ind <- grep(tieName, dyadVarNames)
+
+      if (length(ind) > 0) {
+        dtName <- dyadFileNames[[ind]]
+        exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", dtName), exoEffects[ii])
+      }
+
+    } else { # everything that is not event and tie is also in the attr actors object
+      ma <- regexpr("'(.*?)'", exoEffects[ii])
+      effVarName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
+      ind <- grep(effVarName, actorVarNames)
+      if (length(ind) > 0) {
+        dtName <- actorDataNames[[ind]]
+        exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", dtName), exoEffects[ii])
+      }
+
     }
 
     exoDims <- append(exoDims, dimstmp)
   }
 
   exoEffects <- paste0(exoEffects, ")")
-
   exoEffectsSave2 <- exoEffects
   exoEffects <- paste0(exoEffects, collapse = " + ")
 
