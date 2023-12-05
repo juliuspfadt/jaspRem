@@ -561,7 +561,16 @@ Form
 
 		Group 
 		{
-			title: qsTr("REM statistics options")
+			title: qsTr("Statistics options")
+
+			RadioButtonGroup
+			{
+				name: "simultaneousEvents"
+				title: qsTr("Simultaneous events")
+				radioButtonsOnSameRow: true
+				RadioButton { label: qsTr("Join"); value: "join"; checked: true}
+				RadioButton { label: qsTr("Split"); value: "split" }
+			}
 
 			DropDown {
 				id: eventHistory

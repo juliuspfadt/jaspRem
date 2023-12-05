@@ -68,7 +68,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                            "interactionEffects", "endogenousEffectsSender", "exogenousEffectsSender",
                            "interactionEffectsSender", "eventHistory", "eventHistorySingleInput",
                            "eventHistoryIntervalInputLower", "eventHistoryIntervalInputUpper", "timepointInputLower",
-                           "timepointInputUpper"))
+                           "timepointInputUpper", "simultaneousEvents"))
   jaspResults[["mainContainer"]] <- mainContainer
 
   return()
@@ -566,6 +566,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                          "full" = NULL,
                          "decay" = options[["eventHistorySingleInput"]])
 
+  # how to treat simultaenous events:
+  simMethod <- ifelse(options[["simultaneousEvents"]] == "join", "pt", "pe")
 
   # check if there is already a statsObject in storage, if null we are in the first round of calculations
   # or maybe the user did not choose to save the samples
@@ -582,7 +584,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                           receiver_effects = receivers,
                                           memory = options[["eventHistory"]], memory_value = memoryValues,
                                           start = options[["timepointInputLower"]],
-                                          stop = as.numeric(options[["timepointInputUpper"]])))
+                                          stop = as.numeric(options[["timepointInputUpper"]]),
+                                          method = simMethod))
 
     if (isTryError(statsObject)) {
       jaspResults[["mainContainer"]]$setError(gettextf("Remstats failed. Internal error message: %s",
@@ -629,7 +632,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties,
                                               memory = options[["eventHistory"]], memory_value = memoryValues,
                                               start = options[["timepointInputLower"]],
-                                              stop = options[["timepointInputUpper"]]))
+                                              stop = options[["timepointInputUpper"]],
+                                              method = simMethod))
 
         # add the jasp-detailed dimnames to the whole thing.
         if (isTryError(statsObject)) {
@@ -678,7 +682,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                               sender_effects = sendersNew,
                                               memory = options[["eventHistory"]], memory_value = memoryValues,
                                               start = options[["timepointInputLower"]],
-                                              stop = options[["timepointInputUpper"]]))
+                                              stop = options[["timepointInputUpper"]],
+                                              method = simMethod))
 
         # add the jasp-detailed dimnames to the whole thing.
         if (isTryError(statsObject)) {
