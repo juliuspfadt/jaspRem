@@ -273,50 +273,50 @@ Form
 		property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
 		property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
 
-		Group 
-		{
-			title: orientation.value == "tie" ? qsTr("Endogenous effects") : qsTr("Endogenous effects receiver model")
-			implicitHeight: 150 * preferencesModel.uiScale
+		// Group 
+		// {
+		// 	title: orientation.value == "tie" ? qsTr("Endogenous effects") : qsTr("Endogenous effects receiver model")
+		// 	implicitHeight: 150 * preferencesModel.uiScale
 
-			ComponentsList 
-			{ 
-				implicitHeight: 120 * preferencesModel.uiScale
-				implicitWidth: 590 * preferencesModel.uiScale
+		// 	ComponentsList 
+		// 	{ 
+		// 		implicitHeight: 120 * preferencesModel.uiScale
+		// 		implicitWidth: 590 * preferencesModel.uiScale
 
-				source: [{ 
-						values: orientation.value == "tie" ? 
-							(eventDirection.value == "undirected" ? effects.varsTieUndirected : effects.varsTieDirected) : 
-							(effects.varsActorReceiver)
-						}] 
-				name: "endogenousEffects"
-				id: endogenousEffects
-				titles: ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]
-				rowComponent: RowLayout {
-					Text{Layout.preferredWidth: 180; text: effects.translated[rowValue]}
-					// we need the invisible translated field to get the translated names into R
-					TextField{ name: "translatedName"; value: effects.translated[rowValue]; visible: false}
-					CheckBox{ name: "includeEndoEffect"; label: ""; Layout.preferredWidth: 60; id: inclEndoEff}
-					DropDown {
-						name: "endogenousEffectsScaling"; 
-						Layout.preferredWidth: 50
-						values: effects.varsScalingTwo.includes(rowValue) ? effects.scalingTwo : effects.scalingAll
-						enabled: !effects.varsScalingNone.includes(rowValue) & inclEndoEff.checked
-					}
-					DropDown {
-						name: "endogenousEffectsConsiderType"
-						Layout.preferredWidth: 50
-						values: [{ label: qsTr("No"), value : "no"}, { label: qsTr("Yes"), value : "yes" }, { label: qsTr("Both"), value : "both" }]
-						enabled: inclEndoEff.checked
-					}
-					CheckBox {
-						name: "endogenousEffectsUnique"
-						Layout.preferredWidth: 60
-						visible: effects.varsUnique.includes(rowValue)
-						enabled: inclEndoEff.checked
-					}
-				}
-			}
-		}
+		// 		source: [{ 
+		// 				values: orientation.value == "tie" ? 
+		// 					(eventDirection.value == "undirected" ? effects.varsTieUndirected : effects.varsTieDirected) : 
+		// 					(effects.varsActorReceiver)
+		// 				}] 
+		// 		name: "endogenousEffects"
+		// 		id: endogenousEffects
+		// 		titles: ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]
+		// 		rowComponent: RowLayout {
+		// 			Text{Layout.preferredWidth: 180; text: effects.translated[rowValue]}
+		// 			// we need the invisible translated field to get the translated names into R
+		// 			TextField{ name: "translatedName"; value: effects.translated[rowValue]; visible: false}
+		// 			CheckBox{ name: "includeEndoEffect"; label: ""; Layout.preferredWidth: 60; id: inclEndoEff}
+		// 			DropDown {
+		// 				name: "endogenousEffectsScaling"; 
+		// 				Layout.preferredWidth: 50
+		// 				values: effects.varsScalingTwo.includes(rowValue) ? effects.scalingTwo : effects.scalingAll
+		// 				enabled: !effects.varsScalingNone.includes(rowValue) & inclEndoEff.checked
+		// 			}
+		// 			DropDown {
+		// 				name: "endogenousEffectsConsiderType"
+		// 				Layout.preferredWidth: 50
+		// 				values: [{ label: qsTr("No"), value : "no"}, { label: qsTr("Yes"), value : "yes" }, { label: qsTr("Both"), value : "both" }]
+		// 				enabled: inclEndoEff.checked
+		// 			}
+		// 			CheckBox {
+		// 				name: "endogenousEffectsUnique"
+		// 				Layout.preferredWidth: 60
+		// 				visible: effects.varsUnique.includes(rowValue)
+		// 				enabled: inclEndoEff.checked
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		Group 
 		{
@@ -365,13 +365,20 @@ Form
 			title: orientation.value == "tie" ? qsTr("Exogenous effects") : qsTr("Exogenous effects receiver model")
 			implicitHeight: 150 * preferencesModel.uiScale
 
+			// workaround since the titles for the componentlist keep screwing up
+			Text { text: orientation.value == "tie" ? 
+										(eventDirection.value == "directed" ? 
+											qsTr("	             Average  Difference   Event   Maximum   Minimum   Receive    Same    Send      Tie") : 
+											qsTr("	             Average  Difference   Event   Maximum   Minimum    Same     Tie")) : 
+										qsTr("	             Average  Difference  Receive    Same     Tie")
+						}
 			ComponentsList
 			{
 				id: exogenousEffectsTable
 				name: "exogenousEffectsTable"
-				titles: orientation.value == "tie" ? (eventDirection.value == "directed" ? [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")] : 
-						[qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Same"), "",  qsTr("Tie")]) : 
-					[qsTr("Average"), qsTr("Difference"), "", qsTr("Receive"), qsTr("Same"), "", qsTr("Tie")]
+				// titles: orientation.value == "tie" ? (eventDirection.value == "directed" ? [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")] : 
+				// 		[qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Same"), "",  qsTr("Tie")]) : 
+				// 	[qsTr("Average"), qsTr("Difference"), "", qsTr("Receive"), qsTr("Same"), "", qsTr("Tie")]
 				// maybe translate that?
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 590 * preferencesModel.uiScale
@@ -406,11 +413,13 @@ Form
 			title: qsTr("Exogenous effects sender model")
 			implicitHeight: 140 * preferencesModel.uiScale
 
+			Text { text: qsTr("		Send") }
+
 			ComponentsList
 			{
 				id: exogenousEffectsTableSender
 				name: "exogenousEffectsTableSender"
-				titles: ["", "", "", "", "", "", "", "", qsTr("Send")]
+				// titles: ["", "", "", "", "", "", "", "", qsTr("Send")]
 				// maybe translate that?
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
@@ -436,6 +445,7 @@ Form
 		{
 			title: orientation.value == "tie" ? qsTr("Specified exogenous effects") : qsTr("Specified exogenous effects receiver model")
 			implicitHeight: 140 * preferencesModel.uiScale
+
 			ComponentsList
 			{
 				name: "specifiedExogenousEffects"
@@ -451,7 +461,7 @@ Form
 								 {name: "exogenousEffectsTable.text8", condition: "send"},
 								 {name: "exogenousEffectsTable.text9", condition: "tie"}]
 
-				titles: orientation.value == "tie" ? ["", qsTr("Scaling"), qsTr("Absolute")] : [qsTr("Scaling"), qsTr("Absolute")]
+				// titles: orientation.value == "tie" ? ["", qsTr("Scaling"), qsTr("Absolute")] : [qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
 				rowComponent: RowLayout { 

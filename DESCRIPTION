@@ -20,4 +20,6 @@ Suggests:
 Remotes:
   jasp-stats/jaspBase,
   jasp-stats/jaspGraphs,
+  TilburgNetworkGroup/remstats,
+  TilburgNetworkGroup/remify,
   TilburgNetworkGroup/remstimate
