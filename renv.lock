@@ -260,14 +260,14 @@
     },
     "cli": {
       "Package": "cli",
-      "Version": "3.6.1",
+      "Version": "3.6.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
         "utils"
       ],
-      "Hash": "89e6d8219950eac806ae0c489052048a"
+      "Hash": "1216ac65ac55ec0058a6f75d7ca0fd52"
     },
     "cluster": {
       "Package": "cluster",
@@ -782,7 +782,7 @@
     },
     "igraph": {
       "Package": "igraph",
-      "Version": "1.5.1",
+      "Version": "1.6.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -800,7 +800,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "80401cb5ec513e8ddc56764d03f63669"
+      "Hash": "eef74fe28b747e52288ea9e1d3600034"
     },
     "isoband": {
       "Package": "isoband",
@@ -1463,14 +1463,14 @@
     },
     "remstats": {
       "Package": "remstats",
-      "Version": "3.2.1",
+      "Version": "3.2.2",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRepo": "remstats",
-      "RemoteRef": "master",
-      "RemoteSha": "9e2bd3459cf827182caf66d6a91a67504599a162",
+      "RemoteUsername": "TilburgNetworkGroup",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "2c60c8d862693268a183c488f2703d91eee3977e",
       "Requirements": [
         "R",
         "Rcpp",
@@ -1478,19 +1478,18 @@
         "RcppProgress",
         "stats"
       ],
-      "Hash": "7c6a97c856787d17b365b5cacb758efb"
+      "Hash": "54c8df0b8a39023bc1a0fc4981b119b7"
     },
     "remstimate": {
       "Package": "remstimate",
-      "Version": "2.3.1",
+      "Version": "2.3.6",
       "Source": "GitHub",
-      "Remotes": "TilburgNetworkGroup/remify, TilburgNetworkGroup/remstats",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "remstimate",
       "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRef": "HEAD",
-      "RemoteSha": "948cf0705626ebd7ac6f2d37dd44cc820121d1e9",
+      "RemoteSha": "0a4f03de130f5bf3e5a27fe6be6a3bd3e14f3052",
       "Requirements": [
         "R",
         "Rcpp",
@@ -1501,7 +1500,7 @@
         "remstats",
         "trust"
       ],
-      "Hash": "6a2f13d819c9b4e6fe270d64de01c7f7"
+      "Hash": "ec795438313634b91e53c43979b218d4"
     },
     "renv": {
       "Package": "renv",

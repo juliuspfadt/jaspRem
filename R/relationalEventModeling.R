@@ -27,7 +27,12 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .remUploadDyadData(jaspResults, options)
 
   .feedbackExoTableVariables(jaspResults, options)
+  # process the exo effects from the table
+  .exoEffectsSpecified(jaspResults, options)
+
   .feedbackInteractionEffects(jaspResults, options)
+  .feedbackForPlotEffects(jaspResults, options)
+
 
   ready <- (options[["timeVariable"]] != "") && (options[["actorVariableSender"]] != "") && (options[["actorVariableReceiver"]] != "")
 
@@ -39,8 +44,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   if (ready && options[["syncAnalysisBox"]]) {
-    # process the exo effects from the table
-    .exoEffectsSpecified(jaspResults, options)
+
     dataset <- .remReadData(jaspResults, dataset, options)
 
     .remErrorHandling(jaspResults, dataset, options)
@@ -54,6 +58,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   .remModelFitTable(jaspResults, options, ready)
   .remCoefficientsTable(jaspResults, options, ready)
+  .remDiagnosticPlot(jaspResults, options, ready)
 
   return()
 }
@@ -268,10 +273,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     outEndoListX[-newInd] <- outEndoList[-indBoth]
   }
 
+  combList <- combListSender <- NULL
   if ((length(outExoList) + length(outEndoListX)) >= 2) {
-
-    combList <- c(unlist(outExoList), unlist(outEndoListX) == 0)
-    interTmp <- combn(c(unlist(outExoList), unlist(outEndoListX)), m = 2)
+    combList <- c(unlist(outEndoListX), unlist(outExoList))
+    interTmp <- combn(combList, m = 2)
     inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
 
     possibleInteractionEffectsFromR <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
@@ -305,8 +310,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     if ((length(outExoListSender) + length(outEndoListXSender)) >= 2) {
 
-      combListSender <- c(unlist(outExoListSender), unlist(outEndoListXSender) == 0)
-      interTmpSender <- combn(c(unlist(outExoListSender), unlist(outEndoListXSender)), m = 2)
+      combListSender <- c(unlist(outEndoListXSender), unlist(outExoListSender))
+      interTmpSender <- combn(combListSender, m = 2)
       intersSender <- as.list(paste0(interTmpSender[1, ], " * ", interTmpSender[2, ]))
 
       possibleInteractionEffectsFromRSender <- createJaspQmlSource("possibleInteractionEffectsFromRSender", intersSender)
@@ -316,8 +321,53 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   }
 
+  # so lets save the effects for using them later too source in the plot effects
+  if (!is.null(combList) || !is.null(combListSender)) {
+    saveOut <- c(combList, combListSender)
+    saveState <- createJaspState(saveOut)
+    jaspResults[["savedEffects"]] <- saveState
+  }
+
 
   return()
+}
+
+
+.feedbackForPlotEffects <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["effectsForPlot"]])) return()
+
+  if (is.null(jaspResults[["savedEffects"]])) return()
+
+  savedEffects <- jaspResults[["savedEffects"]]$object
+
+  # add the interaction effects that are checked to the saved effects
+  if (length(options[["interactionEffects"]]) > 1) {
+    iaEffects <- lapply(options[["interactionEffects"]], function(x) {
+      if (x[["includeInteractionEffect"]]) x[["value"]] else NULL
+    })
+
+    iaEffects <- unlist(iaEffects[which(!sapply(iaEffects, is.null))])
+
+    savedEffects <- c(savedEffects, iaEffects)
+
+  }
+  if (length(options[["interactionEffectsSender"]]) > 1) {
+    iaEffectsSender <- lapply(options[["interactionEffectsSender"]], function(x) {
+      if(x[["includeInteractionEffectSender"]]) x[["value"]] else NULL
+    })
+    iaEffectsSender <- unlist(iaEffectsSender[which(!sapply(iaEffectsSender, is.null))])
+    savedEffects <- c(savedEffects, iaEffectsSender)
+  }
+  savedEffects <- as.list(savedEffects)
+
+  savedSource <- createJaspQmlSource("effectsForPlot", savedEffects)
+  savedSource$dependOn(c("endogenousEffects", "specifiedExogenousEffects",
+                         "endogenousEffectsSender", "specifiedExogenousEffectsSender",
+                         "interactionEffects", "interactionEffecsSender",
+                         "includeInteractionEffect", "includeInteractionEffectSender"))
+  jaspResults[["effectsForPlot"]] <- savedSource
+
 }
 
 
@@ -743,6 +793,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   rehObject <- jaspResults[["remifyResultState"]]$object
   statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
 
+  if (jaspResults[["mainContainer"]]$getError()) return()
+
   fit <- try(remstimate::remstimate(reh = rehObject, stats = statsObject, method = options[["method"]]))
 
   if (isTryError(fit)) { # try error
@@ -767,7 +819,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   modelFitContainer <- createJaspContainer()
   modelFitContainer$dependOn("method")
   jaspResults[["mainContainer"]][["modelFitContainer"]] <- modelFitContainer
-
 
   if (!ready || !options[["syncAnalysisBox"]] || jaspResults[["mainContainer"]]$getError()) { # create empty table
 
@@ -893,6 +944,125 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
+.remDiagnosticPlot <- function(jaspResults, options, ready) {
+  if (!is.null(jaspResults[["mainContainer"]][["plotContainer"]])) return()
+
+  plotContainer <- createJaspContainer()
+  plotContainer$dependOn(c("method", "diagnosticPlots", "diagnosticPlotWaitTime", "residualPlotSelect"))
+  jaspResults[["mainContainer"]][["plotContainer"]] <- plotContainer
+
+
+  if (ready && options[["syncAnalysisBox"]] && !jaspResults[["mainContainer"]]$getError()
+      && options[["diagnosticPlots"]]) {
+
+    if (length(options[["residualPlotSelect"]]) > 0) {
+      selected <- lapply(options[["residualPlotSelect"]], function(x) {
+        if (x[["includePlotEffect"]]) x[["value"]] else NULL
+      })
+      selected <- unlist(selected[which(!sapply(selected, is.null))])
+    }
+
+    if (options[["diagnosticPlotWaitTime"]] || length(selected) > 0) {
+
+      rehObject <- jaspResults[["remifyResultState"]]$object
+      statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
+      remstimateObject <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
+
+      diagnos <- remstimate::diagnostics(remstimateObject, rehObject, statsObject)
+
+      if (options[["diagnosticPlotWaitTime"]]) {
+        # plot call in a function
+
+        plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 1, effects = NULL,
+                                  send_effects = NULL, rec_effects = NULL)
+        waitPlot <- createJaspPlot(plot = NULL, title = gettext("Waiting times fit"),
+                                   height = 400, width = 500)
+        waitPlot$dependOn("diagnosticPlotWaitTime")
+        waitPlot$position <- 1
+        plotContainer[["waitingTimePlot"]] <- waitPlot
+        if (isTryError(plotObj)) {
+          waitPlot$setError(gettextf("Waiting time diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+        } else {
+          waitPlot$plotObject <- plotObj
+        }
+      }
+
+      if (length(selected) > 0) {
+        residualsPlotContainer <- createJaspContainer(gettext("Schoenfeld's residuals fit"))
+        residualsPlotContainer$dependOn("residualPlotSelect")
+        jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainer"]] <- residualsPlotContainer
+
+        if (options[["orientation"]] == "tie") {
+          toPlotTie <- .matchJaspPlotEffects(selected, attr(remstimateObject$coefficients, "name"))
+          for (pp in seq_len(length(toPlot))) {
+            plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 2, effects = toPlotTie[pp],
+                                      send_effects = NULL, rec_effects = NULL)
+            residualsPlot <- createJaspPlot(plot = NULL, title = selected[pp], height = 400)
+            residualsPlot$position <- pp
+            residualsPlotContainer[[toPlot[pp]]] <- residualsPlot
+
+            if (isTryError(plotObj)) {
+              residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+            } else {
+              residualsPlot$plotObject <- plotObj
+            }
+          }
+        } else {
+          ##### TODO: the proper titles
+          residualsPlotContainerReceiver <- createJaspContainer(gettext("Schoenfeld's residuals fit receiver model"))
+          residualsPlotContainerReceiver$dependOn("residualPlotSelect")
+          jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainerReceiver"]] <- residualsPlotContainerReceiver
+
+          toPlotReceiver <- .matchJaspPlotEffects(selected, attr(remstimateObject$receiver_model$coefficients, "name"))
+          toPlotReceiver<- toPlotReceiver[!is.na(toPlotReceiver)]
+          if (length(toPlotReceiver) > 0) {
+            for (pp in seq_len(length(toPlotReceiver))) {
+              plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 2, effects = NULL,
+                                        send_effects = NULL, rec_effects = toPlotReceiver[[pp]])
+              residualsPlot <- createJaspPlot(plot = NULL, title = "", height = 400)
+              residualsPlot$position <- pp
+              residualsPlotContainerReceiver[[toPlotReceiver[pp]]] <- residualsPlot
+
+              if (isTryError(plotObj)) {
+                residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+              } else {
+                residualsPlot$plotObject <- plotObj
+              }
+            }
+          }
+
+          residualsPlotContainerSender <- createJaspContainer(gettext("Schoenfeld's residuals fit sender model"))
+          residualsPlotContainerSender$dependOn("residualPlotSelect")
+          jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainerSender"]] <- residualsPlotContainerSender
+
+          toPlotSender <- .matchJaspPlotEffects(selected, attr(remstimateObject$sender_model$coefficients, "name"))
+          toPlotSender <- toPlotSender[!is.na(toPlotSender)]
+
+          if (length(toPlotSender) > 0) {
+            for (pp in seq_len(length(toPlotSender))) {
+              plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 2, effects = NULL,
+                                        send_effects = toPlotSender[pp], rec_effects = NULL)
+              residualsPlot <- createJaspPlot(plot = NULL, title = "", height = 400)
+              residualsPlot$position <- pp
+              residualsPlotContainerSender[[toPlotSender[pp]]] <- residualsPlot
+
+              if (isTryError(plotObj)) {
+                residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+              } else {
+                residualsPlot$plotObject <- plotObj
+              }
+            }
+          }
+        }
+
+
+      }
+    }
+
+  }
+
+  return()
+}
 
 
 # ------------- Helper functions ----------------
@@ -1152,7 +1322,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     paste0(x, collapse = ":")
   })
 
-  # now remove for the remaining effects
+  # now remove the period in the remaining effects
   coefNames <- gsub("\\.(.*)", "", coefNames)
 
   return(coefNames)
@@ -1485,6 +1655,76 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   return(coefficientsTable)
 }
+
+
+.plotFunHelper <- function(fit, reh, diagnos, wh, effects, send_effects, rec_effects) {
+
+  plotFun <- function() {
+    remstimate:::plot.remstimate(fit, reh = reh, diagnostics = diagnos, which = wh, effects = effects,
+                                 sender_effects = send_effects, receiver_effects = rec_effects)
+  }
+  return(plotFun)
+}
+
+
+
+.matchJaspPlotEffects <- function(jaspNames, remstimateNames) {
+
+  # align the jaspNames
+  jNames <- gsub("('", "_", jaspNames, fixed = TRUE)
+  jNames <- gsub("')", "", jNames, fixed = TRUE)
+  jNames <- gsub(" * ", ":", jNames, fixed = TRUE)
+  jNames <- gsub(" ", "", jNames, fixed = TRUE)
+  jNames <- gsub("(type)", ".type", jNames, fixed = TRUE)
+  jNames <- tolower(jNames)
+
+  # align the remstimateNames
+  rNames <- remstimateNames
+  indsIA <- grep(":", rNames)
+  splitlist <- strsplit(rNames[indsIA], ":")
+  rNames[indsIA] <- sapply(splitlist, function(x) {
+    x <- gsub(".std", "", x)
+    x <- gsub(".absolute", "", x)
+    paste0(x, collapse = ":")
+  })
+  # now remove the period in the remaining effects
+  rNames <- gsub(".std", "", rNames)
+  rNames <- gsub(".absolute", "", rNames)
+  rNames <- tolower(rNames)
+
+  indVec <- c()
+  for (j in seq_len(length(jNames))) {
+    ind <- match(jNames[j], rNames)
+    # there should always be a match, however, sometimes for interactions,
+    # the order is switched, so check that
+    if (is.na(ind)) {
+      if (grepl(":", jNames[j])) {
+        splitted <- unlist(strsplit(jNames[j], ":"))
+        jNames[j] <- paste0(splitted[2], ":", splitted[1])
+        ind <- grep(jNames[j], rNames)
+      }
+    }
+    indVec <- c(indVec, ind)
+  }
+
+  return(remstimateNames[indVec])
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

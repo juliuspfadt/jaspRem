@@ -15,13 +15,13 @@ Form
 		AssignedVariablesList	{	name:	"actorVariableReceiver";		title: qsTr("Actor Variable Receiver");	suggestedColumns: ["scale","ordinal", "nominal"]; singleVariable: true}
 
 		AssignedVariablesList	{	name:	"weightVariable";		title: qsTr("Weight Variable");	suggestedColumns: ["scale"];	singleVariable: true	}
-		AssignedVariablesList	{	name:	"typeVariable";			title: qsTr("Type Variable");	suggestedColumns: ["nominal"];	singleVariable: true	}
+		AssignedVariablesList	{	name:	"typeVariable";			title: qsTr("Type Variable");	suggestedColumns: ["nominal"];	singleVariable: true; id:typeVar}
 
 		CheckBox
 		{
 			id: 						syncAnalysisBox
 			name: 					"syncAnalysisBox"
-			label: 					qsTr("<b>Sync Analysis</b>")
+			label: 					qsTr("<b>Start/Sync Analysis</b>")
 			checked: 				false
 			Component.onCompleted:
         {
@@ -273,50 +273,52 @@ Form
 		property var scalingTwo: [{label: qsTr("none"), value: "none"}, {label: qsTr("std"), value: "std"}]
 		property var scalingAll: [{label: qsTr("none"), value: "none"}, {label: qsTr("prop"), value: "prop"}, {label: qsTr("std"), value: "std"}]
 
-		// Group 
-		// {
-		// 	title: orientation.value == "tie" ? qsTr("Endogenous effects") : qsTr("Endogenous effects receiver model")
-		// 	implicitHeight: 150 * preferencesModel.uiScale
+		Group 
+		{
+			title: orientation.value == "tie" ? qsTr("Endogenous effects") : qsTr("Endogenous effects receiver model")
+			implicitHeight: 150 * preferencesModel.uiScale
 
-		// 	ComponentsList 
-		// 	{ 
-		// 		implicitHeight: 120 * preferencesModel.uiScale
-		// 		implicitWidth: 590 * preferencesModel.uiScale
+			ComponentsList 
+			{ 
+				implicitHeight: 120 * preferencesModel.uiScale
+				implicitWidth: 590 * preferencesModel.uiScale
 
-		// 		source: [{ 
-		// 				values: orientation.value == "tie" ? 
-		// 					(eventDirection.value == "undirected" ? effects.varsTieUndirected : effects.varsTieDirected) : 
-		// 					(effects.varsActorReceiver)
-		// 				}] 
-		// 		name: "endogenousEffects"
-		// 		id: endogenousEffects
-		// 		titles: ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]
-		// 		rowComponent: RowLayout {
-		// 			Text{Layout.preferredWidth: 180; text: effects.translated[rowValue]}
-		// 			// we need the invisible translated field to get the translated names into R
-		// 			TextField{ name: "translatedName"; value: effects.translated[rowValue]; visible: false}
-		// 			CheckBox{ name: "includeEndoEffect"; label: ""; Layout.preferredWidth: 60; id: inclEndoEff}
-		// 			DropDown {
-		// 				name: "endogenousEffectsScaling"; 
-		// 				Layout.preferredWidth: 50
-		// 				values: effects.varsScalingTwo.includes(rowValue) ? effects.scalingTwo : effects.scalingAll
-		// 				enabled: !effects.varsScalingNone.includes(rowValue) & inclEndoEff.checked
-		// 			}
-		// 			DropDown {
-		// 				name: "endogenousEffectsConsiderType"
-		// 				Layout.preferredWidth: 50
-		// 				values: [{ label: qsTr("No"), value : "no"}, { label: qsTr("Yes"), value : "yes" }, { label: qsTr("Both"), value : "both" }]
-		// 				enabled: inclEndoEff.checked
-		// 			}
-		// 			CheckBox {
-		// 				name: "endogenousEffectsUnique"
-		// 				Layout.preferredWidth: 60
-		// 				visible: effects.varsUnique.includes(rowValue)
-		// 				enabled: inclEndoEff.checked
-		// 			}
-		// 		}
-		// 	}
-		// }
+				source: [{ 
+						values: orientation.value == "tie" ? 
+							(eventDirection.value == "undirected" ? effects.varsTieUndirected : effects.varsTieDirected) : 
+							(effects.varsActorReceiver)
+						}] 
+				name: "endogenousEffects"
+				id: endogenousEffects
+				titles: typeVar.count > 0 ? ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]:
+																		["", "", "", qsTr("Include"), qsTr("Scaling"), qsTr("    Unique")]
+				rowComponent: RowLayout {
+					Text{Layout.preferredWidth: 180; text: effects.translated[rowValue]}
+					// we need the invisible translated field to get the translated names into R
+					TextField{ name: "translatedName"; value: effects.translated[rowValue]; visible: false}
+					CheckBox{ name: "includeEndoEffect"; label: ""; Layout.preferredWidth: 60; id: inclEndoEff}
+					DropDown {
+						name: "endogenousEffectsScaling"; 
+						Layout.preferredWidth: 50
+						values: effects.varsScalingTwo.includes(rowValue) ? effects.scalingTwo : effects.scalingAll
+						enabled: !effects.varsScalingNone.includes(rowValue) & inclEndoEff.checked
+					}
+					DropDown {
+						visible: typeVar.count > 0
+						name: "endogenousEffectsConsiderType"
+						Layout.preferredWidth: 70
+						values: [{ label: qsTr("No"), value : "no"}, { label: qsTr("Yes"), value : "yes" }, { label: qsTr("Both"), value : "both" }]
+						enabled: inclEndoEff.checked
+					}
+					CheckBox {
+						name: "endogenousEffectsUnique"
+						Layout.preferredWidth: 60
+						visible: effects.varsUnique.includes(rowValue)
+						enabled: inclEndoEff.checked
+					}
+				}
+			}
+		}
 
 		Group 
 		{
@@ -446,6 +448,7 @@ Form
 			title: orientation.value == "tie" ? qsTr("Specified exogenous effects") : qsTr("Specified exogenous effects receiver model")
 			implicitHeight: 140 * preferencesModel.uiScale
 
+			Text { text: qsTr("			         Scaling    Absolute")}
 			ComponentsList
 			{
 				name: "specifiedExogenousEffects"
@@ -461,7 +464,6 @@ Form
 								 {name: "exogenousEffectsTable.text8", condition: "send"},
 								 {name: "exogenousEffectsTable.text9", condition: "tie"}]
 
-				// titles: orientation.value == "tie" ? ["", qsTr("Scaling"), qsTr("Absolute")] : [qsTr("Scaling"), qsTr("Absolute")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
@@ -493,7 +495,7 @@ Form
 				// rSource: "specifiedExoEffectsFromRSender"
 				source: [{name: "exogenousEffectsTableSender.text8", condition: "send"}]
 
-				titles: qsTr("Scaling")
+				titles: ["", qsTr("Scaling")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
@@ -561,6 +563,7 @@ Form
 		Group 
 		{
 		title: qsTr("Estimation method")
+		visible: false // make this invisible to use at a a later point, so now the method will always be MLE
 			RadioButtonGroup {
 				name: "method"
 				RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}
@@ -652,12 +655,43 @@ Form
 	{
 		title: qsTr("Advanced Options")
 
+	Group 
+	{
 		CheckBox
 		{
-			name:				"oldEffectsSaved"
-			label:			qsTr("Save old effects")
-			checked:		false
-			info: 		qsTr("Something")
+			name: "diagnosticPlots"
+			id:diagPlots
+			label: qsTr("Diagnostic Plots")
+			CheckBox { name: "diagnosticPlotWaitTime"; label: qsTr("Waiting time fit"); enabled: diagPlots.checked; checked: true }
+			// CheckBox { name: "diagnosticPlotResiduals"; label: qsTr("Residuals"); enabled: diagPlots.checked; checked: false; id: residualPlot}
+			
+			Text {text: qsTr("Residuals plot") }
+
+			ComponentsList
+			{
+				id: residualSelect
+				name: "residualPlotSelect"
+				enabled: diagPlots.checked
+				implicitHeight: 90 * preferencesModel.uiScale
+				implicitWidth: 400 * preferencesModel.uiScale
+				rSource: "effectsForPlot"
+				rowComponent: RowLayout { 
+					Text{Layout.preferredWidth: 300; text: rowValue} 
+					CheckBox {Layout.preferredWidth: 40; name: "includePlotEffect"}
+				}
+			}
+
+		}
+	}
+
+		Group {
+			CheckBox
+			{
+				name:				"oldEffectsSaved"
+				label:			qsTr("Save old effects")
+				checked:		false
+				info: 		qsTr("Something")
+			}
 		}
 	}
 
