@@ -1,12 +1,11 @@
-
-
-
+#' I commented out some lines of code, which can be uncommented if one ever wants to run the tests manually
+#'
+#'
 context("Relational Event Modeling")
 
-# does not test:
 
 
-#### baseline test tie model directed ####
+# ----  baseline test tie model directed ----
 options <- jaspTools::analysisOptions("relationalEventModeling")
 options$timeVariable <- "time"
 options$actorVariableSender <- "actor1"
@@ -37,7 +36,8 @@ test_that("Model fit tie model table results match", {
                                       "BIC", ""))
 })
 
-#### tie model directed with effects ####
+# ---- standard tie modeling ----
+# tie model directed with effects
 options <- jaspTools::analysisOptions("relationalEventModeling")
 options$timeVariable <- "time"
 options$actorVariableSender <- "actor1"
@@ -53,10 +53,10 @@ options$dyadDataList <- list(list(dyadData = "social.csv", value = "#"),
 
 options$syncAnalysisBox <- TRUE
 options$exogenousEffectsTable <- list(
-  list(average = FALSE, difference = FALSE, event = FALSE, maximum = TRUE, minimum = TRUE, receive = FALSE, same = FALSE, send = FALSE, tie = FALSE, value = "gender"),
-  list(average = FALSE, difference = TRUE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = FALSE, value = "age"),
-  list(average = FALSE, difference = FALSE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = TRUE, value = "advice"),
-  list(average = FALSE, difference = FALSE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = TRUE, value = "social")
+  list(maximum = TRUE, minimum = TRUE, value = "gender"),
+  list(difference = TRUE, value = "age"),
+  list(tie = TRUE, value = "advice"),
+  list(tie = TRUE, value = "social")
 )
 options$specifiedExogenousEffects <- list(
   list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "none", value = "maximum('gender')"),
@@ -137,6 +137,7 @@ options$eventHistory <- "window"
 options$eventHistorySingleInput <- 100
 options$timepointInputLower <- 1
 options$timepointInputUpper <- "200"
+
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
 # results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
@@ -157,45 +158,191 @@ test_that("Model fit tie model table results match", {
                                       "BIC", ""))
 })
 
-# TODO: BSIR is broken
-# BSIR and interval window
-# options <- jaspTools::analysisOptions("relationalEventModeling")
-# options$timeVariable <- "time"
-# options$actorVariableSender <- "actor1"
-# options$actorVariableReceiver <- "actor2"
-# options$syncAnalysisBox <- TRUE
-# options$method <- "BSIR"
-# options$eventHistory <- "interval"
-# options$eventHistoryIntervalInputLower <- 50
-# options$eventHistoryIntervalInputUpper <- 100
-# options$timepointInputLower <- 1
-# options$timepointInputUpper <- "200"
-# options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
-#                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-#                                        endogenousEffectsConsiderType = "no"))
-# set.seed(1)
-# # results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
-# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = F)
-#
-# test_that("Coefficient estimates tie model table results match", {
-#   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
-#   jaspTools::expect_equal_tables(table,
-#                                  list("baseline", -7.15198275739228, 0.0795393109438783, 0, -7.30811669991729,
-#                                       -7.15040793617075, -7.0020148776776, "Inertia", 1.68248335791643,
-#                                       0.113421904446645, 5.18241861461358e-47, 1.4635571359845, 1.67556754609801,
-#                                       1.89428089512612))
-# })
-#
-# test_that("Model fit tie model table results match", {
-#   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
-#   jaspTools::expect_equal_tables(table,
-#                                  list(3076.77214310402, "BIC"))
-# })
+
+# ---- model options ----
+##### tie undirected #####
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$timepointInputUpper <- "Inf"
+options$eventHistory <- "decay"
+options$eventHistorySingleInput <- 100
+options$eventDirection <- "undirected"
+options$syncAnalysisBox <- TRUE
+
+options$actorDataList <- list(list(actorData = "attributes2.csv", value = "#"))
+options$dyadDataList <- list(list(dyadData = "social.csv", value = "#"))
+
+options$syncAnalysisBox <- TRUE
+options$exogenousEffectsTable <- list(
+  list(difference = TRUE, value = "age"),
+  list(tie = TRUE, value = "social")
+)
+options$specifiedExogenousEffects <- list(
+  list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('age')"),
+  list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "none", value = "tie('social')")
+)
+
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no"))
+
+options$interactionEffects <- list(
+  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+)
+
+# options$actorDataList <- list(list(actorData = "tests/testthat/attributes2.csv", value = "#"))
+# options$dyadDataList <- list(list(dyadData = "tests/testthat/social.csv", value = "#"))
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
+# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
+
+test_that("Coefficient estimates tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("baseline", -6.1178345770935, 0, 0, 0.140905030989789, -43.4181415249597,
+                                      "Inertia", 96.2698809101359, 5.53075302451979e-45, 0, 6.63216720995604,
+                                      14.5155991793479, "Difference_age", -0.025687998673645, 0.0169093376176443,
+                                      0.000106587709038264, 0.00662901640414771, -3.87508449331522,
+                                      "Tie_social", -0.0191427510932347, 0.967602672815231, 0.755316084231341,
+                                      0.061426353844977, -0.311637430760512, "Difference_age:Inertia",
+                                      1.23617613625278, 0.571071308168138, 0.0119507417843097, 0.49179597027741,
+                                      2.51359549683883))
+})
+
+test_that("Model fit tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(983, 13478.65099124, "Null deviance", "", 978, 12836.0866321316,
+                                      "Residual deviance", "", 5, 642.564359108463, "Chi^2", 0, "",
+                                      12846.0866321316, "AIC", "", "", 12846.1480446188, "AICC", "",
+                                      "", 12870.5396777323, "BIC", ""))
+})
 
 
+# tie undirected, active riskset
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$timepointInputUpper <- "Inf"
+options$eventHistory <- "decay"
+options$eventHistorySingleInput <- 100
+options$eventDirection <- "undirected"
+options$syncAnalysisBox <- TRUE
 
-#### model options ####
-# tie undirected #
+options$actorDataList <- list(list(actorData = "attributes2.csv", value = "#"))
+options$dyadDataList <- list(list(dyadData = "social.csv", value = "#"))
+
+options$syncAnalysisBox <- TRUE
+options$exogenousEffectsTable <- list(
+  list(difference = TRUE, value = "age"),
+  list(tie = TRUE, value = "social")
+)
+options$specifiedExogenousEffects <- list(
+  list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('age')"),
+  list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "none", value = "tie('social')")
+)
+
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no"))
+
+options$interactionEffects <- list(
+  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+)
+options$timepointInputUpper <- "Inf"
+options$eventHistory <- "full"
+options$eventDirection <- "directed"
+options$riskset <- "active"
+
+# options$actorDataList <- list(list(actorData = "tests/testthat/attributes2.csv", value = "#"))
+# options$dyadDataList <- list(list(dyadData = "tests/testthat/social.csv", value = "#"))
+
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
+# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
+
+test_that("Coefficient estimates tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("baseline", -6.22074972197566, 0, 0, 0.149032198824019, -41.7409779300195,
+                                      "Inertia", 0.0239520866999468, 5.71722601343895e-26, 0, 0.00215847583035702,
+                                      11.0967592794333, "Difference_age", -0.0171354953828436, 0.532356227155608,
+                                      0.01001966488604, 0.00665417392215236, -2.57514991091501, "Tie_social",
+                                      0.0632856607903381, 0.949359765876912, 0.310505056214087, 0.0624018729605998,
+                                      1.01416284139895, "Difference_age:Inertia", 0.000939363588278229,
+                                      0.000329869375873128, 1.68571494585379e-06, 0.000196197075701293,
+                                      4.78785723446966))
+})
+
+test_that("Model fit tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(983, 13478.65099124, "Null deviance", "", 978, 13151.6297126877,
+                                      "Residual deviance", "", 5, 327.021278552349, "Chi^2", 0, "",
+                                      13161.6297126877, "AIC", "", "", 13161.6911251749, "AICC", "",
+                                      "", 13186.0827582884, "BIC", ""))
+})
+
+# tie directed, ordinal
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$timepointInputUpper <- "Inf"
+options$eventDirection <- "directed"
+options$syncAnalysisBox <- TRUE
+options$eventSequence <- "orderOnly"
+
+options$exogenousEffectsTable <- list(
+  list(difference = TRUE, value = "gender")
+)
+options$specifiedExogenousEffects <- list(
+  list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('gender')")
+)
+options$endogenousEffects <- list(list(value = "indegreeSender", translatedName = "Indegree sender", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no"),
+                                  list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "std",
+                                       endogenousEffectsConsiderType = "no"),
+                                  list(value = "osp", translatedName = "Outgoing shared partners", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = TRUE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no")
+                                  )
+
+options$actorDataList <- list(list(actorData = "attributes1.csv", value = "#"))
+# options$actorDataList <- list(list(actorData = "tests/testthat/attributes1.csv", value = "#"))
+
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
+# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
+
+test_that("Coefficient estimates tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("Indegree sender", -0.00899775776081751, 1.60929952598435e-36,
+                                      0, 0.000686621439620137, -13.1043938356999, "Inertia", 0.61320667850748,
+                                      6.04445877505199e-222, 0, 0.0191473809788657, 32.0256164111592,
+                                      "Outgoing shared partners", -0.161756761814537, 9.48592275180902e-20,
+                                      0, 0.016640233636505, -9.72082275694003, "Difference_gender",
+                                      -0.135984064525107, 0.717954271087487, 0.0250281735917186, 0.0606809595676603,
+                                      -2.24096760324765))
+})
+
+test_that("Model fit tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(983, 8407.92558998549, "Null deviance", "", 979, 7367.07281942246,
+                                      "Residual deviance", "", 4, 1040.85277056303, "Chi^2", 0, "",
+                                      7375.07281942246, "AIC", "", "", 7375.11371921796, "AICC", "",
+                                      "", 7394.63525590305, "BIC", ""))
+})
+
+
+# tie undirected, active riskset, ordinal
 options <- jaspTools::analysisOptions("relationalEventModeling")
 options$timeVariable <- "time"
 options$actorVariableSender <- "actor1"
@@ -226,9 +373,15 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
 options$interactionEffects <- list(
   list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
 )
+options$timepointInputUpper <- "Inf"
+options$eventHistory <- "full"
+options$eventDirection <- "directed"
+options$riskset <- "active"
+options$eventSequence <- "timeSensitive"
 
 # options$actorDataList <- list(list(actorData = "tests/testthat/attributes2.csv", value = "#"))
 # options$dyadDataList <- list(list(dyadData = "tests/testthat/social.csv", value = "#"))
+
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
 # results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
@@ -236,111 +389,28 @@ results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", op
 test_that("Coefficient estimates tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -6.11783457709347, 0, 0, 0.140905030989795, -43.4181415249578,
-                                      "Inertia", 96.2698809101322, 5.53075302460193e-45, 0, 6.63216720995626,
-                                      14.5155991793469, "Difference_age", -0.0256879986736469, 0.0169093376176363,
-                                      0.000106587709038264, 0.00662901640414798, -3.87508449331534,
-                                      "Tie_social", -0.0191427510932326, 0.967602672815231, 0.755316084231374,
-                                      0.0614263538449788, -0.311637430760468, "Difference_age:Inertia",
-                                      1.236176136253, 0.571071308167902, 0.0119507417842968, 0.491795970277425,
-                                      2.51359549683921))
+                                 list("baseline", -6.22074972197566, 0, 0, 0.149032198824019, -41.7409779300195,
+                                      "Inertia", 0.0239520866999468, 5.71722601343895e-26, 0, 0.00215847583035702,
+                                      11.0967592794333, "Difference_age", -0.0171354953828436, 0.532356227155608,
+                                      0.01001966488604, 0.00665417392215236, -2.57514991091501, "Tie_social",
+                                      0.0632856607903381, 0.949359765876912, 0.310505056214087, 0.0624018729605998,
+                                      1.01416284139895, "Difference_age:Inertia", 0.000939363588278229,
+                                      0.000329869375873128, 1.68571494585379e-06, 0.000196197075701293,
+                                      4.78785723446966))
 })
 
 test_that("Model fit tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list(983, 13478.65099124, "Null deviance", "", 978, 12836.0866321316,
-                                      "Residual deviance", "", 5, 642.564359108472, "Chi^2", 0, "",
-                                      12846.0866321316, "AIC", "", "", 12846.1480446188, "AICC", "",
-                                      "", 12870.5396777323, "BIC", ""))
-  })
+                                 list(983, 13478.65099124, "Null deviance", "", 978, 13151.6297126877,
+                                      "Residual deviance", "", 5, 327.021278552349, "Chi^2", 0, "",
+                                      13161.6297126877, "AIC", "", "", 13161.6911251749, "AICC", "",
+                                      "", 13186.0827582884, "BIC", ""))
+})
 
 
 
-# # tie undirected , active riskset # FAILS with remstimate
-# options <- jaspTools::analysisOptions("relationalEventModeling")
-# options$timeVariable <- "time"
-# options$actorVariableSender <- "actor1"
-# options$actorVariableReceiver <- "actor2"
-# options$timepointInputUpper <- "Inf"
-# options$eventHistory <- "decay"
-# options$eventHistorySingleInput <- 100
-# options$eventDirection <- "undirected"
-# options$syncAnalysisBox <- TRUE
-#
-# options$actorDataList <- list(list(actorData = "attributes2.csv", value = "#"))
-# options$dyadDataList <- list(list(dyadData = "social.csv", value = "#"))
-#
-# options$syncAnalysisBox <- TRUE
-# options$exogenousEffectsTable <- list(
-#   list(average = FALSE, difference = TRUE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = FALSE, value = "age"),
-#   list(average = FALSE, difference = FALSE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = TRUE, value = "social")
-# )
-# options$specifiedExogenousEffects <- list(
-#   list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('age')"),
-#   list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "none", value = "tie('social')")
-# )
-#
-# options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
-#                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-#                                        endogenousEffectsConsiderType = "no"))
-#
-# options$interactionEffects <- list(
-#   list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
-# )
-# options$timepointInputUpper <- "Inf"
-# options$eventHistory <- "full"
-# options$eventDirection <- "directed"
-# options$riskset <- "active"
-#
-# # options$actorDataList <- list(list(actorData = "tests/testthat/attributes2.csv", value = "#"))
-# # options$dyadDataList <- list(list(dyadData = "tests/testthat/social.csv", value = "#"))
-#
-# set.seed(1)
-# results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
-# # results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
-#
-#
-# test_that("Coefficient estimates tie model table results match", {
-#   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
-#   jaspTools::expect_equal_tables(table,
-#                                  list("baseline", -6.52166655849015, 5.04891549570117e-240, 0, 0.195845568243134,
-#                                       -33.3000466489687, "Inertia", 0.0313931376360234, 1.15126461850371e-14,
-#                                       0, 0.0037235495344607, 8.43097086408715, "Difference_age", -0.00701130789106741,
-#                                       0.954615113967713, 0.371586871699675, 0.00784697232226769, -0.893504858067502,
-#                                       "Tie_social", 0.146265791330681, 0.91593649670018, 0.145970709698504,
-#                                       0.100601544579648, 1.45391198457078, "Difference_age:Inertia",
-#                                       0.000539918874242037, 0.83002654012185, 0.0537972774065809,
-#                                       0.000279973342856817, 1.92846529149085))
-# })
-#
-# test_that("Model fit tie model table results match", {
-#   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
-#   jaspTools::expect_equal_tables(table,
-#                                  list(983, 9441.55126411736, "Null deviance", "", 978, 9179.59793153212,
-#                                       "Residual deviance", "", 5, 261.953332585244, "Chi^2", 0, "",
-#                                       9189.59793153212, "AIC", "", "", 9189.65934401932, "AICC", "",
-#                                       "", 9214.05097713285, "BIC", ""))
-# })
-
-
-# tie directed, ordinal #
-# FAILS with remstimate
-# options <- jaspTools::analysisOptions("relationalEventModeling")
-# options$timeVariable <- "time"
-# options$actorVariableSender <- "actor1"
-# options$actorVariableReceiver <- "actor2"
-# options$timepointInputUpper <- "Inf"
-# options$eventDirection <- "directed"
-# options$syncAnalysisBox <- TRUE
-# options$eventSequence <- "ordinal"
-#
-# set.seed(1)
-# results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
-# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options)
-
-
-# actor model #
+#### actor model ####
 # basic input
 options <- jaspTools::analysisOptions("relationalEventModeling")
 options$timeVariable <- "time"
@@ -381,16 +451,16 @@ options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
 options$orientation <- "actor"
 options$exogenousEffectsTable <- list(
-  list(average = TRUE, difference = FALSE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = FALSE, value = "age"),
-  list(average = FALSE, difference = TRUE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = FALSE, value = "age")
+  list(average = TRUE, value = "age"),
+  list(difference = TRUE, value = "age")
 )
 options$specifiedExogenousEffects <- list(
   list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "std", value = "average('age')"),
   list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('age')")
 )
 options$exogenousEffectsTableSender <- list(
-  list(average = FALSE, difference = FALSE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = TRUE, tie = FALSE, value = "extraversion"),
-  list(average = FALSE, difference = FALSE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = TRUE, tie = FALSE, value = "sex")
+  list(send = TRUE, value = "extraversion"),
+  list( send = TRUE, value = "sex")
   )
 
 options$specifiedExogenousEffectsSender <- list(
@@ -471,13 +541,104 @@ test_that("Model fit sender model table results match", {
                                       "", "", 2041.61857719911, "BIC", ""))
 })
 
-# actor model, risket active # fails
 
-# actor model, ordinal #
+# actor model, risket active, simultaneous events split
+# just use the same effects as before, plus:
+options$riskset <- "active"
+options$simultaneousEvents <- "split"
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", "history.csv", options)
+
+test_that("Model fit receiver model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(115, 277.974918588083, "Null deviance", "", 110, 240.22772188864,
+                                      "Residual deviance", "", 5, 37.7471966994438, "Chi^2", 4.24116054276169e-07,
+                                      "", 250.22772188864, "AIC", "", "", 250.778180604236, "AICC",
+                                      "", "", 263.952382530456, "BIC", ""))
+})
+
+test_that("Model fit sender model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTableSender"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(115, 2023.93506633869, "Null deviance", "", 109, 2013.14898442893,
+                                      "Residual deviance", "", 6, 10.7860819097682, "Chi^2", 0.0952171386619114,
+                                      "", 2025.14898442893, "AIC", "", "", 2025.9267622067, "AICC",
+                                      "", "", 2041.61857719911, "BIC", ""))
+})
+
+
+# actor model, ordinal, simultaneous events split
+
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$orientation <- "actor"
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$timepointInputUpper <- "Inf"
+options$syncAnalysisBox <- TRUE
+options$eventSequence <- "orderOnly"
+
+options$exogenousEffectsTable <- list(
+  list(difference = TRUE, value = "age")
+)
+options$specifiedExogenousEffects <- list(
+  list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('age')")
+)
+options$exogenousEffectsTableSender <- list(
+  list(send = TRUE, value = "age")
+)
+
+options$specifiedExogenousEffectsSender <- list(
+  list(exogenousEffectsAbsoluteSender = FALSE, exogenousEffectsScalingSender = "none", value = "send('age')")
+)
+
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no"))
+options$endogenousEffectsSender <- list(list(value = "indegreeSender", translatedNameSender = "Indegree sender", includeEndoEffectSender = TRUE,
+                                             endogenousEffectsUniqueSender = FALSE, endogenousEffectsScalingSender = "none",
+                                             endogenousEffectsConsiderTypeSender = "no")
+)
+
+options$actorDataList <- list(list(actorData = "attributes2.csv", value = "#"))
+# options$actorDataList <- list(list(actorData = "tests/testthat/attributes2.csv", value = "#"))
+
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
+# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
+
+test_that("Coefficient estimates sender model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTableSender"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("baseline", 1.17921879893501, 4.58698398297698e-08, 1.788067471864e-10,
+                                      0.184873401300191, 6.37852060189146, "Indegree sender", -0.00990059228120915,
+                                      6.34051665507703e-33, 0, 0.000794805873525519, -12.4566169060794,
+                                      "Send_age", -0.025902563085422, 2.55425752872077e-06, 1.10560927080172e-08,
+                                      0.00453343166542433, -5.71367674580301))
+})
+
+test_that("Model fit receiver model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(983, 4.15888308335967, "Null deviance", "", 981, 3674.13224406993,
+                                      "Residual deviance", "", 2, -3669.97336098657, "Chi^2", 1, "",
+                                      3678.13224406993, "AIC", "", "", 3678.14448896789, "AICC", "",
+                                      "", 3687.91346231023, "BIC", ""))
+})
+
+test_that("Model fit sender model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTableSender"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(983, 4319.74351904301, "Null deviance", "", 980, 4143.74687228237,
+                                      "Residual deviance", "", 3, 175.996646760644, "Chi^2", 0, "",
+                                      4149.74687228237, "AIC", "", "", 4149.7713870934, "AICC", "",
+                                      "", 4164.41869964281, "BIC", ""))
+})
 
 
 
-# input:
+# ---- input ----
 # dyadic attributes format test
 options <- jaspTools::analysisOptions("relationalEventModeling")
 options$timeVariable <- "time"
@@ -490,15 +651,9 @@ options$dyadDataList <- list(list(dyadData = "wideDyad.csv", value = "#"),
                              list(dyadData = "longDyad1.csv", value = "#2"),
                              list(dyadData = "longDyad2.csv", value = "#4"))
 options$exogenousEffectsTable <- list(
-  list(average = FALSE, difference = TRUE, event = FALSE,
-       maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE,
-       send = FALSE, tie = FALSE, value = "age"),
-  list(average = TRUE, difference = FALSE, event = FALSE, maximum = FALSE,
-       minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE,
-       tie = FALSE, value = "extraversion"),
-  list(average = FALSE, difference = FALSE, event = FALSE, maximum = FALSE,
-       minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE,
-       tie = TRUE, value = "dy1")
+  list(difference = TRUE, value = "age"),
+  list(average = TRUE, value = "extraversion"),
+  list(tie = TRUE, value = "dy1")
 )
 options$specifiedExogenousEffects <- list(list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none",
                                                value = "difference('age')"),
@@ -530,3 +685,122 @@ test_that("Model fit tie model table results match", {
                                       "", 2530.80475785775, "AIC", "", "", 2531.16839422138, "AICC",
                                       "", "", 2541.7844863712, "BIC", ""))
 })
+
+
+
+# .txt actor attributes data
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$syncAnalysisBox <- TRUE
+options$timepointInputUpper <- "Inf"
+options$exogenousEffectsTable <- list(
+  list(difference = TRUE, value = "age")
+)
+options$specifiedExogenousEffects <- list(
+  list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('age')")
+)
+options$actorDataList <- list(list(actorData = "attributes2.txt", value = "#"))
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
+# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
+
+test_that("Coefficient estimates tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("baseline", -6.34161974379161, 0, 0, 0.0514741387296736, -123.200113693905,
+                                      "Difference_age", -0.021233904087681, 0.000260332255338065,
+                                      1.317707411852e-06, 0.00438983282163195, -4.83706440551583
+                                 ))
+})
+
+test_that("Model fit tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(983, 14841.3783482209, "Null deviance", "", 981, 14817.8306768573,
+                                      "Residual deviance", "", 2, 23.5476713635398, "Chi^2", 7.70350081003013e-06,
+                                      "", 14821.8306768573, "AIC", "", "", 14821.8429217553, "AICC",
+                                      "", "", 14831.6118950976, "BIC", ""))
+})
+
+
+
+# ---- plots ----
+# tie model
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$syncAnalysisBox <- TRUE
+options$timepointInputUpper <- "Inf"
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no"),
+                                  list(value = "indegreeSender", translatedName = "Indegree sender", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no"))
+options$diagnosticPlots <- TRUE
+options$diagnosticPlotWaitTime <- TRUE
+options$residualPlotSelect <- list(list(includePlotEffect = TRUE, value = "Indegree sender"),
+                                   list(includePlotEffect = TRUE, value = "Inertia"))
+
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
+# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
+
+
+test_that("Indegree sender plot matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainer_indegreeSender"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "indegree-sender")
+})
+
+test_that("Inertia plot matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainer_inertia"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "inertia")
+})
+
+test_that("Waiting times fit plot matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_waitingTimePlot"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "waiting-times-fit")
+})
+
+
+
+# actor model
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$orientation <- "actor"
+options$syncAnalysisBox <- TRUE
+options$timepointInputUpper <- "Inf"
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no"),
+                                  list(value = "indegreeReceiver", translatedName = "Indegree receiver", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "no"))
+
+options$endogenousEffectsSender <- list(list(value = "indegreeSender", translatedNameSender = "Indegree sender", includeEndoEffectSender = TRUE,
+                                       endogenousEffectsUniqueSender = FALSE, endogenousEffectsScalingSender = "none",
+                                       endogenousEffectsConsiderTypeSender = "no"),
+                                  list(value = "outdegreeSender", translatedNameSender = "Outdegree sender", includeEndoEffectSender = TRUE,
+                                       endogenousEffectsUniqueSender = FALSE, endogenousEffectsScalingSender = "none",
+                                       endogenousEffectsConsiderTypeSender = "no"))
+options$diagnosticPlots <- TRUE
+options$diagnosticPlotWaitTime <- TRUE
+options$residualPlotSelect <- list(list(includePlotEffect = TRUE, value = "Indegree receiver"),
+                                   list(includePlotEffect = TRUE, value = "Inertia"),
+                                   list(includePlotEffect = TRUE, value = "Indegree sender"),
+                                   list(includePlotEffect = TRUE, value = "Outdegree sender"))
+
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", "team4_red.csv", options)
+# results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
+
+### TODO when Giuseppe is ready
+

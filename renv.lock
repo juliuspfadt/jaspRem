@@ -1470,26 +1470,28 @@
       "RemoteRepo": "remstats",
       "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRef": "HEAD",
-      "RemoteSha": "2c60c8d862693268a183c488f2703d91eee3977e",
+      "RemoteSha": "1fd890e197a98011c969decee2a122768233f0f4",
       "Requirements": [
         "R",
         "Rcpp",
         "RcppArmadillo",
         "RcppProgress",
+        "grDevices",
+        "graphics",
         "stats"
       ],
-      "Hash": "54c8df0b8a39023bc1a0fc4981b119b7"
+      "Hash": "2eca6fbd1b6cedf2f5b95ab5d2ee372e"
     },
     "remstimate": {
       "Package": "remstimate",
-      "Version": "2.3.6",
+      "Version": "2.3.7",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "remstimate",
       "RemoteUsername": "TilburgNetworkGroup",
       "RemoteRef": "HEAD",
-      "RemoteSha": "0a4f03de130f5bf3e5a27fe6be6a3bd3e14f3052",
+      "RemoteSha": "1ea61122706ed42f3859db47f41eb5f949f00069",
       "Requirements": [
         "R",
         "Rcpp",
@@ -1500,7 +1502,7 @@
         "remstats",
         "trust"
       ],
-      "Hash": "ec795438313634b91e53c43979b218d4"
+      "Hash": "d6a60987871d3972f68264100a6087d8"
     },
     "renv": {
       "Package": "renv",
