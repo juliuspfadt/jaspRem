@@ -1,8 +1,8 @@
 Package: jaspRem
 Type: Package
 Title: REM
-Version: 0.18.2
-Date: 2023-11-20
+Version: 0.19
+Date: 2024-06-05
 Author: JASP Team
 Website: jasp-stats.org
 Maintainer: JASP Team <info@jasp-stats.org>
@@ -19,7 +19,4 @@ Suggests:
   testthat
 Remotes:
   jasp-stats/jaspBase,
-  jasp-stats/jaspGraphs,
-  TilburgNetworkGroup/remstats,
-  TilburgNetworkGroup/remify,
-  TilburgNetworkGroup/remstimate
+  jasp-stats/jaspGraphs
