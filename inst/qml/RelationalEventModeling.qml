@@ -290,8 +290,8 @@ Form
 						}] 
 				name: "endogenousEffects"
 				id: endogenousEffects
-				titles: typeVar.count > 0 ? ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]:
-																		["", "", "", qsTr("Include"), qsTr("Scaling"), qsTr("    Unique")]
+				headerLabels: typeVar.count > 0 ? [qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]:
+																		[qsTr("Include"), qsTr("Scaling"), qsTr("Unique")]
 				rowComponent: RowLayout {
 					Text{Layout.preferredWidth: 180; text: effects.translated[rowValue]}
 					// we need the invisible translated field to get the translated names into R
@@ -336,7 +336,7 @@ Form
 				source: [{ values: effects.varsActorSender }] 
 				name: "endogenousEffectsSender"
 				id: endogenousEffectsSender
-				titles: ["", "", qsTr("Include"), qsTr("Scaling"), qsTr("Consider type")]
+				headerLabels: [qsTr("Include"), qsTr("Scaling"), qsTr("Consider type")]
 				rowComponent: RowLayout {
 					Text{Layout.preferredWidth: 200; text: effects.translated[rowValue]}
 					TextField{ name: "translatedNameSender"; value: effects.translated[rowValue]; visible: false}
@@ -367,21 +367,20 @@ Form
 			title: orientation.value == "tie" ? qsTr("Exogenous effects") : qsTr("Exogenous effects receiver model")
 			implicitHeight: 150 * preferencesModel.uiScale
 
-			// workaround since the titles for the componentlist keep screwing up
-			Text { text: orientation.value == "tie" ? 
-										(eventDirection.value == "directed" ? 
-											qsTr("	             Average  Difference   Event   Maximum   Minimum   Receive    Same    Send      Tie") : 
-											qsTr("	             Average  Difference   Event   Maximum   Minimum    Same     Tie")) : 
-										qsTr("	             Average  Difference  Receive    Same     Tie")
-						}
+			// workaround since the headerLabels for the componentlist keep screwing up
+			// Text { text: orientation.value == "tie" ? 
+			// 							(eventDirection.value == "directed" ? 
+			// 								qsTr("	             Average  Difference   Event   Maximum   Minimum   Receive    Same    Send      Tie") : 
+			// 								qsTr("	             Average  Difference   Event   Maximum   Minimum    Same     Tie")) : 
+			// 							qsTr("	             Average  Difference  Receive    Same     Tie")
+			// 			}
 			ComponentsList
 			{
 				id: exogenousEffectsTable
 				name: "exogenousEffectsTable"
-				// titles: orientation.value == "tie" ? (eventDirection.value == "directed" ? [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")] : 
-				// 		[qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Same"), "",  qsTr("Tie")]) : 
-				// 	[qsTr("Average"), qsTr("Difference"), "", qsTr("Receive"), qsTr("Same"), "", qsTr("Tie")]
-				// maybe translate that?
+				headerLabels: orientation.value == "tie" ? (eventDirection.value == "directed" ? [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")] : 
+						[qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Same"), qsTr("Tie")]) : 
+					[qsTr("Average"), qsTr("Difference"), qsTr("Receive"), qsTr("Same"), qsTr("Tie")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 590 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
@@ -415,14 +414,11 @@ Form
 			title: qsTr("Exogenous effects sender model")
 			implicitHeight: 140 * preferencesModel.uiScale
 
-			Text { text: qsTr("		Send") }
-
 			ComponentsList
 			{
 				id: exogenousEffectsTableSender
 				name: "exogenousEffectsTableSender"
-				// titles: ["", "", "", "", "", "", "", "", qsTr("Send")]
-				// maybe translate that?
+				headerLabels: [qsTr("Send")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
 				rSource: "exoTableVariablesR"
@@ -448,11 +444,11 @@ Form
 			title: orientation.value == "tie" ? qsTr("Specified exogenous effects") : qsTr("Specified exogenous effects receiver model")
 			implicitHeight: 140 * preferencesModel.uiScale
 
-			Text { text: qsTr("			         Scaling    Absolute")}
 			ComponentsList
 			{
 				name: "specifiedExogenousEffects"
 				id: specifiedExoEffects
+				headerLabels: [qsTr("Scaling"), qsTr("Absolute")]
 				// rSource: "specifiedExoEffectsFromR"
 				source: [{name: "exogenousEffectsTable.text1", condition: "average"},
 								 {name: "exogenousEffectsTable.text2", condition: "difference"},
@@ -495,7 +491,7 @@ Form
 				// rSource: "specifiedExoEffectsFromRSender"
 				source: [{name: "exogenousEffectsTableSender.text8", condition: "send"}]
 
-				titles: ["", qsTr("Scaling")]
+				headerLabels: [qsTr("Scaling")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
@@ -524,7 +520,7 @@ Form
 				name: "interactionEffects"
 				rSource: "possibleInteractionEffectsFromR"
 				// source: ["specifiedExogenousEffects", {name: "specifiedExogenousEffects", combineTerms: JASP.Combination2Way}]
-				titles: [qsTr("Include")]
+				headerLabels: [qsTr("Include")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 500 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
@@ -544,7 +540,7 @@ Form
 				name: "interactionEffectsSender"
 				rSource: "possibleInteractionEffectsFromRSender"
 				// source: ["specifiedExogenousEffectsSender", {name: "specifiedExogenousEffectsSender", combineTerms: JASP.Combination2Way}]
-				titles: [qsTr("Include")]
+				headerLabels: [qsTr("Include")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 500 * preferencesModel.uiScale
 				rowComponent: RowLayout { 
@@ -563,7 +559,7 @@ Form
 		Group 
 		{
 		title: qsTr("Estimation method")
-		visible: false // make this invisible to use at a a later point, so now the method will always be MLE
+		visible: false // make this invisible to use at a later point, so now the method will always be MLE
 			RadioButtonGroup {
 				name: "method"
 				RadioButton { value: "MLE" ; label: qsTr("Maximum likelihood estimation"); checked: true}

@@ -1649,9 +1649,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   } else { # method = BSIR
     coefficientsTable$addColumnInfo(name = "stdErr", title = gettext("Posterior SD"),    type= "number")
-    coefficientsTable$addColumnInfo(name = "q2.5",   title = gettext("2.5% Quantile"),  type= "number")
-    coefficientsTable$addColumnInfo(name = "q50",   title = gettext("50% Quantile"),     type= "number")
-    coefficientsTable$addColumnInfo(name = "q97.5",      title = gettext("97.5% Quantile"),     type= "number")
+    coefficientsTable$addColumnInfo(name = "q2.5",   title = gettextf("2.5%% Quantile"),  type= "number")
+    coefficientsTable$addColumnInfo(name = "q50",   title = gettextf("50%% Quantile"),     type= "number")
+    coefficientsTable$addColumnInfo(name = "q97.5",      title = gettextf("97.5%% Quantile"),     type= "number")
     coefficientsTable$addColumnInfo(name = "pr0",      title = gettext("p(=0|y)"),       type= "number")
   }
 
