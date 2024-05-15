@@ -631,6 +631,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       jaspResults[["mainContainer"]]$setError(gettext("No effects were specified."))
       return()
     }
+
+
     # in the first round both states are created
     statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
                                           receiver_effects = receivers,
@@ -1243,6 +1245,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       dyadObj <- jaspResults[["dyadFindState"]]$object
       dyadVarNames <- dyadObj[["name"]]
       dyadFileNames <- dyadObj[["file"]]
+
       # dyInds records the match between specified exoEffects and dyad attributes variables
       dyInds <- lapply(dyadVarNames, function(x) which(x %in% exoVariablesDec))
       if (length(unlist(dyInds)) > 0) {
