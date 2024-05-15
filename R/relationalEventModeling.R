@@ -1677,13 +1677,18 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 .matchJaspPlotEffects <- function(jaspNames, remstimateNames) {
 
-  # align the jaspNames
+  # align the jaspNames to match them with rnames
   jNames <- gsub("('", "_", jaspNames, fixed = TRUE)
   jNames <- gsub("')", "", jNames, fixed = TRUE)
   jNames <- gsub(" * ", ":", jNames, fixed = TRUE)
+  # because the "of" is not part of the remstimate outputted names
+  jNames <- gsub(" of ", "", jNames, fixed = TRUE)
   jNames <- gsub(" ", "", jNames, fixed = TRUE)
   jNames <- gsub("(type)", ".type", jNames, fixed = TRUE)
   jNames <- tolower(jNames)
+  # because apparently remstimate abbreviates recencyrank to rrank
+  jNames <- gsub("recencyrank", "rrank", jNames, fixed = TRUE)
+
 
   # align the remstimateNames
   rNames <- remstimateNames
