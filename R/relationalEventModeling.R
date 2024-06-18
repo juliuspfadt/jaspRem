@@ -797,6 +797,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   rehObject <- jaspResults[["remifyResultState"]]$object
   statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
 
+  print(str(rehObject))
+  print(str(statsObject))
   if (jaspResults[["mainContainer"]]$getError()) return()
 
   fit <- try(remstimate::remstimate(reh = rehObject, stats = statsObject, method = options[["method"]]))
