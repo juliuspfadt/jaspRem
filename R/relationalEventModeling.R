@@ -25,6 +25,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
+  .remUploadDyadExcludeData(jaspResults, options)
 
   .feedbackExoTableVariables(jaspResults, options)
   # process the exo effects from the table
@@ -56,10 +57,12 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     .remCheckActorAttributes(jaspResults, dataset, options)
     .remRemstats(jaspResults, dataset, options)
     .remRemstimate(jaspResults, dataset, options)
+    .remRegularization(jaspResults, dataset, options)
   }
 
   .remModelFitTable(jaspResults, options, ready)
   .remCoefficientsTable(jaspResults, options, ready)
+  .remRegularizationTable(jaspResults, options, ready)
   .remDiagnosticPlot(jaspResults, options, ready)
 
   return()
@@ -156,6 +159,50 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   dyadDataState$dependOn("dyadDataList")
   jaspResults[["dyadDataState"]] <- dyadDataState
 
+
+  return()
+}
+
+
+.remUploadDyadExcludeData <- function(jaspResults, options) {
+
+  dyadExcludePaths <- sapply(options[["dyadExcludeList"]], function(x) x[["dyadExclude"]])
+
+  if (all(dyadExcludePaths == "")) return()
+
+  if (!is.null(jaspResults[["dyadExcludeState"]]$object) || options[["riskset"]] != "custom") return()
+
+  dyadOut <- list()
+  for (i in 1:length(dyadExcludePaths)) {
+
+    if (dyadExcludePaths[i] != "") {
+
+      bsName <- basename(options[["dyadExcludeList"]][[i]][["dyadExclude"]])
+      attrName <- gsub("\\..*","", bsName)
+      ending <- sub(".*(\\..*)", "\\1", bsName)
+
+      if (ending == ".csv") {
+        dyadDt <- read.csv(options[["dyadExcludeList"]][[i]][["dyadExclude"]], row.names = NULL, check.names = FALSE)
+      } else if (ending == ".txt") {
+        dyadDt <- read.delim(options[["dyadExcludeList"]][[i]][["dyadExclude"]], row.names = NULL, check.names = FALSE)
+      }
+
+      dyadDt$type <- NA
+      # # this is only necessary for the wide format...
+      # if (ncol(dyadDt) == nrow(dyadDt)) {
+      #   rownames(dyadDt) <- colnames(dyadDt)
+      # }
+
+      dyadOut[[attrName]] <- dyadDt
+
+    } else {
+      dyadOut[[i]] <- NULL
+    }
+  }
+
+  dyadExcludeState <- createJaspState(dyadOut)
+  dyadExcludeState$dependOn("dyadExcludeList")
+  jaspResults[["dyadExcludeState"]] <- dyadExcludeState
 
   return()
 }
@@ -525,11 +572,22 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     directed <- TRUE
   }
 
+  if (!is.null(jaspResults[["dyadExcludeState"]][["object"]])) {
+    dtExcludeList <- jaspResults[["dyadExcludeState"]][["object"]]
+    omitDyad <- list()
+    for (i in 1:length(dtExcludeList)) {
+      omitDyad <- append(omitDyad, list(time = c(NA,NA), dyad = dtExcludeList[[i]]))
+    }
+  } else {
+    omitDyad <- NULL
+  }
+
   rehObject <- try(remify::remify(edgelist = dataset,
                                   directed = directed,
                                   ordinal = options[["eventSequence"]] == "orderOnly",
                                   model = options[["orientation"]],
-                                  riskset = options[["riskset"]]))
+                                  riskset = options[["riskset"]],
+                                  omit_dyad = omitDyad))
 
   if (isTryError(rehObject)) {
     jaspResults[["mainContainer"]]$setError(gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(rehObject)))
@@ -797,8 +855,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   rehObject <- jaspResults[["remifyResultState"]]$object
   statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
 
-  print(str(rehObject))
-  print(str(statsObject))
   if (jaspResults[["mainContainer"]]$getError()) return()
 
   fit <- try(remstimate::remstimate(reh = rehObject, stats = statsObject, method = options[["method"]]))
@@ -812,6 +868,52 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   remstimateResultState$dependOn("method")
 
   jaspResults[["mainContainer"]][["remstimateResultState"]] <- remstimateResultState
+
+  return()
+}
+
+.remRegularization <- function(jaspResults, dataset, options) {
+
+  if (!is.null(jaspResults[["mainContainer"]][["regResultsState"]]$object)) return()
+  if (jaspResults[["mainContainer"]]$getError()) return()
+  if (options[["regularization"]] == "") return()
+
+  remstimateResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
+
+  if (options[["regularizationSetSeed"]]) set.seed(options[["regularizationSeed"]])
+  if (options[["orientation"]] == "tie") {
+    coefs <- remstimateResults$coefficients
+    ecov <- remstimateResults$vcov
+    regOut <- try(shrinkem::shrinkem(x = coefs,
+                             Sigma = ecov,
+                             type = options[["regularization"]],
+                             iterations = options[["regularizationIterations"]],
+                             cred.level = options[["regularizationCiLevel"]]))
+  } else {
+    regOut <- list()
+    if (!is.null(remstimateResults$receiver_model)) {
+      coefsRec <- remstimateResults$receiver_model$coefficients
+      ecovRec <- remstimateResults$receiver_model$vcov
+      regOut$recReg <- try(shrinkem::shrinkem(x = coefsRec,
+                                              Sigma = ecovRec,
+                                              type = options[["regularization"]],
+                                              iterations = options[["regularizationIterations"]],
+                                              cred.level = options[["regularizationCiLevel"]]))
+    }
+
+    coefsSend <- remstimateResults$sender_model$coefficients
+    ecovSend <- remstimateResults$sender_model$vcov
+    regOut$sendReg <- try(shrinkem::shrinkem(x = coefsSend,
+                                       Sigma = ecovSend,
+                                       type = options[["regularization"]],
+                                       iterations = options[["regularizationIterations"]],
+                                       cred.level = options[["regularizationCiLevel"]]))
+  }
+
+  regState <- createJaspState(regOut)
+  regState$dependOn(c("regularization", "regularizationIterations", "regularizationCiLevel",
+                      "regularizationSetSeed", "regularizationSeed"))
+  jaspResults[["mainContainer"]][["regResultsState"]] <- regState
 
   return()
 }
@@ -920,7 +1022,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   coefficientsTable$position <- 2
   coefficientsContainer[["coefficientsTable"]] <- coefficientsTable
 
-
   if (ready && options[["syncAnalysisBox"]] && !jaspResults[["mainContainer"]]$getError()) { # empty table if we are not ready
 
     remResults <- jaspResults[["mainContainer"]][["remstimateResultState"]]$object
@@ -979,6 +1080,74 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       coefficientsTable$setData(dtFill)
     }
 
+
+  }
+
+  return()
+}
+
+.remRegularizationTable <- function(jaspResults, options, ready) {
+
+  if (!is.null(jaspResults[["mainContainer"]][["regContainer"]])) return()
+  if (!ready) return()
+  if (!options[["syncAnalysisBox"]]) return()
+  if (jaspResults[["mainContainer"]]$getError()) return()
+  if (options[["regularization"]] == "") return()
+
+
+  regContainer <- createJaspContainer()
+  regContainer$dependOn(optionsFromObject = jaspResults[["mainContainer"]][["regResultsState"]])
+  jaspResults[["mainContainer"]][["regContainer"]] <- regContainer
+
+  ci <- format(100 * options[["regularizationCiLevel"]], digits = 3, drop0trailing = TRUE)
+
+  regTable <- .createRegularizationTable(ci)
+  regTable$position <- 2.5
+  regResults <- jaspResults[["mainContainer"]][["regResultsState"]]$object
+
+  if (options[["orientation"]] == "tie") {
+
+    if (isTryError(regResults)) {
+      regContainer$setError(gettext("Regularization failed"))
+      return()
+    }
+    regTable$title <- gettext("Regularization results tie model")
+    dt <- regResults$estimates
+    rwnames <- rownames(dt)
+    dt$coef <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "")
+    regTable$setData(dt)
+    regContainer[["regTable"]] <- regTable
+
+  } else {
+
+    if (!is.null(regResults$recReg)) {
+      if (isTryError(regResults$recReg) ) {
+        regContainer$setError(gettext("Regularization failed"))
+        return()
+      }
+      regTableReceiver <- .createRegularizationTable(ci)
+      regTableReceiver$title <- gettext("Regularization results receiver model")
+      regTableReceiver$position <- 2.4
+      dtRec <- regResults$recReg$estimates
+      rwnames <- rownames(dtRec)
+      dtRec$coef <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "")
+      regTableReceiver$setData(dtRec)
+      regContainer[["regTableReceiver"]] <- regTableReceiver
+    }
+
+    if (isTryError(regResults$sendReg) ) {
+      regContainer$setError(gettext("Regularization failed"))
+      return()
+    }
+
+    regTableSender <- regTable
+    regTableSender$position <- 2.5
+    regTableSender$title <- gettext("Regularization results sender model")
+    dtSend <- regResults$sendReg$estimates
+    rwnames <- rownames(dtSend)
+    dtSend$coef <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "Sender")
+    regTableSender$setData(dtSend)
+    regContainer[["regTableSender"]] <- regTableSender
 
   }
 
@@ -1661,6 +1830,21 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   return(coefficientsTable)
+}
+
+.createRegularizationTable <- function(ci) {
+
+  regTable <- createJaspTable()
+  regTable$addColumnInfo(name = "coef", title = gettext("Coefficient"), type = "string")
+  regTable$addColumnInfo(name = "est", title = gettext("Estimate"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.mean", title = gettext("Shrunk mean"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.median", title = gettext("Shrunk median"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.mode", title = gettext("Shrunk mode"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.lower", title = gettextf("Lower shrunk %s%% CI", ci), type = "number")
+  regTable$addColumnInfo(name = "shrunk.upper", title = gettextf("Upper shrunk %s%% CI", ci), type = "number")
+  regTable$addColumnInfo(name = "nonzero", title = gettext("≠0"), type = "string")
+
+  return(regTable)
 }
 
 

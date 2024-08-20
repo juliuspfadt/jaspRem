@@ -164,6 +164,7 @@ Form
 			name: "riskset"
 			title: qsTr("Riskset")
 			radioButtonsOnSameRow: false
+			id: riskset
 
 			RadioButton
 			{
@@ -176,11 +177,35 @@ Form
 				value: "active"
 				label: qsTr("Active")
 			}
-			// RadioButton
-			// {
-			// 	value: "manual"
-			// 	label: qsTr("Manual")
-			// }
+			RadioButton
+			{
+				value: "custom"
+				label: qsTr("Custom")
+				ComponentsList
+				{
+					visible: riskset.value == "custom"
+					name: "dyadExcludeList"
+					title: qsTr("Upload dyads to exclude from the riskset")
+					implicitHeight: 90 * preferencesModel.uiScale // about 3 rows
+					minimumItems: 1
+					rowComponent: 
+					RowLayout
+					{
+						FileSelector
+						{
+							id:										dyadExclude
+							name:									"dyadExclude"
+							label:								""
+							placeholderText:			qsTr("e.g., home/Data/dyadExclude.csv")
+							filter:								"*.csv *.txt"
+							save:									false
+							fieldWidth:						180 * preferencesModel.uiScale
+						}
+					}
+				}
+			}
+
+
 		}
 	}
 
@@ -641,6 +666,52 @@ Form
 					label:			""
 					defaultValue: "Inf"
 					fieldWidth: 	40
+				}
+			}
+		}
+
+		Group
+		{
+			title: qsTr("Regularization")
+			DropDown
+			{
+				name: "regularization"
+				values: [
+					{ label: qsTr("Horseshoe prior"), value : "horseshoe"}, 
+					{ label: qsTr("Bayesian lasso"), value : "lasso" },
+					{ label: qsTr("Bayesian ridge"), value : "ridge" }
+				]
+				addEmptyValue: true
+			}
+
+			CIField {
+				text: qsTr("Credible interval")
+				name: "regularizationCiLevel"
+			}
+
+			IntegerField
+			{
+				name: "regularizationIterations"
+				label: qsTr("Iterations")
+				defaultValue: 10000
+				min: 1000
+				fieldWidth: 70
+			}
+
+			CheckBox
+			{
+				name: 				"regularizationSetSeed"
+				label: 				qsTr("Set seed")
+				childrenOnSameRow: 	true
+
+				IntegerField
+				{
+					name: 			"regularizationSeed"
+					label: 			""
+					defaultValue: 	1234
+					fieldWidth: 	60
+					min: 			1
+					max: 			1e9
 				}
 			}
 		}

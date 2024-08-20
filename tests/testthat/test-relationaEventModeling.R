@@ -13,6 +13,7 @@ options$weightVariable <- "duration"
 options$typeVariable <- "sensor"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
+options$regularization <- ""
 
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", "team4_events.csv", options)
@@ -44,6 +45,7 @@ options$actorVariableReceiver <- "actor2"
 options$weightVariable <- "duration"
 options$typeVariable <- "sensor"
 options$timepointInputUpper <- "Inf"
+options$regularization <- ""
 
 options$actorDataList <- list(list(actorData = "team4_attributes_actor1.csv", value = "#"),
                               list(actorData = "team4_attributes_actor2.csv", value = "#2"))
@@ -136,6 +138,7 @@ options$eventHistory <- "window"
 options$eventHistorySingleInput <- 100
 options$timepointInputLower <- 1
 options$timepointInputUpper <- "200"
+options$regularization <- ""
 
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", "team4_events.csv", options)
@@ -169,6 +172,7 @@ options$eventHistory <- "decay"
 options$eventHistorySingleInput <- 100
 options$eventDirection <- "undirected"
 options$syncAnalysisBox <- TRUE
+options$regularization <- ""
 
 options$actorDataList <- list(list(actorData = "team4_attributes_actor2.csv", value = "#"))
 options$dyadDataList <- list(list(dyadData = "team4_social_dyadic.csv", value = "#"))
@@ -230,6 +234,7 @@ options$eventHistory <- "decay"
 options$eventHistorySingleInput <- 100
 options$eventDirection <- "undirected"
 options$syncAnalysisBox <- TRUE
+options$regularization <- ""
 
 options$actorDataList <- list(list(actorData = "team4_attributes_actor2.csv", value = "#"))
 options$dyadDataList <- list(list(dyadData = "team4_social_dyadic.csv", value = "#"))
@@ -294,6 +299,7 @@ options$timepointInputUpper <- "Inf"
 options$eventDirection <- "directed"
 options$syncAnalysisBox <- TRUE
 options$eventSequence <- "orderOnly"
+options$regularization <- ""
 
 options$exogenousEffectsTable <- list(
   list(difference = TRUE, value = "gender")
@@ -351,6 +357,7 @@ options$eventHistory <- "decay"
 options$eventHistorySingleInput <- 100
 options$eventDirection <- "undirected"
 options$syncAnalysisBox <- TRUE
+options$regularization <- ""
 
 options$actorDataList <- list(list(actorData = "team4_attributes_actor2.csv", value = "#"))
 options$dyadDataList <- list(list(dyadData = "team4_social_dyadic.csv", value = "#"))
@@ -418,6 +425,7 @@ options$actorVariableReceiver <- "actor2"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
 options$orientation <- "actor"
+options$regularization <- ""
 
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", "history_events.csv", options)
@@ -449,6 +457,12 @@ options$typeVariable <- "setting"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
 options$orientation <- "actor"
+options$regularization <- "horseshoe"
+options$regularizationCiLevel <- .95
+options$regularizationIterations <- 1000
+options$regularizationSetSeed <- TRUE
+options$regularizationSeed <- 1234
+
 options$exogenousEffectsTable <- list(
   list(average = TRUE, value = "age"),
   list(difference = TRUE, value = "age")
@@ -484,14 +498,14 @@ options$interactionEffects <- list(
 options$interactionEffectsSender <- list(
   list(includeInteractionEffectSender = TRUE, value = "send('extraversion') * Indegree sender")
 )
+
 options$actorDataList <- list(list(actorData = "history_info_actor.csv", value = "#"))
 
-# options$actorDataList <- list(list(actorData = "tests/testthat/info.csv", value = "#"))
+# options$actorDataList <- list(list(actorData = "tests/testthat/history_info_actor.csv", value = "#"))
 
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", "history_events.csv", options)
-
-# results <- jaspTools::runAnalysis("relationalEventModeling", history, options, makeTests = T)
+# results <- jaspTools::runAnalysis("relationalEventModeling", "tests/testthat/history_events.csv", options, makeTests = T)
 
 test_that("Coefficient estimates receiver model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
@@ -540,6 +554,42 @@ test_that("Model fit sender model table results match", {
                                       "", "", 2041.61857719911, "BIC", ""))
 })
 
+test_that("Regularization results receiver model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_regContainer"]][["collection"]][["mainContainer_regContainer_regTableReceiver"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("Inertia", -0.0957215642664435, "FALSE", -0.216665430916147, -0.038328590758554,
+                                      -0.038328590758554, -0.0084247593208453, 0.102060406894072,
+                                      "Average_age", -0.0962082753309048, "FALSE", -0.306816764662162,
+                                      -0.064921168405876, -0.064921168405876, -0.00574985713063719,
+                                      0.0820768484032265, "Difference_age", -0.64933563493158, "FALSE",
+                                      -1.02244200588294, -0.305763177482974, -0.305763177482974, -0.0432498212219417,
+                                      0.0551257710263637, "Average_age:Inertia", -0.0133837060290562,
+                                      "FALSE", -0.0805432598004375, 0.0060578378515774, 0.0060578378515774,
+                                      0.0017769260876942, 0.118420090195969, "Difference_age:Inertia",
+                                      -0.0964302037038354, "FALSE", -0.450728517312485, -0.0946379259058603,
+                                      -0.0946379259058603, -0.0165597461373644, 0.107317654778757
+                                 ))
+})
+
+test_that("Regularization results sender model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_regContainer"]][["collection"]][["mainContainer_regContainer_regTableSender"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("baseline", -8.18014042071102, "TRUE", -8.41151136079651, -7.96045614439795,
+                                      -7.96045614439795, -7.84659535655243, -7.65917577647326, "Indegree sender",
+                                      0.0158870237167221, "FALSE", -0.0155602609976501, 0.00676345547073354,
+                                      0.00676345547073354, -0.000679553240205862, 0.0407667636241887,
+                                      "Outdegree sender", 1.38135802157882, "FALSE", -0.665822882179564,
+                                      0.618857352034407, 0.618857352034407, 0.0692891252372188, 3.16495970759094,
+                                      "Send_sex", 0.582721603768429, "FALSE", -0.0441586368087956,
+                                      0.300670801963222, 0.300670801963222, 0.0844629073334333, 0.778857130752527,
+                                      "Send_extraversion", -0.246614172404979, "FALSE", -0.565860731264122,
+                                      -0.187432186483912, -0.187432186483912, -0.0306443835065509,
+                                      0.0447246341579021, "Send_extraversion:Indegree sender", 0.0202109445565805,
+                                      "FALSE", -0.00773947209001064, 0.0143763866013809, 0.0143763866013809,
+                                      0.0057839137087007, 0.0446536591997765))
+})
+
+
 
 # actor model, risket active, simultaneous events split
 # just use the same effects as before, plus:
@@ -577,6 +627,7 @@ options$actorVariableReceiver <- "actor2"
 options$timepointInputUpper <- "Inf"
 options$syncAnalysisBox <- TRUE
 options$eventSequence <- "orderOnly"
+options$regularization <- ""
 
 options$exogenousEffectsTable <- list(
   list(difference = TRUE, value = "age")
@@ -645,6 +696,8 @@ options$actorVariableSender <- "actor1"
 options$actorVariableReceiver <- "actor2"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
+options$regularization <- ""
+
 options$actorDataList <- list(list(actorData = "history_info_actor.csv", value = "#"))
 options$dyadDataList <- list(list(dyadData = "history_wide_dyadic.csv", value = "#"),
                              list(dyadData = "history_long_dyadic1.csv", value = "#2"),
@@ -694,6 +747,7 @@ options$actorVariableSender <- "actor1"
 options$actorVariableReceiver <- "actor2"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
+options$regularization <- ""
 options$exogenousEffectsTable <- list(
   list(difference = TRUE, value = "age")
 )
@@ -733,6 +787,7 @@ options$actorVariableSender <- "actor1"
 options$actorVariableReceiver <- "actor2"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
+options$regularization <- ""
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
                                        endogenousEffectsConsiderType = "no"),
@@ -777,6 +832,7 @@ options$actorVariableReceiver <- "actor2"
 options$orientation <- "actor"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
+options$regularization <- ""
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
                                        endogenousEffectsConsiderType = "no"),
@@ -801,5 +857,8 @@ set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", "team4_events.csv", options)
 # results <- jaspTools::runAnalysis("relationalEventModeling", edges, options, makeTests = T)
 
-### TODO when Giuseppe is ready
+
+
+# regularization works
+
 
