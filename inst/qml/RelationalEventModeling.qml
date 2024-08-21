@@ -1,7 +1,8 @@
-import QtQuick
-import QtQuick.Layouts
-import JASP
-import JASP.Controls
+import QtQuick			2.8
+import QtQuick.Layouts	1.3
+import QtQuick.Controls 2.12
+import JASP.Controls	1.0
+import JASP				1.0
 
 Form
 {
@@ -670,6 +671,12 @@ Form
 			}
 		}
 
+	}
+
+	Section
+	{
+		title: qsTr("Advanced Options")
+
 		Group
 		{
 			title: qsTr("Regularization")
@@ -716,50 +723,48 @@ Form
 			}
 		}
 
-	}
-
-	Section
-	{
-		title: qsTr("Advanced Options")
-
-	Group 
-	{
-		CheckBox
+		Group 
 		{
-			name: "diagnosticPlots"
-			id:diagPlots
-			label: qsTr("Diagnostic Plots")
-			CheckBox { name: "diagnosticPlotWaitTime"; label: qsTr("Waiting time fit"); enabled: diagPlots.checked; checked: true }
-			// CheckBox { name: "diagnosticPlotResiduals"; label: qsTr("Residuals"); enabled: diagPlots.checked; checked: false; id: residualPlot}
-			
-			Text {text: qsTr("Residuals plot") }
-
-			ComponentsList
+			CheckBox
 			{
-				id: residualSelect
-				name: "residualPlotSelect"
-				enabled: diagPlots.checked
-				implicitHeight: 90 * preferencesModel.uiScale
-				implicitWidth: 400 * preferencesModel.uiScale
-				rSource: "effectsForPlot"
-				rowComponent: RowLayout { 
-					Text{Layout.preferredWidth: 300; text: rowValue} 
-					CheckBox {Layout.preferredWidth: 40; name: "includePlotEffect"}
+				name: "diagnosticPlots"
+				id:diagPlots
+				label: qsTr("Diagnostic Plots")
+				CheckBox { name: "diagnosticPlotWaitTime"; label: qsTr("Waiting time fit"); enabled: diagPlots.checked; checked: true }
+				// CheckBox { name: "diagnosticPlotResiduals"; label: qsTr("Residuals"); enabled: diagPlots.checked; checked: false; id: residualPlot}
+				
+				Text {text: qsTr("Residuals plot") }
+
+				ComponentsList
+				{
+					id: residualSelect
+					name: "residualPlotSelect"
+					enabled: diagPlots.checked
+					implicitHeight: 90 * preferencesModel.uiScale
+					implicitWidth: 250 * preferencesModel.uiScale
+					rSource: "effectsForPlot"
+					rowComponent: RowLayout { 
+						Text{Layout.preferredWidth: 300; text: rowValue} 
+						CheckBox {Layout.preferredWidth: 40; name: "includePlotEffect"}
+					}
 				}
 			}
-
 		}
-	}
 
-		Group {
+		
+		RowLayout 
+		{
 			CheckBox
 			{
 				name:				"oldEffectsSaved"
 				label:			qsTr("Save old effects")
 				checked:		false
-				info: 		qsTr("Something")
+			}
+			HelpButton
+			{
+				toolTip: 					qsTr("Click for more information")
+				helpPage:					"forQml/tooltipSaveEffects"
 			}
 		}
 	}
-
 }
