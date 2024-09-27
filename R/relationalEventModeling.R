@@ -1840,8 +1840,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   regTable$addColumnInfo(name = "shrunk.mean", title = gettext("Shrunk mean"), type = "number")
   regTable$addColumnInfo(name = "shrunk.median", title = gettext("Shrunk median"), type = "number")
   regTable$addColumnInfo(name = "shrunk.mode", title = gettext("Shrunk mode"), type = "number")
-  regTable$addColumnInfo(name = "shrunk.lower", title = gettextf("Lower shrunk %s%% CI", ci), type = "number")
-  regTable$addColumnInfo(name = "shrunk.upper", title = gettextf("Upper shrunk %s%% CI", ci), type = "number")
+  regTable$addColumnInfo(name = "shrunk.lower", title = gettext("Lower"),
+                         type = "number", overtitle = gettextf("Shrunk %s%% CI", ci))
+  regTable$addColumnInfo(name = "shrunk.upper", title = gettext("Upper"),
+                         type = "number", overtitle = gettextf("Shrunk %s%% CI", ci))
   regTable$addColumnInfo(name = "nonzero", title = gettext("≠0"), type = "string")
 
   return(regTable)

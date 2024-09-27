@@ -180,11 +180,11 @@ Form
 			}
 			RadioButton
 			{
-				value: "custom"
-				label: qsTr("Custom")
+				value: "manual"
+				label: qsTr("Manual")
 				ComponentsList
 				{
-					visible: riskset.value == "custom"
+					visible: riskset.value == "manual"
 					name: "dyadExcludeList"
 					title: qsTr("Upload dyads to exclude from the riskset")
 					implicitHeight: 90 * preferencesModel.uiScale // about 3 rows
