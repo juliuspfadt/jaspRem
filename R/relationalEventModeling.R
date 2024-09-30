@@ -166,42 +166,29 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 .remUploadDyadExcludeData <- function(jaspResults, options) {
 
-  dyadExcludePaths <- sapply(options[["dyadExcludeList"]], function(x) x[["dyadExclude"]])
+  if (!is.null(jaspResults[["dyadExcludeState"]]$object) || options[["riskset"]] != "manual" ||
+      is.null(options[["dyadExclude"]])) return()
 
-  if (all(dyadExcludePaths == "")) return()
+  if (options[["dyadExclude"]] == "") return()
 
-  if (!is.null(jaspResults[["dyadExcludeState"]]$object) || options[["riskset"]] != "custom") return()
+  bsName <- basename(options[["dyadExclude"]])
+  attrName <- gsub("\\..*","", bsName)
+  ending <- sub(".*(\\..*)", "\\1", bsName)
 
-  dyadOut <- list()
-  for (i in 1:length(dyadExcludePaths)) {
-
-    if (dyadExcludePaths[i] != "") {
-
-      bsName <- basename(options[["dyadExcludeList"]][[i]][["dyadExclude"]])
-      attrName <- gsub("\\..*","", bsName)
-      ending <- sub(".*(\\..*)", "\\1", bsName)
-
-      if (ending == ".csv") {
-        dyadDt <- read.csv(options[["dyadExcludeList"]][[i]][["dyadExclude"]], row.names = NULL, check.names = FALSE)
-      } else if (ending == ".txt") {
-        dyadDt <- read.delim(options[["dyadExcludeList"]][[i]][["dyadExclude"]], row.names = NULL, check.names = FALSE)
-      }
-
-      dyadDt$type <- NA
-      # # this is only necessary for the wide format...
-      # if (ncol(dyadDt) == nrow(dyadDt)) {
-      #   rownames(dyadDt) <- colnames(dyadDt)
-      # }
-
-      dyadOut[[attrName]] <- dyadDt
-
-    } else {
-      dyadOut[[i]] <- NULL
-    }
+  if (ending == ".csv") {
+    dyadDt <- read.csv(options[["dyadExclude"]], row.names = NULL, check.names = FALSE)
+  } else if (ending == ".txt") {
+    dyadDt <- read.delim(options[["dyadExclude"]], row.names = NULL, check.names = FALSE)
   }
 
-  dyadExcludeState <- createJaspState(dyadOut)
-  dyadExcludeState$dependOn("dyadExcludeList")
+  cnames <- colnames(dyadDt)
+  if (!all(c("actor1", "actor2") %in% cnames)) {
+    .quitAnalysis(gettext("The columns in the dyad exclude data file should be named 'actor1' and 'actor2'"))
+  }
+
+  dyadDt <- dyadDt[, c("actor1", "actor2")]
+  dyadExcludeState <- createJaspState(dyadDt)
+  dyadExcludeState$dependOn(c("riskset", "dyadExclude"))
   jaspResults[["dyadExcludeState"]] <- dyadExcludeState
 
   return()
@@ -573,11 +560,11 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   if (!is.null(jaspResults[["dyadExcludeState"]][["object"]])) {
-    dtExcludeList <- jaspResults[["dyadExcludeState"]][["object"]]
-    omitDyad <- list()
-    for (i in 1:length(dtExcludeList)) {
-      omitDyad <- append(omitDyad, list(time = c(NA,NA), dyad = dtExcludeList[[i]]))
-    }
+    dtExclude <- jaspResults[["dyadExcludeState"]][["object"]]
+    dtExclude <- lapply(dtExclude, as.character)
+    dtExclude$type <- NA
+
+    omitDyad <- list(list(time = c(NA,NA), dyad = dtExclude))
   } else {
     omitDyad <- NULL
   }

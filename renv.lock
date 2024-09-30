@@ -1096,12 +1096,10 @@
       "Package": "jaspBase",
       "Version": "0.19.0",
       "Source": "GitHub",
-      "Remotes": "jasp-stats/jaspGraphs",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "jaspBase",
       "RemoteUsername": "jasp-stats",
-      "RemoteRef": "HEAD",
+      "RemoteRepo": "jaspBase",
       "RemoteSha": "7de02c442478e028fe2036e3b906059bf504c13e",
       "Requirements": [
         "R6",
@@ -1141,7 +1139,6 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "jaspGraphs",
       "RemoteUsername": "jasp-stats",
-      "RemoteRef": "HEAD",
       "RemoteSha": "09e2fecf1b921a00a203a442207591ecd3db2821",
       "Requirements": [
         "R6",
@@ -1165,7 +1162,6 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "jaspTools",
       "RemoteUsername": "jasp-stats",
-      "RemoteRef": "HEAD",
       "RemoteSha": "6caf5dd91f1469f4357cd6dc78b3600711e871ea",
       "Requirements": [
         "archive",
@@ -1852,13 +1848,13 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "1.0.3",
+      "Version": "1.0.9",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "utils"
       ],
-      "Hash": "41b847654f567341725473431dd0d5ab"
+      "Hash": "ef233f0e9064fc88c898b340c9add5c2"
     },
     "reshape2": {
       "Package": "reshape2",
@@ -2075,7 +2071,6 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "shrinkem",
       "RemoteUsername": "jomulder",
-      "RemoteRef": "HEAD",
       "RemoteSha": "b5699e9b14120127dbbb8f6b2c59b188872e6263",
       "Requirements": [
         "CholWishart",

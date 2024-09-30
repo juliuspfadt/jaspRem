@@ -182,27 +182,19 @@ Form
 			{
 				value: "manual"
 				label: qsTr("Manual")
-				ComponentsList
+			
+				Label {	text:	qsTr("Upload dyads to exclude:"); visible: riskset.value == "manual" }
+
+				FileSelector
 				{
-					visible: riskset.value == "manual"
-					name: "dyadExcludeList"
-					title: qsTr("Upload dyads to exclude from the riskset")
-					implicitHeight: 90 * preferencesModel.uiScale // about 3 rows
-					minimumItems: 1
-					rowComponent: 
-					RowLayout
-					{
-						FileSelector
-						{
-							id:										dyadExclude
-							name:									"dyadExclude"
-							label:								""
-							placeholderText:			qsTr("e.g., home/Data/dyadExclude.csv")
-							filter:								"*.csv *.txt"
-							save:									false
-							fieldWidth:						180 * preferencesModel.uiScale
-						}
-					}
+					id:										dyadExclude
+					visible: 							riskset.value == "manual"
+					name:									"dyadExclude"
+					label: 								""
+					placeholderText:			qsTr("e.g., home/Data/dyadExclude.csv")
+					filter:								"*.csv *.txt"
+					save:									false
+					fieldWidth:						180 * preferencesModel.uiScale
 				}
 			}
 
