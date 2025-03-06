@@ -13,7 +13,7 @@ jobs:
       REPO_KEY: ${{ secrets.REPOS_KEY }}
       WEBLATE_KEY: ${{ secrets.WEBLATE_KEY }}
       QML_REPO: jasptestmodule-qml
-      R_REPO: jasttestmodule-r
+      R_REPO: jasptestmodule-r
 
     steps:
       - uses: jasp-stats/jasp-actions/wlcLock@master

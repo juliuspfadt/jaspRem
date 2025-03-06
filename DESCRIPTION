@@ -1,8 +1,8 @@
-Package: jaspModule
+Package: jaspRem
 Type: Package
-Title: A module for JASP
-Version: 0.1.0
-Date: 2020-10-15
+Title: REM
+Version: 0.19.3
+Date: 2025-03-06
 Author: JASP Team
 Website: jasp-stats.org
 Maintainer: JASP Team <info@jasp-stats.org>
@@ -11,9 +11,14 @@ License: GPL (>= 2)
 Encoding: UTF-8
 Imports:
   jaspBase,
-  jaspGraphs
+  jaspGraphs,
+  remify,
+  remstats,
+  remstimate,
+  shrinkem
 Suggests:
   testthat
 Remotes:
   jasp-stats/jaspBase,
-  jasp-stats/jaspGraphs
+  jasp-stats/jaspGraphs,
+  jomulder/shrinkem
