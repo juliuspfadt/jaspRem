@@ -13,7 +13,7 @@ Description
 	license		: "GPL (>= 2)"
 	icon      : "logoFreq.png"
 	hasWrappers	: false
-	preloadData: false
+	preloadData: true
 
 	Analysis
 	{

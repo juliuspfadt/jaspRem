@@ -37,7 +37,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   # create a container for the main results that passes down dependencies to everything saved withiin
   .remMainContainer(jaspResults, options)
 
-
   ready <- (options[["timeVariable"]] != "") && (options[["actorVariableSender"]] != "") && (options[["actorVariableReceiver"]] != "")
 
   if (ready && !options[["syncAnalysisBox"]]) {
@@ -49,7 +48,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   if (ready && options[["syncAnalysisBox"]]) {
 
-    dataset <- .remReadData(jaspResults, dataset, options)
+    dataset <- .remHandleData(jaspResults, dataset, options)
 
     .remErrorHandling(jaspResults, dataset, options)
 
@@ -438,10 +437,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 
 # ----------- Main analysis -------------
-.remReadData <- function(jaspResults, dataset, options) {
-
-  if (!is.null(dataset))
-    return(dataset)
+.remHandleData <- function(jaspResults, dataset, options) {
 
   variables <- c(options$timeVariable, options$actorVariableSender, options$actorVariableReceiver)
   if (options$weightVariable != "") {
@@ -461,10 +457,11 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     tmp1 <- lapply(exoEffects, function(x) names(x) == "event")
     tmp2 <- unlist(lapply(tmp1, any))
     eventNames <- unique(names(tmp2[tmp2]))
-    variables <- c(variables, jaspBase::encodeColNames(eventNames))
+    eventIndices <- which(eventNames == decodeColNames(colnames(dataset)))
+    variables <- c(variables, colnames(dataset)[eventIndices])
   }
 
-  dataset <- .readDataSetToEnd(columns = variables)
+  dataset <- dataset[, variables]
 
   colnames(dataset)[1:3] <- jaspBase::encodeColNames(c("time", "actor1", "actor2"))
 
@@ -676,7 +673,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       jaspResults[["mainContainer"]]$setError(gettext("No effects were specified."))
       return()
     }
-
 
     # in the first round both states are created
     statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
@@ -1678,15 +1674,16 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", dtName), exoEffects[ii])
       }
 
-    } else { # everything that is not event and tie is also in the attr actors object
-      ma <- regexpr("'(.*?)'", exoEffects[ii])
-      effVarName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
-      ind <- grep(effVarName, actorVarNames)
-      if (length(ind) > 0) {
-        dtName <- actorDataNames[[ind]]
-        exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", dtName), exoEffects[ii])
+    } else { # everything that is not event and tie is also in the attr actors object (if that exists)
+      if (!is.null(actorDataList)) {
+        ma <- regexpr("'(.*?)'", exoEffects[ii])
+        effVarName <- gsub("'", "", regmatches(exoEffects[ii], ma), fixed = TRUE)
+        ind <- grep(effVarName, actorVarNames)
+        if (length(ind) > 0) {
+          dtName <- actorDataNames[[ind]]
+          exoEffects[ii] <- sub("(\\'.*?)\\'", paste0("\\1', ", dtName), exoEffects[ii])
+        }
       }
-
     }
 
     exoDims <- append(exoDims, dimstmp)

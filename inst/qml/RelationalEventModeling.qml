@@ -348,8 +348,7 @@ Form
 					CheckBox {
 						name: "endogenousEffectsUnique"
 						Layout.preferredWidth: 60
-						visible: effects.varsUnique.includes(rowValue)
-						enabled: inclEndoEff.checked
+						enabled: inclEndoEff.checked & effects.varsUnique.includes(rowValue)
 					}
 				}
 			}
@@ -402,13 +401,6 @@ Form
 			title: orientation.value == "tie" ? qsTr("Exogenous effects") : qsTr("Exogenous effects receiver model")
 			implicitHeight: 150 * preferencesModel.uiScale
 
-			// workaround since the headerLabels for the componentlist keep screwing up
-			// Text { text: orientation.value == "tie" ? 
-			// 							(eventDirection.value == "directed" ? 
-			// 								qsTr("	             Average  Difference   Event   Maximum   Minimum   Receive    Same    Send      Tie") : 
-			// 								qsTr("	             Average  Difference   Event   Maximum   Minimum    Same     Tie")) : 
-			// 							qsTr("	             Average  Difference  Receive    Same     Tie")
-			// 			}
 			ComponentsList
 			{
 				id: exogenousEffectsTable
