@@ -479,7 +479,7 @@ options$interactionEffectsSender <- list(
 options$actorDataList <- list(list(actorData = testthat::test_path("history_info_actor.csv"), value = "#"))
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = FALSE)
 
 test_that("Coefficient estimates receiver model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
@@ -531,36 +531,36 @@ test_that("Model fit sender model table results match", {
 test_that("Regularization results receiver model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_regContainer"]][["collection"]][["mainContainer_regContainer_regTableReceiver"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("Inertia", -0.0957215642664435, "FALSE", -0.216665430916147, -0.038328590758554,
-                                      -0.038328590758554, -0.0084247593208453, 0.102060406894072,
-                                      "Average_age", -0.0962082753309048, "FALSE", -0.306816764662162,
-                                      -0.064921168405876, -0.064921168405876, -0.00574985713063719,
-                                      0.0820768484032265, "Difference_age", -0.64933563493158, "FALSE",
-                                      -1.02244200588294, -0.305763177482974, -0.305763177482974, -0.0432498212219417,
-                                      0.0551257710263637, "Average_age:Inertia", -0.0133837060290562,
-                                      "FALSE", -0.0805432598004375, 0.0060578378515774, 0.0060578378515774,
-                                      0.0017769260876942, 0.118420090195969, "Difference_age:Inertia",
-                                      -0.0964302037038354, "FALSE", -0.450728517312485, -0.0946379259058603,
-                                      -0.0946379259058603, -0.0165597461373644, 0.107317654778757
+                                 list("Inertia", -0.0957215642664435, "FALSE", -0.224579668670249, -0.04035636665249,
+                                      -0.04035636665249, -0.00416152747171972, 0.0903751561913496,
+                                      "Average_age", -0.0962082753309048, "FALSE", -0.327688367620373,
+                                      -0.0745376492806992, -0.0745376492806992, -0.00783625042911096,
+                                      0.0877219491953565, "Difference_age", -0.64933563493158, "FALSE",
+                                      -1.01603606009306, -0.283773726185557, -0.283773726185557, -0.019629829062412,
+                                      0.104391134876248, "Average_age:Inertia", -0.0133837060290562,
+                                      "FALSE", -0.141675915592962, -0.00653747901853143, -0.00653747901853143,
+                                      -0.000183198903951354, 0.119658871471872, "Difference_age:Inertia",
+                                      -0.0964302037038354, "FALSE", -0.400348387522549, -0.0907860320348991,
+                                      -0.0907860320348991, -0.00678565631124306, 0.102066790269654
                                  ))
 })
 
 test_that("Regularization results sender model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_regContainer"]][["collection"]][["mainContainer_regContainer_regTableSender"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -8.18014042071102, "TRUE", -8.41151136079651, -7.96045614439795,
-                                      -7.96045614439795, -7.84659535655243, -7.65917577647326, "Indegree sender",
-                                      0.0158870237167221, "FALSE", -0.0155602609976501, 0.00676345547073354,
-                                      0.00676345547073354, -0.000679553240205862, 0.0407667636241887,
-                                      "Outdegree sender", 1.38135802157882, "FALSE", -0.665822882179564,
-                                      0.618857352034407, 0.618857352034407, 0.0692891252372188, 3.16495970759094,
-                                      "Send_sex", 0.582721603768429, "FALSE", -0.0441586368087956,
-                                      0.300670801963222, 0.300670801963222, 0.0844629073334333, 0.778857130752527,
-                                      "Send_extraversion", -0.246614172404979, "FALSE", -0.565860731264122,
-                                      -0.187432186483912, -0.187432186483912, -0.0306443835065509,
-                                      0.0447246341579021, "Send_extraversion:Indegree sender", 0.0202109445565805,
-                                      "FALSE", -0.00773947209001064, 0.0143763866013809, 0.0143763866013809,
-                                      0.0057839137087007, 0.0446536591997765))
+                                 list("baseline", -8.18014042071102, "TRUE", -8.43376324961643, -7.96430571459135,
+                                      -7.96430571459135, -7.86511876070782, -7.61381727954624, "Indegree sender",
+                                      0.0158870237167221, "FALSE", -0.0175760303948435, 0.00770943151060249,
+                                      0.00770943151060249, 0.00163175135945118, 0.0405988635082699,
+                                      "Outdegree sender", 1.38135802157882, "FALSE", -0.585167024899356,
+                                      0.577075575511302, 0.577075575511302, 0.036690476042835, 2.83997016188058,
+                                      "Send_sex", 0.582721603768429, "FALSE", -0.0726138857381782,
+                                      0.324084834252686, 0.324084834252686, 0.0327131662209897, 0.953412168176907,
+                                      "Send_extraversion", -0.246614172404979, "FALSE", -0.553954082025001,
+                                      -0.179642395154242, -0.179642395154242, -0.0192255900712305,
+                                      0.0633166204776167, "Send_extraversion:Indegree sender", 0.0202109445565805,
+                                      "FALSE", -0.0103666425445991, 0.0138446490788342, 0.0138446490788342,
+                                      0.0125407074706353, 0.0449437254427987))
 })
 
 
@@ -850,18 +850,18 @@ options$riskset <- "manual"
 options$dyadExclude <- testthat::test_path("history_dyads_exclude.csv")
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = T)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = FALSE)
 
 
 test_that("Regularization results tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_regContainer"]][["collection"]][["mainContainer_regContainer_regTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -9.86384358356178, "TRUE", -10.1975950153729, -9.84490296479337,
-                                      -9.84490296479337, -9.86986126474518, -9.53943924275895, "Inertia",
-                                      0.0401278305929245, "FALSE", -0.16561773615919, 0.0373658027180329,
-                                      0.0373658027180329, 0.0310262795685606, 0.235121707193633, "Indegree sender",
-                                      0.0115272367578098, "FALSE", -0.0329460784496282, 0.00841958215201384,
-                                      0.00841958215201384, 0.00591078200027084, 0.0539134231660194
+                                 list("baseline", -9.86384358356178, "TRUE", -10.1625302129706, -9.84318313761637,
+                                      -9.84318313761637, -9.80289902782461, -9.53951591639268, "Inertia",
+                                      0.0401278305929245, "FALSE", -0.177162355620214, 0.0317062978884972,
+                                      0.0317062978884972, 0.00647003474545849, 0.26269240663871, "Indegree sender",
+                                      0.0115272367578098, "FALSE", -0.0331947142707422, 0.00901076175607919,
+                                      0.00901076175607919, 0.00333218999209164, 0.0536675308980435
                                  ))
 })
 
