@@ -4805,7 +4805,7 @@
     },
     "rvg": {
       "Package": "rvg",
-      "Version": "0.3.4",
+	  "Version": "0.3.5",
       "Source": "Repository",
       "Type": "Package",
       "Title": "R Graphics Devices for 'Office' Vector Graphics Output",
