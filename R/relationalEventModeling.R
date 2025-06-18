@@ -20,8 +20,8 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  # sink("~/Downloads/log.txt")
-  # on.exit(sink(NULL))
+  sink("~/Downloads/log.txt")
+  on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
@@ -49,6 +49,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (ready && options[["syncAnalysisBox"]]) {
 
     dataset <- .remHandleData(jaspResults, dataset, options)
+    # for debugging
+    saveRDS(dataset, "~/Downloads/dataset.rds")
+    saveRDS(options, "~/Downloads/options.rds")
 
     .remErrorHandling(jaspResults, dataset, options)
 
