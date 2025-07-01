@@ -206,7 +206,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   vars <- jaspBase::decodeColNames(options[["allVariablesHidden"]])
   vars <- vars[!grepl("weight", vars)]
   vars <- vars[!grepl("type", vars)]
-  vars <- as.list(vars)
+  vars <- list(eventListVars = vars)
 
   if (!is.null(jaspResults[["actorDataState"]])) {
     actorDataList <- jaspResults[["actorDataState"]]$object
@@ -215,6 +215,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       actnms <- actnms[!grepl("time", actnms)]
       actnms <- actnms[!grepl("name", actnms)]
       vars <- append(vars, actnms)
+      # vars[["actorVars"]] <- actnms
     }
   }
 
@@ -228,10 +229,13 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     for (ii in 1:length(dyadDataList)) {
       if (ncol(dyadDataList[[ii]]) == nrow(dyadDataList[[ii]])) { # wide format
         vars <- append(vars, dyadVars[ii])
+        # vars[["dyadVars"]] <- list()
+        # vars[["dyadVars"]][ii] <- dyadVars[ii]
         dyadFind$name[[ii]] <- dyadFind$file[[ii]] <- dyadVars[ii]
       } else {
         longNames <- colnames(dyadDataList[[ii]])[-c(1, 2)] # actor1 and actor2 are in cols 1 and 2
         vars <- append(vars, longNames)
+        # vars[["dyadVars"]] <- longNames
         dyadFind$name[[ii]] <- longNames
         dyadFind$file[[ii]] <- dyadVars[[ii]]
       }
@@ -915,7 +919,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   jaspResults[["mainContainer"]][["modelFitContainer"]] <- modelFitContainer
 
   modelFitTable <- .createEmptyModelFitTable(options)
-  modelFitTable$title <- gettext("Model fit table")
+  modelFitTable$title <- gettext("Model Fit Table")
   modelFitTable$position <- 1
 
   modelFitContainer[["modelFitTable"]] <- modelFitTable
@@ -928,19 +932,19 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
       res <- summary(remResults)
 
-      modelFitTable$title <- gettext("Model fit tie model")
+      modelFitTable$title <- gettext("Model Fit Tie Model")
 
     } else { # actor model
 
       resTmp <- summary(remResults)
       res <- resTmp[["receiver_model"]]
-      modelFitTable$title <- gettext("Model fit receiver model")
+      modelFitTable$title <- gettext("Model Fit Receiver Model")
 
       resSend <- resTmp[["sender_model"]]
       if (!is.null(resSend)) {
 
         modelFitTableSender <- .createEmptyModelFitTable(options)
-        modelFitTableSender$title <- gettext("Model fit sender model")
+        modelFitTableSender$title <- gettext("Model Fit Sender Model")
         modelFitTableSender$position <- 1.1
         modelFitContainer[["modelFitTableSender"]] <- modelFitTableSender
 
@@ -1003,7 +1007,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   jaspResults[["mainContainer"]][["coefficientsContainer"]] <- coefficientsContainer
 
   coefficientsTable <- .createEmptyCoefficientsTable(options)
-  coefficientsTable$title <- gettext("Coefficient estimates")
+  coefficientsTable$title <- gettext("Coefficient Estimates")
 
   coefficientsTable$position <- 2
   coefficientsContainer[["coefficientsTable"]] <- coefficientsTable
@@ -1015,19 +1019,19 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     if (options[["orientation"]] == "tie") {
 
-      coefficientsTable$title <- gettext("Coefficient estimates tie model")
+      coefficientsTable$title <- gettext("Coefficient Estimates Tie Model")
 
     } else {
 
       ctabSend <- ctab[["sender_model"]]
       ctab <- ctab[["receiver_model"]]
 
-      coefficientsTable$title <- gettext("Coefficient estimates receiver model")
+      coefficientsTable$title <- gettext("Coefficient Estimates Receiver Model")
 
       if (!is.null(ctabSend)) {
 
         coefficientsTableSender <- .createEmptyCoefficientsTable(options)
-        coefficientsTableSender$title <- gettext("Coefficient estimates sender model")
+        coefficientsTableSender$title <- gettext("Coefficient Estimates Sender Model")
         coefficientsTableSender$position <- 3
         coefficientsContainer[["coefficientsTableSender"]] <- coefficientsTableSender
 
@@ -1097,7 +1101,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       regContainer$setError(gettext("Regularization failed"))
       return()
     }
-    regTable$title <- gettext("Regularization results tie model")
+    regTable$title <- gettext("Regularization Results Tie Model")
     dt <- regResults$estimates
     rwnames <- rownames(dt)
     dt$coef <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "")
@@ -1112,7 +1116,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         return()
       }
       regTableReceiver <- .createRegularizationTable(ci)
-      regTableReceiver$title <- gettext("Regularization results receiver model")
+      regTableReceiver$title <- gettext("Regularization Results Receiver Model")
       regTableReceiver$position <- 2.4
       dtRec <- regResults$recReg$estimates
       rwnames <- rownames(dtRec)
@@ -1128,7 +1132,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     regTableSender <- regTable
     regTableSender$position <- 2.5
-    regTableSender$title <- gettext("Regularization results sender model")
+    regTableSender$title <- gettext("Regularization Results Sender Model")
     dtSend <- regResults$sendReg$estimates
     rwnames <- rownames(dtSend)
     dtSend$coef <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "Sender")
@@ -1173,20 +1177,20 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
         plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 1, effects = NULL,
                                   send_effects = NULL, rec_effects = NULL)
-        waitPlot <- createJaspPlot(plot = NULL, title = gettext("Waiting times fit"),
+        waitPlot <- createJaspPlot(plot = NULL, title = gettext("Waiting Times Fit"),
                                    height = 400, width = 500)
         waitPlot$dependOn("diagnosticPlotWaitTime")
         waitPlot$position <- 1
         plotContainer[["waitingTimePlot"]] <- waitPlot
         if (isTryError(plotObj)) {
-          waitPlot$setError(gettextf("Waiting time diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+          waitPlot$setError(gettextf("Waiting time diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
         } else {
           waitPlot$plotObject <- plotObj
         }
       }
 
       if (length(selected) > 0) {
-        residualsPlotContainer <- createJaspContainer(gettext("Schoenfeld's residuals fit"))
+        residualsPlotContainer <- createJaspContainer(gettext("Schoenfeld's Residuals Fit"))
         residualsPlotContainer$dependOn("residualPlotSelect")
         jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainer"]] <- residualsPlotContainer
 
@@ -1201,7 +1205,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
             residualsPlotContainer[[toPlotTie[pp]]] <- residualsPlot
 
             if (isTryError(plotObj)) {
-              residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+              residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
             } else {
               residualsPlot$plotObject <- plotObj
             }
@@ -1209,7 +1213,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
         } else {
           ##### TODO: the proper titles
-          residualsPlotContainerReceiver <- createJaspContainer(gettext("Schoenfeld's residuals fit receiver model"))
+          residualsPlotContainerReceiver <- createJaspContainer(gettext("Schoenfeld's Residuals Fit Receiver Model"))
           residualsPlotContainerReceiver$dependOn("residualPlotSelect")
           jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainerReceiver"]] <- residualsPlotContainerReceiver
 
@@ -1224,14 +1228,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
               residualsPlotContainerReceiver[[toPlotReceiver[pp]]] <- residualsPlot
 
               if (isTryError(plotObj)) {
-                residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+                residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
               } else {
                 residualsPlot$plotObject <- plotObj
               }
             }
           }
 
-          residualsPlotContainerSender <- createJaspContainer(gettext("Schoenfeld's residuals fit sender model"))
+          residualsPlotContainerSender <- createJaspContainer(gettext("Schoenfeld's Residuals Fit Sender Model"))
           residualsPlotContainerSender$dependOn("residualPlotSelect")
           jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainerSender"]] <- residualsPlotContainerSender
 
@@ -1247,7 +1251,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
               residualsPlotContainerSender[[toPlotSender[pp]]] <- residualsPlot
 
               if (isTryError(plotObj)) {
-                residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+                residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
               } else {
                 residualsPlot$plotObject <- plotObj
               }
@@ -1824,9 +1828,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   regTable <- createJaspTable()
   regTable$addColumnInfo(name = "coef", title = gettext("Coefficient"), type = "string")
   regTable$addColumnInfo(name = "est", title = gettext("Estimate"), type = "number")
-  regTable$addColumnInfo(name = "shrunk.mean", title = gettext("Shrunk mean"), type = "number")
-  regTable$addColumnInfo(name = "shrunk.median", title = gettext("Shrunk median"), type = "number")
-  regTable$addColumnInfo(name = "shrunk.mode", title = gettext("Shrunk mode"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.mean", title = gettext("Shrunk Mean"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.median", title = gettext("Shrunk Median"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.mode", title = gettext("Shrunk Mode"), type = "number")
   regTable$addColumnInfo(name = "shrunk.lower", title = gettext("Lower"),
                          type = "number", overtitle = gettextf("Shrunk %s%% CI", ci))
   regTable$addColumnInfo(name = "shrunk.upper", title = gettext("Upper"),

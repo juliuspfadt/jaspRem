@@ -310,7 +310,7 @@ Form
 
 		Group 
 		{
-			title: orientation.value == "tie" ? qsTr("Endogenous effects") : qsTr("Endogenous effects receiver model")
+			title: orientation.value == "tie" ? qsTr("Endogenous Effects") : qsTr("Endogenous Effects Receiver Model")
 			implicitHeight: 150 * preferencesModel.uiScale
 
 			ComponentsList 
@@ -357,7 +357,7 @@ Form
 		Group 
 		{
 			visible: orientation.value == "actor"
-			title: qsTr("Endogenous effects sender model")
+			title: qsTr("Endogenous Effects Sender Model")
 			implicitHeight: 130 * preferencesModel.uiScale
 
 			ComponentsList 
@@ -398,7 +398,7 @@ Form
 
 		Group
 		{
-			title: orientation.value == "tie" ? qsTr("Exogenous effects") : qsTr("Exogenous effects receiver model")
+			title: orientation.value == "tie" ? qsTr("Exogenous Effects") : qsTr("Exogenous Effects Receiver Model")
 			implicitHeight: 150 * preferencesModel.uiScale
 
 			ComponentsList
