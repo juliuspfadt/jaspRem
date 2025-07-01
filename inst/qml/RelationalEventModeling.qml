@@ -222,7 +222,7 @@ Form
  // section visible for the tie-oriented directed model
 	Section 
 	{
-		title: qsTr("Effects")
+		title: qsTr("Endogenous Effects")
 		columns: 1
 		id: effects
 		/*
@@ -310,12 +310,12 @@ Form
 
 		Group 
 		{
-			title: orientation.value == "tie" ? qsTr("Endogenous Effects") : qsTr("Endogenous Effects Receiver Model")
-			implicitHeight: 150 * preferencesModel.uiScale
+			title: orientation.value == "tie" ? "" : qsTr("Receiver Model")
+			implicitHeight: 180 * preferencesModel.uiScale
 
 			ComponentsList 
 			{ 
-				implicitHeight: 120 * preferencesModel.uiScale
+				implicitHeight: 150 * preferencesModel.uiScale
 				implicitWidth: 590 * preferencesModel.uiScale
 
 				source: [{ 
@@ -357,15 +357,13 @@ Form
 		Group 
 		{
 			visible: orientation.value == "actor"
-			title: qsTr("Endogenous Effects Sender Model")
+			title: qsTr("Sender Model")
 			implicitHeight: 130 * preferencesModel.uiScale
 
 			ComponentsList 
 			{ 
 				implicitHeight: 80 * preferencesModel.uiScale
 				implicitWidth: 590 * preferencesModel.uiScale
-
-
 
 				source: [{ values: effects.varsActorSender }] 
 				name: "endogenousEffectsSender"
@@ -395,42 +393,42 @@ Form
 				}
 			}
 		}
+	}
 
-		Group
+	Section
+	{
+		title: qsTr("Exogenous Effects")
+
+		Group 
 		{
-			title: orientation.value == "tie" ? qsTr("Exogenous Effects") : qsTr("Exogenous Effects Receiver Model")
-			implicitHeight: 150 * preferencesModel.uiScale
-
+			Layout.columnSpan: 2
 			ComponentsList
 			{
-				id: exogenousEffectsTable
-				name: "exogenousEffectsTable"
-				headerLabels: orientation.value == "tie" ? (eventDirection.value == "directed" ? [qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send"), qsTr("Tie")] : 
-						[qsTr("Average"), qsTr("Difference"), qsTr("Event"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Same"), qsTr("Tie")]) : 
-					[qsTr("Average"), qsTr("Difference"), qsTr("Receive"), qsTr("Same"), qsTr("Tie")]
+				id: exogenousEffectsTableActors
+				name: "exogenousEffectsTableActors"
+				title: orientation.value == "tie" ? qsTr("Actor Effects") : qsTr("Actor Effects Receiver Model")
+				headerLabels: orientation.value == "tie" ? (eventDirection.value == "directed" ? [qsTr("Average"), qsTr("Difference"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Receive"), qsTr("Same"), qsTr("Send")] : 
+						[qsTr("Average"), qsTr("Difference"), qsTr("Maximum"), qsTr("Minimum"), qsTr("Same")]) : 
+					[qsTr("Average"), qsTr("Difference"), qsTr("Receive"), qsTr("Same")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 590 * preferencesModel.uiScale
-				rSource: "exoTableVariablesR"
+				rSource: "exoTableVariablesActorsFromR"
 				rowComponent: RowLayout { 
 					Text{Layout.preferredWidth: 110; text: rowValue} 
 					CheckBox {Layout.preferredWidth: 40; name: "average"}
 					CheckBox {Layout.preferredWidth: 50; name: "difference"}
-					CheckBox {Layout.preferredWidth: 35; name: "event"; visible: orientation.value == "tie"  }
 					CheckBox {Layout.preferredWidth: 45; name: "maximum"; visible: orientation.value == "tie"}
 					CheckBox {Layout.preferredWidth: 45; name: "minimum"; visible: orientation.value == "tie"}
 					CheckBox {Layout.preferredWidth: 40; name: "receive"; visible: !(orientation.value == "tie" && eventDirection.value == "undirected")}
 					CheckBox {Layout.preferredWidth: 30; name: "same"}
 					CheckBox {Layout.preferredWidth: 30; name: "send"; visible: orientation.value == "tie" && eventDirection.value == "directed"}
-					CheckBox {Layout.preferredWidth: 30; name: "tie"}
 					TextField { visible: false; name: "text1"; value: "average('" + rowValue + "')"}
 					TextField { visible: false; name: "text2"; value: "difference('" + rowValue + "')"}
-					TextField { visible: false; name: "text3"; value: "event('" + rowValue + "')"}
 					TextField { visible: false; name: "text4"; value: "maximum('" + rowValue + "')"}
 					TextField { visible: false; name: "text5"; value: "minimum('" + rowValue + "')"}
 					TextField { visible: false; name: "text6"; value: "receive('" + rowValue + "')"}
 					TextField { visible: false; name: "text7"; value: "same('" + rowValue + "')"}
 					TextField { visible: false; name: "text8"; value: "send('" + rowValue + "')"}
-					TextField { visible: false; name: "text9"; value: "tie('" + rowValue + "')"}
 				}
 			}
 		}
@@ -438,7 +436,7 @@ Form
 		Group
 		{
 			visible: orientation.value == "actor"
-			title: qsTr("Exogenous effects sender model")
+			title: qsTr("Actor Effects Sender Model")
 			implicitHeight: 140 * preferencesModel.uiScale
 
 			ComponentsList
@@ -447,28 +445,57 @@ Form
 				name: "exogenousEffectsTableSender"
 				headerLabels: [qsTr("Send")]
 				implicitHeight: 100 * preferencesModel.uiScale
-				implicitWidth: 400 * preferencesModel.uiScale
-				rSource: "exoTableVariablesR"
+				implicitWidth: 290 * preferencesModel.uiScale
+				rSource: "exoTableVariablesActorsFromR"
 				rowComponent: RowLayout { 
-					Text{Layout.preferredWidth: 140; text: rowValue} 
-					CheckBox {Layout.preferredWidth: 40; name: "average"; visible: false}
-					CheckBox {Layout.preferredWidth: 50; name: "difference"; visible: false}
-					CheckBox {Layout.preferredWidth: 25; name: "event"; visible: false}
-					CheckBox {Layout.preferredWidth: 45; name: "maximum"; visible: false}
-					CheckBox {Layout.preferredWidth: 45; name: "minimum"; visible: false}
-					CheckBox {Layout.preferredWidth: 40; name: "receive"; visible: false}
-					CheckBox {Layout.preferredWidth: 30; name: "same"; visible: false}
+					Text{Layout.preferredWidth: 180; text: rowValue} 
 					CheckBox {Layout.preferredWidth: 30; name: "send"}
-					CheckBox {Layout.preferredWidth: 30; name: "tie"; visible: false}
 					TextField { visible: false; name: "text8"; value: "send('" + rowValue + "')"}
-
 				}
 			}
 		}
 
 		Group
 		{
-			title: orientation.value == "tie" ? qsTr("Specified exogenous effects") : qsTr("Specified exogenous effects receiver model")
+			ComponentsList
+			{
+				id: exogenousEffectsTableEvents
+				name: "exogenousEffectsTableEvents"
+				title: qsTr("Event Effect")
+				visible: orientation.value == "tie"
+				implicitHeight: 100 * preferencesModel.uiScale
+				implicitWidth: 290 * preferencesModel.uiScale
+				rSource: "exoTableVariablesEventsFromR"
+				rowComponent: RowLayout { 
+					Text{Layout.preferredWidth: 130; text: rowValue} 
+					CheckBox {Layout.preferredWidth: 35; name: "event" }
+					TextField { visible: false; name: "text3"; value: "event('" + rowValue + "')"}
+				}
+			}
+		}
+
+		Group
+		{
+			ComponentsList
+			{
+				id: exogenousEffectsTableDyads
+				name: "exogenousEffectsTableDyads"
+				title: qsTr("Tie Effect")
+				implicitHeight: 100 * preferencesModel.uiScale
+				implicitWidth: 290 * preferencesModel.uiScale
+				rSource: "exoTableVariablesDyadsFromR"
+				rowComponent: RowLayout { 
+					Text{Layout.preferredWidth: 130; text: rowValue} 
+					CheckBox {Layout.preferredWidth: 30; name: "tie"}
+					TextField { visible: false; name: "text9"; value: "tie('" + rowValue + "')"}
+				}
+			}
+		}
+
+		Group
+		{
+			Layout.columnSpan: 2
+			title: orientation.value == "tie" ? qsTr("Specified Effects") : qsTr("Specified Effects Receiver Model")
 			implicitHeight: 140 * preferencesModel.uiScale
 
 			ComponentsList
@@ -477,15 +504,15 @@ Form
 				id: specifiedExoEffects
 				headerLabels: [qsTr("Scaling"), qsTr("Absolute")]
 				// rSource: "specifiedExoEffectsFromR"
-				source: [{name: "exogenousEffectsTable.text1", condition: "average"},
-								 {name: "exogenousEffectsTable.text2", condition: "difference"},
-								 {name: "exogenousEffectsTable.text3", condition: "event"},
-								 {name: "exogenousEffectsTable.text4", condition: "maximum"},
-								 {name: "exogenousEffectsTable.text5", condition: "minimum"},
-								 {name: "exogenousEffectsTable.text6", condition: "receive"},
-								 {name: "exogenousEffectsTable.text7", condition: "same"},
-								 {name: "exogenousEffectsTable.text8", condition: "send"},
-								 {name: "exogenousEffectsTable.text9", condition: "tie"}]
+				source: [{name: "exogenousEffectsTableActors.text1", condition: "average"},
+								 {name: "exogenousEffectsTableActors.text2", condition: "difference"},
+								 {name: "exogenousEffectsTableEvents.text3", condition: "event"},
+								 {name: "exogenousEffectsTableActors.text4", condition: "maximum"},
+								 {name: "exogenousEffectsTableActors.text5", condition: "minimum"},
+								 {name: "exogenousEffectsTableActors.text6", condition: "receive"},
+								 {name: "exogenousEffectsTableActors.text7", condition: "same"},
+								 {name: "exogenousEffectsTableActors.text8", condition: "send"},
+								 {name: "exogenousEffectsTableDyads.text9", condition: "tie"}]
 
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 400 * preferencesModel.uiScale
@@ -509,7 +536,7 @@ Form
 		Group
 		{
 			visible: orientation.value == "actor"
-			title: qsTr("Specified exogenous effects sender model")
+			title: qsTr("Specified Effects Sender Model")
 			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
 			{
@@ -537,10 +564,14 @@ Form
 				}
 			}
 		}
+	}
 
+	Section
+	{
+		title: qsTr("Interaction Effects")
 		Group
 		{
-			title: orientation.value == "tie" ? qsTr("Interaction effects") : qsTr("Interaction effects receiver model")
+			title: orientation.value == "tie" ? "" : qsTr("Receiver Model")
 			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
 			{
@@ -560,7 +591,7 @@ Form
 		Group
 		{
 			visible: orientation.value == "actor"
-			title: qsTr("Interaction effects sender model")
+			title: qsTr("Sender Model")
 			implicitHeight: 140 * preferencesModel.uiScale
 			ComponentsList
 			{
@@ -585,7 +616,7 @@ Form
 
 		Group 
 		{
-		title: qsTr("Estimation method")
+		title: qsTr("Estimation Method")
 		visible: false // make this invisible to use at a later point, so now the method will always be MLE
 			RadioButtonGroup {
 				name: "method"
@@ -597,7 +628,7 @@ Form
 
 		Group 
 		{
-			title: qsTr("Statistics options")
+			title: qsTr("Statistics Options")
 
 			RadioButtonGroup
 			{

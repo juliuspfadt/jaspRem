@@ -20,15 +20,22 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  sink("~/Downloads/log.txt")
-  on.exit(sink(NULL))
+#   sink("~/Downloads/log.txt")
+#   on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
   .remUploadDyadExcludeData(jaspResults, options)
 
-  .feedbackExoTableVariables(jaspResults, options)
+  # fill the qml componentsLists
+  .feedbackExoTableVariablesEvents(jaspResults, options)
+  .feedbackExoTableVariablesActors(jaspResults, options)
+  .feedbackExoTableVariablesDyads(jaspResults, options)
+
   # process the exo effects from the table
+  saveRDS(options, "~/Downloads/options.rds")
+  saveRDS(dataset, "~/Downloads/dataset.rds")
+
   .exoEffectsSpecified(jaspResults, options)
 
   .feedbackInteractionEffects(jaspResults, options)
@@ -199,15 +206,27 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 # -------- Effects preparation and handling ----------
 
-.feedbackExoTableVariables <- function(jaspResults, options) {
+.feedbackExoTableVariablesEvents <- function(jaspResults, options) {
 
-  if (!is.null(jaspResults[["exoTableVariablesR"]])) return()
+  if (!is.null(jaspResults[["exoTableVariablesEventsFromR"]])) return()
 
   vars <- jaspBase::decodeColNames(options[["allVariablesHidden"]])
   vars <- vars[!grepl("weight", vars)]
   vars <- vars[!grepl("type", vars)]
-  vars <- list(eventListVars = vars)
+  vars <- as.list(vars)
 
+  src <- createJaspQmlSource("exoTableVariablesEventsFromR", vars)
+  src$dependOn(c("allVariablesHidden"))
+  jaspResults[["exoTableVariablesEventsFromR"]] <- src
+
+  return()
+}
+
+.feedbackExoTableVariablesActors <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["exoTableVariablesActorsFromR"]])) return()
+
+  vars <- list()
   if (!is.null(jaspResults[["actorDataState"]])) {
     actorDataList <- jaspResults[["actorDataState"]]$object
     for (i in 1:length(actorDataList)) {
@@ -215,9 +234,21 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       actnms <- actnms[!grepl("time", actnms)]
       actnms <- actnms[!grepl("name", actnms)]
       vars <- append(vars, actnms)
-      # vars[["actorVars"]] <- actnms
     }
   }
+
+  src <- createJaspQmlSource("exoTableVariablesActorsFromR", vars)
+  src$dependOn("actorDataList")
+  jaspResults[["exoTableVariablesActorsFromR"]] <- src
+
+  return()
+}
+
+.feedbackExoTableVariablesDyads <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["exoTableVariablesDyadsFromR"]])) return()
+
+  vars <- list()
 
   if (!is.null(jaspResults[["dyadDataState"]])) {
     dyadDataList <- jaspResults[["dyadDataState"]]$object
@@ -229,13 +260,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     for (ii in 1:length(dyadDataList)) {
       if (ncol(dyadDataList[[ii]]) == nrow(dyadDataList[[ii]])) { # wide format
         vars <- append(vars, dyadVars[ii])
-        # vars[["dyadVars"]] <- list()
-        # vars[["dyadVars"]][ii] <- dyadVars[ii]
         dyadFind$name[[ii]] <- dyadFind$file[[ii]] <- dyadVars[ii]
       } else {
         longNames <- colnames(dyadDataList[[ii]])[-c(1, 2)] # actor1 and actor2 are in cols 1 and 2
         vars <- append(vars, longNames)
-        # vars[["dyadVars"]] <- longNames
         dyadFind$name[[ii]] <- longNames
         dyadFind$file[[ii]] <- dyadVars[[ii]]
       }
@@ -244,12 +272,13 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     jaspResults[["dyadFindState"]] <- dyadFindState
   }
 
-  src <- createJaspQmlSource("exoTableVariablesR", vars)
-  src$dependOn(c("allVariablesHidden", "actorDataList", "dyadDataList"))
-  jaspResults[["exoTableVariablesR"]] <- src
+  src <- createJaspQmlSource("exoTableVariablesDyadsFromR", vars)
+  src$dependOn("dyadDataList")
+  jaspResults[["exoTableVariablesDyadsFromR"]] <- src
 
   return()
 }
+
 
 .feedbackInteractionEffects <- function(jaspResults, options) {
 
@@ -419,8 +448,40 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     return()
   }
 
-  exoOut <- .exogenousEffectsHelper(options[["exogenousEffectsTable"]])
-  specExoEffects <- exoOut$specifiedEffects
+  exoEventsOut <- .exogenousEffectsHelper(options[["exogenousEffectsTableEvents"]])
+  exoActorsOut <- .exogenousEffectsHelper(options[["exogenousEffectsTableActors"]])
+  exoDyadsOut <- .exogenousEffectsHelper(options[["exogenousEffectsTableDyads"]])
+
+  # Merge the specifiedEffects$variableNames
+  mergedVariableNames <- c(
+    exoEventsOut$specifiedEffects$variableNames,
+    exoActorsOut$specifiedEffects$variableNames,
+    exoDyadsOut$specifiedEffects$variableNames
+  )
+
+  # Merge the specifiedEffects$list elements
+  mergedList <- c(
+    exoEventsOut$specifiedEffects$list,
+    exoActorsOut$specifiedEffects$list,
+    exoDyadsOut$specifiedEffects$list
+  )
+
+  # Merge the qmlNames vectors
+  mergedQmlNames <- c(
+    exoEventsOut$qmlNames,
+    exoActorsOut$qmlNames,
+    exoDyadsOut$qmlNames
+  )
+
+  # Combine everything into a new merged list
+  exoMerged <- list(
+    specifiedEffects = list(
+      variableNames = mergedVariableNames,
+      list = mergedList
+    ),
+    qmlNames = mergedQmlNames
+  )
+  specExoEffects <- exoMerged$specifiedEffects
 
   if (options[["orientation"]] == "actor") {
 
@@ -434,7 +495,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   }
 
   exoEffectsState <- createJaspState(specExoEffects)
-  exoEffectsState$dependOn(c("exogenousEffectsTable", "exogenousEffectsTableSender"))
+  exoEffectsState$dependOn(c("exogenousEffectsTableEvents",
+                             "exogenousEffectsTableActors",
+                             "exogenousEffectsTableDyads",
+                             "exogenousEffectsTableSender"))
   jaspResults[["exoEffectsState"]] <- exoEffectsState
 
   return()
@@ -658,7 +722,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   # prepare the data for remstats, aka, assign the attributes to objects so they are present for remstats
   .prepareCovariateData(jaspResults, dataset, options)
-
 
   # prepare some more options for remstats
   memoryValues <- switch(options[["eventHistory"]],
@@ -1421,6 +1484,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     # the actor attributes data
     if (!is.null(jaspResults[["actorDataStateNew"]]$object)) {
+
       actorDataList <- jaspResults[["actorDataStateNew"]]$object
 
       actorVarNames <- lapply(actorDataList, colnames)

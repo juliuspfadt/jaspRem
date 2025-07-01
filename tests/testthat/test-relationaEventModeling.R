@@ -51,12 +51,16 @@ options$dyadDataList <- list(list(dyadData = testthat::test_path("team4_social_d
                              list(dyadData = testthat::test_path("team4_advice_dyadic.csv"), value = "#2"))
 
 options$syncAnalysisBox <- TRUE
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(maximum = TRUE, minimum = TRUE, value = "gender"),
-  list(difference = TRUE, value = "age"),
+  list(difference = TRUE, value = "age")
+)
+
+options$exogenousEffectsTableDyads <- list(
   list(tie = TRUE, value = "team4_advice_dyadic"),
   list(tie = TRUE, value = "team4_social_dyadic")
 )
+
 options$specifiedExogenousEffects <- list(
   list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "none", value = "maximum('gender')"),
   list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "std", value = "minimum('gender')"),
@@ -82,7 +86,7 @@ options$interactionEffects <- list(
 )
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("team4_events.csv"), options)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("team4_events.csv"), options, makeTests = FALSE)
 
 test_that("Coefficient estimates tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
@@ -169,8 +173,10 @@ options$actorDataList <- list(list(actorData = testthat::test_path("team4_attrib
 options$dyadDataList <- list(list(dyadData = testthat::test_path("team4_social_dyadic.csv"), value = "#"))
 
 options$syncAnalysisBox <- TRUE
-options$exogenousEffectsTable <- list(
-  list(difference = TRUE, value = "age"),
+options$exogenousEffectsTableActors <- list(
+  list(difference = TRUE, value = "age")
+)
+options$exogenousEffectsTableDyads <- list(
   list(tie = TRUE, value = "team4_social_dyadic")
 )
 options$specifiedExogenousEffects <- list(
@@ -228,8 +234,10 @@ options$actorDataList <- list(list(actorData = testthat::test_path("team4_attrib
 options$dyadDataList <- list(list(dyadData = testthat::test_path("team4_social_dyadic.csv"), value = "#"))
 
 options$syncAnalysisBox <- TRUE
-options$exogenousEffectsTable <- list(
-  list(difference = TRUE, value = "age"),
+options$exogenousEffectsTableActors <- list(
+  list(difference = TRUE, value = "age")
+)
+options$exogenousEffectsTableDyads <- list(
   list(tie = TRUE, value = "social")
 )
 options$specifiedExogenousEffects <- list(
@@ -285,7 +293,7 @@ options$syncAnalysisBox <- TRUE
 options$eventSequence <- "orderOnly"
 options$regularization <- ""
 
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(difference = TRUE, value = "gender")
 )
 options$specifiedExogenousEffects <- list(
@@ -345,9 +353,11 @@ options$actorDataList <- list(list(actorData = testthat::test_path("team4_attrib
 options$dyadDataList <- list(list(dyadData = testthat::test_path("team4_social_dyadic.csv"), value = "#"))
 
 options$syncAnalysisBox <- TRUE
-options$exogenousEffectsTable <- list(
-  list(average = FALSE, difference = TRUE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = FALSE, value = "age"),
-  list(average = FALSE, difference = FALSE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = TRUE, value = "social")
+options$exogenousEffectsTableActors <- list(
+  list(difference = TRUE, value = "age")
+)
+options$exogenousEffectsTableDyads <- list(
+  list(tie = TRUE, value = "social")
 )
 options$specifiedExogenousEffects <- list(
   list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('age')"),
@@ -440,7 +450,7 @@ options$regularizationIterations <- 1000
 options$regularizationSetSeed <- TRUE
 options$regularizationSeed <- 1234
 
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(average = TRUE, value = "age"),
   list(difference = TRUE, value = "age")
 )
@@ -603,7 +613,7 @@ options$syncAnalysisBox <- TRUE
 options$eventSequence <- "orderOnly"
 options$regularization <- ""
 
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(difference = TRUE, value = "age")
 )
 options$specifiedExogenousEffects <- list(
@@ -674,9 +684,10 @@ options$actorDataList <- list(list(actorData = testthat::test_path("history_info
 options$dyadDataList <- list(list(dyadData = testthat::test_path("history_wide_dyadic.csv"), value = "#"),
                              list(dyadData = testthat::test_path("history_long_dyadic1.csv"), value = "#2"),
                              list(dyadData = testthat::test_path("history_long_dyadic2.csv"), value = "#4"))
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(difference = TRUE, value = "age"),
-  list(average = TRUE, value = "extraversion"),
+  list(average = TRUE, value = "extraversion"))
+options$exogenousEffectsTableDyads <- list(
   list(tie = TRUE, value = "dy1")
 )
 options$specifiedExogenousEffects <- list(list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none",
@@ -719,7 +730,8 @@ options$actorVariableReceiver <- "actor2"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
 options$regularization <- ""
-options$exogenousEffectsTable <- list(
+
+options$exogenousEffectsTableActors <- list(
   list(difference = TRUE, value = "age")
 )
 options$specifiedExogenousEffects <- list(
@@ -788,7 +800,7 @@ test_that("Inertia plot matches", {
 test_that("Waiting times fit plot matches", {
   plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_waitingTimePlot"]][["data"]]
   testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
-  jaspTools::expect_equal_plots(testPlot, "waiting-times-fit")
+  jaspTools::expect_equal_plots(testPlot, "waiting-times-fit-tie")
 })
 
 
@@ -823,8 +835,37 @@ options$residualPlotSelect <- list(list(includePlotEffect = TRUE, value = "Indeg
                                    list(includePlotEffect = TRUE, value = "Outdegree sender"))
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("team4_events.csv"), options)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("team4_events.csv"), options, makeTests = FALSE)
 
+test_that("titleless-plot-4 matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainerReceiver"]][["collection"]][["mainContainer_plotContainer_residualsContainerReceiver_indegreeReceiver"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "titleless-plot-4")
+})
+
+test_that("titleless-plot-5 matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainerReceiver"]][["collection"]][["mainContainer_plotContainer_residualsContainerReceiver_inertia"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "titleless-plot-5")
+})
+
+test_that("titleless-plot-6 matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainerSender"]][["collection"]][["mainContainer_plotContainer_residualsContainerSender_indegreeSender"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "titleless-plot-6")
+})
+
+test_that("titleless-plot-7 matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainerSender"]][["collection"]][["mainContainer_plotContainer_residualsContainerSender_outdegreeSender"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "titleless-plot-7")
+})
+
+test_that("Waiting Times Fit plot matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_waitingTimePlot"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "waiting-times-fit-actor")
+})
 
 
 # regularization and manual riskset
