@@ -20,8 +20,8 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-#   sink("~/Downloads/log.txt")
-#   on.exit(sink(NULL))
+  # sink("~/Downloads/log.txt")
+  # on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
@@ -589,7 +589,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
   }
 
-  # first three variables should be time actors and maybe weight
 }
 
 
@@ -745,6 +744,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
 
     # in the first round both states are created
+
     statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
                                           receiver_effects = receivers,
                                           memory = options[["eventHistory"]], memory_value = memoryValues,
@@ -1476,7 +1476,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         for (iii in 1:length(dyInds)) {
           if (length(dyInds[[iii]]) > 0) {# because there are some integer(0) elements sometimes
             # seems like remstats needs as.matrix()
-            assign(dyadFileNames[[iii]], as.matrix(jaspResults[["dyadDataState"]][["object"]][[dyadFileNames[[iii]]]]), pos = 1)
+            dtObj <- jaspResults[["dyadDataState"]][["object"]][[dyadFileNames[[iii]]]]
+            if (ncol(dtObj) == nrow(dtObj)) dtObj <- as.matrix(dtObj) # for wide format we need to transform into matrix
+            assign(dyadFileNames[[iii]], dtObj, pos = 1)
           }
         }
       }
