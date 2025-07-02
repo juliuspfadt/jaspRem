@@ -113,7 +113,7 @@ Form
 
 	Section
 	{
-		title: qsTr("Model")
+		title: qsTr("Model Options")
 		columns: 2
 
 		RadioButtonGroup
