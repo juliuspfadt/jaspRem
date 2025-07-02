@@ -33,9 +33,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   .feedbackExoTableVariablesDyads(jaspResults, options)
 
   # process the exo effects from the table
-  saveRDS(options, "~/Downloads/options.rds")
-  saveRDS(dataset, "~/Downloads/dataset.rds")
-
   .exoEffectsSpecified(jaspResults, options)
 
   .feedbackInteractionEffects(jaspResults, options)
@@ -56,9 +53,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (ready && options[["syncAnalysisBox"]]) {
 
     dataset <- .remHandleData(jaspResults, dataset, options)
-    # for debugging
-    saveRDS(dataset, "~/Downloads/dataset.rds")
-    saveRDS(options, "~/Downloads/options.rds")
+
+    # # for debugging
+    # saveRDS(dataset, "~/Downloads/dataset.rds")
+    # saveRDS(options, "~/Downloads/options.rds")
 
     .remErrorHandling(jaspResults, dataset, options)
 
@@ -87,7 +85,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                            "interactionEffects", "endogenousEffectsSender", "exogenousEffectsSender",
                            "interactionEffectsSender", "eventHistory", "eventHistorySingleInput",
                            "eventHistoryIntervalInputLower", "eventHistoryIntervalInputUpper", "timepointInputLower",
-                           "timepointInputUpper", "simultaneousEvents"))
+                           "timepointInputUpper", "simultaneousEvents", "dyadExclude"))
   jaspResults[["mainContainer"]] <- mainContainer
 
   return()
@@ -211,8 +209,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["exoTableVariablesEventsFromR"]])) return()
 
   vars <- jaspBase::decodeColNames(options[["allVariablesHidden"]])
-  vars <- vars[!grepl("weight", vars)]
-  vars <- vars[!grepl("type", vars)]
   vars <- as.list(vars)
 
   src <- createJaspQmlSource("exoTableVariablesEventsFromR", vars)
@@ -651,7 +647,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   remifyResultState$dependOn(c("eventDirection", "eventSequence",
                                "orientation", "riskset", "naAction", "weightVariable",
                                "timeVariable", "actorVariableSender", "actorVariableReceiver", "weightVariable",
-                               "typeVariable", "syncAnalysisBox"))
+                               "typeVariable", "syncAnalysisBox", "dyadExclude"))
 
   jaspResults[["remifyResultState"]] <- remifyResultState
 
