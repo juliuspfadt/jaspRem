@@ -1053,6 +1053,34 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   }
 
+
+  # add model options to footnote
+  eventSeq <- switch(options[["eventSequence"]],
+                     "orderOnly" = gettext("ordered only"),
+                     "timeSensitive" = gettext("time-sensitive"))
+  if (options[["orientation"]] == "tie") {
+    modelFitTable$addFootnote(gettextf("The model is %1$s-oriented %2$s with %3$s riskset. The event sequence is %4$s.",
+                                       options[["orientation"]], options[["eventDirection"]], options[["riskset"]], eventSeq))
+  } else {
+    modelFitTable$addFootnote(gettextf("The model is %1$s-oriented with %2$s riskset. The event sequence is %3$s.",
+                                       options[["orientation"]], options[["riskset"]], eventSeq))
+  }
+
+
+  # add statistics options in footnote
+  simEvents <- switch(options[["simultaneousEvents"]],
+                      "join" = "joined",
+                      options[["simultaneousEvents"]])
+  eventHistory <- switch(options[["eventHistory"]],
+                         "window" = gettextf("a window with %s time units", options[["eventHistorySingleInput"]]),
+                         "interval" = gettextf("an interval from %1$s to %2$s",
+                                               options[["eventHistoryIntervalInputLower"]],
+                                               options[["eventHistoryIntervalInputUpper"]]),
+                         "decay" = gettextf("decaying with half-life time of %s", options[["eventHistorySingleInput"]]),
+                         options[["eventHistory"]])
+  modelFitTable$addFootnote(gettextf("Simultaneous events are %1$s. Event history is considered as %2$s.",
+                                     simEvents, eventHistory))
+
   return()
 }
 
