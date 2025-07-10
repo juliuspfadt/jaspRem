@@ -212,7 +212,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   vars <- as.list(vars)
 
   src <- createJaspQmlSource("exoTableVariablesEventsFromR", vars)
-  src$dependOn(c("allVariablesHidden"))
+  src$dependOn("allVariablesHidden")
   jaspResults[["exoTableVariablesEventsFromR"]] <- src
 
   return()
@@ -490,12 +490,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   }
 
-  exoEffectsState <- createJaspState(specExoEffects)
-  exoEffectsState$dependOn(c("exogenousEffectsTableEvents",
-                             "exogenousEffectsTableActors",
-                             "exogenousEffectsTableDyads",
-                             "exogenousEffectsTableSender"))
-  jaspResults[["exoEffectsState"]] <- exoEffectsState
+  if (length(specExoEffects) > 0) {
+    exoEffectsState <- createJaspState(specExoEffects)
+    exoEffectsState$dependOn(c("exogenousEffectsTableEvents",
+                               "exogenousEffectsTableActors",
+                               "exogenousEffectsTableDyads",
+                               "exogenousEffectsTableSender"))
+    jaspResults[["exoEffectsState"]] <- exoEffectsState
+  }
 
   return()
 

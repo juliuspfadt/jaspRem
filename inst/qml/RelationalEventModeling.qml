@@ -96,14 +96,13 @@ Form
 				background.color = "#ff8600"
 			}
 		}
-
-		AssignedVariablesList {
-			name: "allVariablesHidden"
-			source: "allVariables"
-			visible: false
-		}
 	}
 
+	Section
+	{
+		AssignedVariablesList{ name: "allVariablesHidden"; source: "allVariables" }
+		visible: false
+	}
 
 	Section
 	{
@@ -400,9 +399,15 @@ Form
 				implicitHeight: 150 * preferencesModel.uiScale
 				implicitWidth: 590 * preferencesModel.uiScale
 				name: "endogenousEffects"
+				addItemManually: false
 				id: endogenousEffects
-				info: qsTr("Choose which endogenous effects to include in the tie-oriented or receiver model (visible in the actor-oriented model). You can select scaling and effect-specific options. Effects quantify patterns such as inertia, reciprocity, shared partners, and other network-driven event dependencies.")
-
+				info: qsTr("Choose which endogenous effects to include in the tie-oriented or receiver model (visible in the actor-oriented model). "
+				+ "You can select scaling and effect-specific options. Effects quantify patterns such as inertia, reciprocity, shared partners, and other network-driven event dependencies.")
+				source: [{ 
+						values: orientation.value == "tie" ? 
+							(eventDirection.value == "undirected" ? effects.varsTieUndirected : effects.varsTieDirected) : 
+							(effects.varsActorReceiver)
+						}] 
 				headerLabels: typeVar.count > 0 ? [qsTr("Include"), qsTr("Scaling"), qsTr("Consider type"), qsTr("Unique")]
 					: [qsTr("Include"), qsTr("Scaling"), qsTr("Unique")]
 				rowComponent: RowLayout {
@@ -449,7 +454,7 @@ Form
 				name: "endogenousEffectsSender"
 				id: endogenousEffectsSender
 				info: qsTr("For the sender in actor-oriented models, choose which endogenous effects to include. Effects reflect sender-based network dynamics.")
-
+				source: [{ values: effects.varsActorSender }] 
 				headerLabels: [qsTr("Include"), qsTr("Scaling"), qsTr("Consider type")]
 				rowComponent: RowLayout {
 					Text { Layout.preferredWidth: 200; text: effects.translated[rowValue] }
@@ -677,7 +682,7 @@ Form
 				name: "interactionEffects"
 				rSource: "possibleInteractionEffectsFromR"
 				// source: ["specifiedExogenousEffects", {name: "specifiedExogenousEffects", combineTerms: JASP.Combination2Way}]
-				info: qsTr("List of possible interaction effects based on previously selected exogenous and edogenous effects. Tick the checkbox to include an interaction in the model.")
+				info: qsTr("List of possible interaction effects based on previously selected exogenous and edogenous effects.")
 				headerLabels: [qsTr("Include")]
 				implicitHeight: 100 * preferencesModel.uiScale
 				implicitWidth: 500 * preferencesModel.uiScale
