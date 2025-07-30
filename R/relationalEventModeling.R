@@ -20,9 +20,6 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  # sink("~/Downloads/log.txt")
-  # on.exit(sink(NULL))
-
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
   .remUploadDyadExcludeData(jaspResults, options)
@@ -677,7 +674,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         .quitAnalysis(gettextf("The actor attributes data file %1$s does not contain all actor names",
                                names(actorDataList)[i]))
       }
-      orderedActorDataList[[i]] <- actorDataList[[i]][match(actorNames, nameVar), ]
+      # keep the actors in the covariates object that are in the rehObject, aka, the event data
+      actorsToKeep <- nameVar %in% actorNames
+      orderedActorDataList[[i]] <- actorDataList[[i]][actorsToKeep, ]
     }
     names(orderedActorDataList) <- names(actorDataList)
   }
