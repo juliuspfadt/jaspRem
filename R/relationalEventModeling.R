@@ -20,8 +20,6 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  sink("~/Downloads/log.txt")
-  on.exit(sink(NULL))
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
