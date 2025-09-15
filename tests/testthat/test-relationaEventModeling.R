@@ -80,9 +80,9 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
                                        endogenousEffectsConsiderType = "no"))
 
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "minimum('gender') * Incoming shared partners(type)"),
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia(type)"),
-  list(includeInteractionEffect = TRUE, value = "tie('team4_advice_dyadic') * Inertia(type)")
+  list(includeInteractionEffect = TRUE, value = "minimum('gender') : Incoming shared partners(type)"),
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia(type)"),
+  list(includeInteractionEffect = TRUE, value = "tie('team4_advice_dyadic') : Inertia(type)")
 )
 
 set.seed(1)
@@ -189,7 +189,7 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
                                        endogenousEffectsConsiderType = "no"))
 
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
 )
 
 set.seed(1)
@@ -250,7 +250,7 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
                                        endogenousEffectsConsiderType = "no"))
 
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
 )
 options$timepointInputUpper <- "Inf"
 options$eventHistory <- "full"
@@ -369,7 +369,7 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
                                        endogenousEffectsConsiderType = "no"))
 
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
 )
 options$timepointInputUpper <- "Inf"
 options$eventHistory <- "full"
@@ -479,11 +479,11 @@ options$endogenousEffectsSender <- list(list(value = "indegreeSender", translate
                                             endogenousEffectsConsiderTypeSender = "no")
                                        )
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "average('age') * Inertia"),
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+  list(includeInteractionEffect = TRUE, value = "average('age') : Inertia"),
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
 )
 options$interactionEffectsSender <- list(
-  list(includeInteractionEffectSender = TRUE, value = "send('extraversion') * Indegree sender")
+  list(includeInteractionEffectSender = TRUE, value = "send('extraversion') : Indegree sender")
 )
 
 options$actorDataList <- list(list(actorData = testthat::test_path("history_info_actor.csv"), value = "#"))
@@ -697,7 +697,7 @@ options$specifiedExogenousEffects <- list(list(exogenousEffectsAbsolute = TRUE, 
                                                value = "tie('dy1')"))
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = T)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = F)
 
 test_that("Coefficient Estimates Tie Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]

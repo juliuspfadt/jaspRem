@@ -341,7 +341,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if ((length(outExoList) + length(outEndoListX)) >= 2) {
     combList <- c(unlist(outEndoListX), unlist(outExoList))
     interTmp <- combn(combList, m = 2)
-    inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
+    inters <- as.list(paste0(interTmp[1, ], " : ", interTmp[2, ]))
 
     possibleInteractionEffectsFromR <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
     possibleInteractionEffectsFromR$dependOn(c("endogenousEffects", "specifiedExogenousEffects"))
@@ -376,7 +376,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
       combListSender <- c(unlist(outEndoListXSender), unlist(outExoListSender))
       interTmpSender <- combn(combListSender, m = 2)
-      intersSender <- as.list(paste0(interTmpSender[1, ], " * ", interTmpSender[2, ]))
+      intersSender <- as.list(paste0(interTmpSender[1, ], " : ", interTmpSender[2, ]))
 
       possibleInteractionEffectsFromRSender <- createJaspQmlSource("possibleInteractionEffectsFromRSender", intersSender)
       possibleInteractionEffectsFromRSender$dependOn(c("endogenousEffectsSender", "specifiedExogenousEffectsSender"))
@@ -1804,8 +1804,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   # work the endo effects
   if (length(endoObj$rNames) > 0) {
-    interTmps <- strsplit(interEffects, " * ", fixed = TRUE)
-    interDimsTmps <- strsplit(interDims, " * ", fixed = TRUE)
+    interTmps <- strsplit(interEffects, " : ", fixed = TRUE)
+    interDimsTmps <- strsplit(interDims, " : ", fixed = TRUE)
     for (ii in 1:length(interTmps)) {
       for (ee in 1:length(endoObj$rNames)) {
         ind <- which(endoObj$jaspNames[ee] == interTmps[[ii]])
@@ -1815,8 +1815,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         }
       }
     }
-    interEffects <- sapply(interTmps, function(x) paste0(x, collapse = " * "))
-    interDims <- sapply(interDimsTmps, function(x) paste0(x, collapse = " * "))
+    interEffects <- sapply(interTmps, function(x) paste0(x, collapse = " : "))
+    interDims <- sapply(interDimsTmps, function(x) paste0(x, collapse = " : "))
   }
 
   # work the exo effects
@@ -1830,10 +1830,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
   }
 
-  interEffects <- gsub(" * ", ":", interEffects, fixed = TRUE)
+  interEffects <- gsub(" : ", ":", interEffects, fixed = TRUE)
   interEffects <- paste0(interEffects, collapse = " + ")
 
-  interDims <- gsub(" * ", ":", interDims, fixed = TRUE)
+  interDims <- gsub(" : ", ":", interDims, fixed = TRUE)
 
   return(list(effects = interEffects, dims = interDims))
 
@@ -1950,7 +1950,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   # align the jaspNames to match them with rnames
   jNames <- gsub("('", "_", jaspNames, fixed = TRUE)
   jNames <- gsub("')", "", jNames, fixed = TRUE)
-  jNames <- gsub(" * ", ":", jNames, fixed = TRUE)
+  jNames <- gsub(" : ", ":", jNames, fixed = TRUE)
   # because the "of" is not part of the remstimate outputted names
   jNames <- gsub(" of ", "", jNames, fixed = TRUE)
   jNames <- gsub(" ", "", jNames, fixed = TRUE)
