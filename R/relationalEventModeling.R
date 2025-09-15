@@ -51,9 +51,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     dataset <- .remHandleData(jaspResults, dataset, options)
 
-    # # for debugging
-    # saveRDS(dataset, "~/Downloads/dataset.rds")
-    # saveRDS(options, "~/Downloads/options.rds")
+    # for debugging
+    saveRDS(dataset, "~/Downloads/dataset.rds")
+    saveRDS(options, "~/Downloads/options.rds")
 
     .remErrorHandling(jaspResults, dataset, options)
 
