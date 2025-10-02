@@ -126,7 +126,7 @@
     },
     "QuickJSR": {
       "Package": "QuickJSR",
-      "Version": "1.8.0",
+      "Version": "1.8.1",
       "Source": "Repository",
       "Title": "Interface for the 'QuickJS-NG' Lightweight 'JavaScript' Engine",
       "Authors@R": "c( person(c(\"Andrew\", \"R.\"), \"Johnson\", , \"andrew.johnson@arjohnsonau.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0001-7000-8065\")), person(\"QuickJS\", \"Authors\", role = c(\"cph\"), comment = \"QuickJS sources and headers\"), person(\"QuickJS-NG\", \"Authors\", role = c(\"cph\"), comment = \"QuickJS-NG sources and headers\") )",
@@ -142,7 +142,7 @@
       "Encoding": "UTF-8",
       "Language": "en-AU",
       "NeedsCompilation": "yes",
-      "RoxygenNote": "7.3.2",
+      "RoxygenNote": "7.3.3",
       "SystemRequirements": "GNU make",
       "VignetteBuilder": "knitr",
       "Author": "Andrew R. Johnson [aut, cre] (ORCID: <https://orcid.org/0000-0001-7000-8065>), QuickJS Authors [cph] (QuickJS sources and headers), QuickJS-NG Authors [cph] (QuickJS-NG sources and headers)",
@@ -223,11 +223,11 @@
     },
     "RcppArmadillo": {
       "Package": "RcppArmadillo",
-      "Version": "15.0.2-1",
+      "Version": "15.0.2-2",
       "Source": "Repository",
       "Type": "Package",
       "Title": "'Rcpp' Integration for the 'Armadillo' Templated Linear Algebra Library",
-      "Date": "2025-09-08",
+      "Date": "2025-09-18",
       "Authors@R": "c(person(\"Dirk\", \"Eddelbuettel\", role = c(\"aut\", \"cre\"), email = \"edd@debian.org\", comment = c(ORCID = \"0000-0001-6419-907X\")), person(\"Romain\", \"Francois\", role = \"aut\", comment = c(ORCID = \"0000-0002-2444-4226\")), person(\"Doug\", \"Bates\", role = \"aut\", comment = c(ORCID = \"0000-0001-8316-9503\")), person(\"Binxiang\", \"Ni\", role = \"aut\"), person(\"Conrad\", \"Sanderson\", role = \"aut\", comment = c(ORCID = \"0000-0002-0049-4501\")))",
       "Description": "'Armadillo' is a templated C++ linear algebra library aiming towards a good balance between speed and ease of use. It provides high-level syntax and functionality deliberately similar to Matlab. It is useful for algorithm development directly in C++, or quick conversion of research code into production environments. It provides efficient classes for vectors, matrices and cubes where dense and sparse matrices are supported. Integer, floating point and complex numbers are supported. A sophisticated expression evaluator (based on template meta-programming) automatically combines several operations to increase speed and efficiency. Dynamic evaluation automatically chooses optimal code paths based on detected matrix structures. Matrix decompositions are provided through integration with LAPACK, or one of its high performance drop-in replacements (such as 'MKL' or 'OpenBLAS'). It can automatically use 'OpenMP' multi-threading (parallelisation) to speed up computationally expensive operations. . The 'RcppArmadillo' package includes the header files from the 'Armadillo' library; users do not need to install 'Armadillo' itself in order to use 'RcppArmadillo'. Starting from release 15.0.0, the minimum compilation standard is C++14 so 'Armadillo' version 14.6.3 is included as a fallback when an R package forces the C++11 standard. Package authors should set a '#define' to select the 'current' version, or select the 'legacy' version (also chosen as default) if they must. See 'GitHub issue #475' for details. . Since release 7.800.0, 'Armadillo' is licensed under Apache License 2; previous releases were under licensed as MPL 2.0 from version 3.800.0 onwards and LGPL-3 prior to that; 'RcppArmadillo' (the 'Rcpp' bindings/bridge to Armadillo) is licensed under the GNU GPL version 2 or later, as is the rest of 'Rcpp'.",
       "License": "GPL (>= 2)",
@@ -1582,7 +1582,7 @@
     },
     "gdtools": {
       "Package": "gdtools",
-      "Version": "0.4.3",
+      "Version": "0.4.4",
       "Source": "Repository",
       "Title": "Utilities for Graphical Rendering and Fonts Management",
       "Authors@R": "c( person(\"David\", \"Gohel\", , \"david.gohel@ardata.fr\", role = c(\"aut\", \"cre\")), person(\"Hadley\", \"Wickham\", , \"hadley@rstudio.com\", role = \"aut\"), person(\"Lionel\", \"Henry\", , \"lionel@rstudio.com\", role = \"aut\"), person(\"Jeroen\", \"Ooms\", , \"jeroen@berkeley.edu\", role = \"aut\", comment = c(ORCID = \"0000-0002-4035-0289\")), person(\"Yixuan\", \"Qiu\", role = \"ctb\"), person(\"R Core Team\", role = \"cph\", comment = \"Cairo code from X11 device\"), person(\"ArData\", role = \"cph\"), person(\"RStudio\", role = \"cph\") )",
@@ -1597,7 +1597,7 @@
         "fontquiver (>= 0.2.0)",
         "htmltools",
         "Rcpp (>= 0.12.12)",
-        "systemfonts (>= 1.1.0)",
+        "systemfonts (>= 1.3.1)",
         "tools"
       ],
       "Suggests": [
@@ -1610,7 +1610,7 @@
         "Rcpp"
       ],
       "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.2",
+      "RoxygenNote": "7.3.3",
       "SystemRequirements": "cairo, freetype2, fontconfig",
       "NeedsCompilation": "yes",
       "Author": "David Gohel [aut, cre], Hadley Wickham [aut], Lionel Henry [aut], Jeroen Ooms [aut] (ORCID: <https://orcid.org/0000-0002-4035-0289>), Yixuan Qiu [ctb], R Core Team [cph] (Cairo code from X11 device), ArData [cph], RStudio [cph]",
@@ -2218,7 +2218,7 @@
       "RemoteUsername": "jasp-stats",
       "RemoteRepo": "jaspGraphs",
       "RemoteRef": "master",
-      "RemoteSha": "ffd065a84e9eaa9cd610684a556dfb1fad129e0c",
+      "RemoteSha": "cf422696bb8d8e2677868997f9a65e6e15ea9a2f",
       "RemoteHost": "api.github.com"
     },
     "jaspTools": {
@@ -2254,7 +2254,7 @@
       "RemoteUsername": "jasp-stats",
       "RemoteRepo": "jaspTools",
       "RemoteRef": "master",
-      "RemoteSha": "525d7bd87fc832df731c5484582dc45af3d40f80",
+      "RemoteSha": "9ef3d8d1c1d9d5b3a87057e80599c250940464ed",
       "RemoteHost": "api.github.com"
     },
     "jsonlite": {
@@ -2765,7 +2765,7 @@
     },
     "openssl": {
       "Package": "openssl",
-      "Version": "2.3.3",
+      "Version": "2.3.4",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Toolkit for Encryption, Signatures and Certificates Based on OpenSSL",
@@ -2794,7 +2794,7 @@
       "NeedsCompilation": "yes",
       "Author": "Jeroen Ooms [aut, cre] (ORCID: <https://orcid.org/0000-0002-4035-0289>), Oliver Keyes [ctb]",
       "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
-      "Repository": "RSPM"
+      "Repository": "CRAN"
     },
     "parallelly": {
       "Package": "parallelly",
@@ -2828,7 +2828,7 @@
     },
     "pillar": {
       "Package": "pillar",
-      "Version": "1.11.0",
+      "Version": "1.11.1",
       "Source": "Repository",
       "Title": "Coloured Formatting for Columns",
       "Authors@R": "c(person(given = \"Kirill\", family = \"M\\u00fcller\", role = c(\"aut\", \"cre\"), email = \"kirill@cynkra.com\", comment = c(ORCID = \"0000-0002-1416-3412\")), person(given = \"Hadley\", family = \"Wickham\", role = \"aut\"), person(given = \"RStudio\", role = \"cph\"))",
@@ -2870,7 +2870,7 @@
       ],
       "VignetteBuilder": "knitr",
       "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.2.9000",
+      "RoxygenNote": "7.3.3.9000",
       "Config/testthat/edition": "3",
       "Config/testthat/parallel": "true",
       "Config/testthat/start-first": "format_multi_fuzz, format_multi_fuzz_2, format_multi, ctl_colonnade, ctl_colonnade_1, ctl_colonnade_2",
@@ -2948,12 +2948,12 @@
     },
     "pkgload": {
       "Package": "pkgload",
-      "Version": "1.4.0",
+      "Version": "1.4.1",
       "Source": "Repository",
       "Title": "Simulate Package Installation and Attach",
       "Authors@R": "c( person(\"Hadley\", \"Wickham\", role = \"aut\"), person(\"Winston\", \"Chang\", role = \"aut\"), person(\"Jim\", \"Hester\", role = \"aut\"), person(\"Lionel\", \"Henry\", , \"lionel@posit.co\", role = c(\"aut\", \"cre\")), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\")), person(\"R Core team\", role = \"ctb\", comment = \"Some namespace and vignette code extracted from base R\") )",
       "Description": "Simulates the process of installing a package and then attaching it. This is a key part of the 'devtools' package as it allows you to rapidly iterate while developing a package.",
-      "License": "GPL-3",
+      "License": "MIT + file LICENSE",
       "URL": "https://github.com/r-lib/pkgload, https://pkgload.r-lib.org",
       "BugReports": "https://github.com/r-lib/pkgload/issues",
       "Depends": [
@@ -2970,8 +2970,7 @@
         "processx",
         "rlang (>= 1.1.1)",
         "rprojroot",
-        "utils",
-        "withr (>= 2.4.3)"
+        "utils"
       ],
       "Suggests": [
         "bitops",
@@ -2982,18 +2981,19 @@
         "remotes",
         "rstudioapi",
         "testthat (>= 3.2.1.1)",
-        "usethis"
+        "usethis",
+        "withr"
       ],
       "Config/Needs/website": "tidyverse/tidytemplate, ggplot2",
       "Config/testthat/edition": "3",
       "Config/testthat/parallel": "TRUE",
       "Config/testthat/start-first": "dll",
       "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.1",
+      "RoxygenNote": "7.3.2",
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut], Winston Chang [aut], Jim Hester [aut], Lionel Henry [aut, cre], Posit Software, PBC [cph, fnd], R Core team [ctb] (Some namespace and vignette code extracted from base R)",
       "Maintainer": "Lionel Henry <lionel@posit.co>",
-      "Repository": "RSPM"
+      "Repository": "CRAN"
     },
     "plyr": {
       "Package": "plyr",
@@ -3267,11 +3267,11 @@
     },
     "remify": {
       "Package": "remify",
-      "Version": "3.2.8",
+      "Version": "3.2.9",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Processing and Transforming Relational Event History Data",
-      "Date": "2025-01-28",
+      "Date": "2025-09-26",
       "Authors@R": "c(person(given = \"Giuseppe\", family = \"Arena\", role = c(\"aut\", \"cre\"), email = \"g.arena@uva.nl\", comment = c(ORCID = \"0000-0001-5204-3326\")), person(given = \"Rumana\", family = \"Lakdawala\", role = \"ctb\"), person(given = \"Marlyne\", family = \"Meijerink-Bosman\", role = \"ctb\"), person(given = \"Diana\", family = \"Karimova\", role = \"ctb\"), person(given = \"Fabio\", family = \"Generoso Vieira\", role = \"ctb\"), person(given = \"Mahdi\", family = \"Shafiee Kamalabad\", role = \"ctb\"), person(given = \"Roger\", family = \"Leenders\", role = \"ctb\", email = \"r.t.a.j.leenders@tilburguniversity.edu\"), person(given = \"Joris\", family = \"Mulder\", role = \"ctb\", email = \"j.mulder3@tilburguniversity.edu\"))",
       "Maintainer": "Giuseppe Arena <g.arena@uva.nl>",
       "Description": "Efficiently processes relational event history data and transforms them into formats suitable for other packages. The primary objective of this package is to convert event history data into a format that integrates with the packages in 'remverse' and is compatible with various analytical tools (e.g., computing network statistics, estimating tie-oriented or actor-oriented social network models). Second, it can also transform the data into formats compatible with other packages out of 'remverse'. The package processes the data for two types of temporal social network models: tie-oriented modeling framework (Butts, C., 2008, <doi:10.1111/j.1467-9531.2008.00203.x>) and actor-oriented modeling framework (Stadtfeld, C., & Block, P., 2017, <doi:10.15195/v4.a14>).",
@@ -3299,7 +3299,7 @@
       "LazyData": "true",
       "RoxygenNote": "7.3.2",
       "NeedsCompilation": "yes",
-      "Author": "Giuseppe Arena [aut, cre] (<https://orcid.org/0000-0001-5204-3326>), Rumana Lakdawala [ctb], Marlyne Meijerink-Bosman [ctb], Diana Karimova [ctb], Fabio Generoso Vieira [ctb], Mahdi Shafiee Kamalabad [ctb], Roger Leenders [ctb], Joris Mulder [ctb]",
+      "Author": "Giuseppe Arena [aut, cre] (ORCID: <https://orcid.org/0000-0001-5204-3326>), Rumana Lakdawala [ctb], Marlyne Meijerink-Bosman [ctb], Diana Karimova [ctb], Fabio Generoso Vieira [ctb], Mahdi Shafiee Kamalabad [ctb], Roger Leenders [ctb], Joris Mulder [ctb]",
       "Repository": "CRAN"
     },
     "remotes": {
@@ -3392,11 +3392,11 @@
     },
     "remstimate": {
       "Package": "remstimate",
-      "Version": "2.3.13",
+      "Version": "2.3.14",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Optimization Frameworks for Tie-Oriented and Actor-Oriented Relational Event Models",
-      "Date": "2025-01-29",
+      "Date": "2025-09-26",
       "Authors@R": "c(person(given = \"Giuseppe\", family = \"Arena\", role = c(\"aut\", \"cre\"), email = \"g.arena@uva.nl\", comment = c(ORCID = \"0000-0001-5204-3326\")), person(given = \"Rumana\", family = \"Lakdawala\", role = \"aut\"), person(given = \"Fabio\", family = \"Generoso Vieira\", role = \"aut\"),              person(given = \"Marlyne\", family = \"Meijerink-Bosman\", role = \"ctb\"), person(given = \"Diana\", family = \"Karimova\", role = \"ctb\"), person(given = \"Mahdi\", family = \"Shafiee Kamalabad\", role = \"ctb\"), person(given = \"Roger\", family = \"Leenders\", role = \"ctb\", email = \"r.t.a.j.leenders@tilburguniversity.edu\"), person(given = \"Joris\", family = \"Mulder\", role = \"ctb\", email = \"j.mulder3@tilburguniversity.edu\"))",
       "Maintainer": "Giuseppe Arena <g.arena@uva.nl>",
       "Description": "A comprehensive set of tools designed for optimizing likelihood within a tie-oriented (Butts, C., 2008, <doi:10.1111/j.1467-9531.2008.00203.x>) or an actor-oriented modelling framework (Stadtfeld, C., & Block, P., 2017, <doi:10.15195/v4.a14>) in relational event networks. The package accommodates both frequentist and Bayesian approaches. The frequentist approaches that the package incorporates are the Maximum Likelihood Optimization (MLE) and the Gradient-based Optimization  (GDADAMAX). The Bayesian methodologies included in the package are the Bayesian Sampling Importance Resampling (BSIR) and the Hamiltonian Monte Carlo (HMC). The flexibility of choosing between frequentist and Bayesian optimization approaches allows researchers to select the estimation approach which aligns the most with their analytical preferences.",
@@ -3429,7 +3429,7 @@
       "LazyData": "true",
       "RoxygenNote": "7.3.2",
       "NeedsCompilation": "yes",
-      "Author": "Giuseppe Arena [aut, cre] (<https://orcid.org/0000-0001-5204-3326>), Rumana Lakdawala [aut], Fabio Generoso Vieira [aut], Marlyne Meijerink-Bosman [ctb], Diana Karimova [ctb], Mahdi Shafiee Kamalabad [ctb], Roger Leenders [ctb], Joris Mulder [ctb]",
+      "Author": "Giuseppe Arena [aut, cre] (ORCID: <https://orcid.org/0000-0001-5204-3326>), Rumana Lakdawala [aut], Fabio Generoso Vieira [aut], Marlyne Meijerink-Bosman [ctb], Diana Karimova [ctb], Mahdi Shafiee Kamalabad [ctb], Roger Leenders [ctb], Joris Mulder [ctb]",
       "Repository": "CRAN"
     },
     "renv": {
@@ -3720,37 +3720,38 @@
     },
     "rvg": {
       "Package": "rvg",
-      "Version": "0.3.5",
+      "Version": "0.4.0",
       "Source": "Repository",
       "Type": "Package",
       "Title": "R Graphics Devices for 'Office' Vector Graphics Output",
-      "Authors@R": "c( person(\"David\", \"Gohel\", role = c(\"aut\", \"cre\"), email = \"david.gohel@ardata.fr\"), person(given = \"ArData\", role = \"cph\"), person(\"Bob\", \"Rudis\", role = c(\"ctb\"), comment = \"the javascript code used by function set_attr\"), person(\"Francois\", \"Brunetti\", role = c(\"ctb\"), email = \"francois.brunetti@lysis-consultants.fr\", comment = \"clipping algorithms\") )",
-      "Description": "Vector Graphics devices for 'Microsoft PowerPoint' and  'Microsoft Excel'. Functions extending package 'officer' are provided to  embed 'DrawingML' graphics into 'Microsoft PowerPoint' presentations and  'Microsoft Excel' workbooks.",
-      "SystemRequirements": "libpng",
+      "Authors@R": "c( person(\"David\", \"Gohel\", , \"david.gohel@ardata.fr\", role = c(\"aut\", \"cre\")), person(\"ArData\", role = \"cph\"), person(\"Bob\", \"Rudis\", role = \"ctb\", comment = \"the javascript code used by function set_attr\"), person(\"Francois\", \"Brunetti\", , \"francois.brunetti@lysis-consultants.fr\", role = \"ctb\", comment = \"clipping algorithms\") )",
+      "Description": "Vector Graphics devices for 'Microsoft PowerPoint' and 'Microsoft Excel'. Functions extending package 'officer' are provided to embed 'DrawingML' graphics into 'Microsoft PowerPoint' presentations and 'Microsoft Excel' workbooks.",
       "License": "GPL-3",
-      "Encoding": "UTF-8",
+      "URL": "https://ardata-fr.github.io/officeverse/, https://davidgohel.github.io/rvg/",
+      "BugReports": "https://github.com/davidgohel/rvg/issues",
       "Depends": [
         "R (>= 3.0)"
       ],
       "Imports": [
-        "grDevices",
-        "Rcpp (>= 0.12.12)",
-        "officer (>= 0.6.2)",
         "gdtools (>= 0.3.3)",
-        "xml2 (>= 1.0.0)",
-        "rlang"
+        "grDevices",
+        "officer (>= 0.6.2)",
+        "Rcpp (>= 0.12.12)",
+        "rlang",
+        "systemfonts",
+        "xml2 (>= 1.0.0)"
+      ],
+      "Suggests": [
+        "grid",
+        "testthat"
       ],
       "LinkingTo": [
         "Rcpp",
-        "gdtools"
+        "systemfonts"
       ],
-      "Suggests": [
-        "testthat",
-        "grid"
-      ],
-      "URL": "https://ardata-fr.github.io/officeverse/, https://davidgohel.github.io/rvg/",
-      "BugReports": "https://github.com/davidgohel/rvg/issues",
-      "RoxygenNote": "7.3.2",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.3",
+      "SystemRequirements": "libpng",
       "NeedsCompilation": "yes",
       "Author": "David Gohel [aut, cre], ArData [cph], Bob Rudis [ctb] (the javascript code used by function set_attr), Francois Brunetti [ctb] (clipping algorithms)",
       "Maintainer": "David Gohel <david.gohel@ardata.fr>",
@@ -3981,7 +3982,7 @@
     },
     "systemfonts": {
       "Package": "systemfonts",
-      "Version": "1.2.3",
+      "Version": "1.3.1",
       "Source": "Repository",
       "Type": "Package",
       "Title": "System Native Font Finding",
@@ -4004,9 +4005,12 @@
       "Suggests": [
         "covr",
         "farver",
+        "ggplot2",
         "graphics",
         "knitr",
+        "ragg",
         "rmarkdown",
+        "svglite",
         "testthat (>= 2.1.0)"
       ],
       "LinkingTo": [
@@ -4022,7 +4026,7 @@
       "NeedsCompilation": "yes",
       "Author": "Thomas Lin Pedersen [aut, cre] (ORCID: <https://orcid.org/0000-0002-5147-4711>), Jeroen Ooms [aut] (ORCID: <https://orcid.org/0000-0002-4035-0289>), Devon Govett [aut] (Author of font-manager), Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
-      "Repository": "RSPM"
+      "Repository": "CRAN"
     },
     "tensorA": {
       "Package": "tensorA",
