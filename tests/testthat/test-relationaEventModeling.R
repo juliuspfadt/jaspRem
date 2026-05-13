@@ -51,12 +51,16 @@ options$dyadDataList <- list(list(dyadData = testthat::test_path("team4_social_d
                              list(dyadData = testthat::test_path("team4_advice_dyadic.csv"), value = "#2"))
 
 options$syncAnalysisBox <- TRUE
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(maximum = TRUE, minimum = TRUE, value = "gender"),
-  list(difference = TRUE, value = "age"),
+  list(difference = TRUE, value = "age")
+)
+
+options$exogenousEffectsTableDyads <- list(
   list(tie = TRUE, value = "team4_advice_dyadic"),
   list(tie = TRUE, value = "team4_social_dyadic")
 )
+
 options$specifiedExogenousEffects <- list(
   list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "none", value = "maximum('gender')"),
   list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "std", value = "minimum('gender')"),
@@ -76,13 +80,13 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
                                        endogenousEffectsConsiderType = "no"))
 
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "minimum('gender') * Incoming shared partners(type)"),
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia(type)"),
-  list(includeInteractionEffect = TRUE, value = "tie('team4_advice_dyadic') * Inertia(type)")
+  list(includeInteractionEffect = TRUE, value = "minimum('gender') : Incoming shared partners(type)"),
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia(type)"),
+  list(includeInteractionEffect = TRUE, value = "tie('team4_advice_dyadic') : Inertia(type)")
 )
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("team4_events.csv"), options)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("team4_events.csv"), options, makeTests = FALSE)
 
 test_that("Coefficient estimates tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
@@ -169,8 +173,10 @@ options$actorDataList <- list(list(actorData = testthat::test_path("team4_attrib
 options$dyadDataList <- list(list(dyadData = testthat::test_path("team4_social_dyadic.csv"), value = "#"))
 
 options$syncAnalysisBox <- TRUE
-options$exogenousEffectsTable <- list(
-  list(difference = TRUE, value = "age"),
+options$exogenousEffectsTableActors <- list(
+  list(difference = TRUE, value = "age")
+)
+options$exogenousEffectsTableDyads <- list(
   list(tie = TRUE, value = "team4_social_dyadic")
 )
 options$specifiedExogenousEffects <- list(
@@ -183,7 +189,7 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
                                        endogenousEffectsConsiderType = "no"))
 
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
 )
 
 set.seed(1)
@@ -228,8 +234,10 @@ options$actorDataList <- list(list(actorData = testthat::test_path("team4_attrib
 options$dyadDataList <- list(list(dyadData = testthat::test_path("team4_social_dyadic.csv"), value = "#"))
 
 options$syncAnalysisBox <- TRUE
-options$exogenousEffectsTable <- list(
-  list(difference = TRUE, value = "age"),
+options$exogenousEffectsTableActors <- list(
+  list(difference = TRUE, value = "age")
+)
+options$exogenousEffectsTableDyads <- list(
   list(tie = TRUE, value = "social")
 )
 options$specifiedExogenousEffects <- list(
@@ -242,7 +250,7 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
                                        endogenousEffectsConsiderType = "no"))
 
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
 )
 options$timepointInputUpper <- "Inf"
 options$eventHistory <- "full"
@@ -285,7 +293,7 @@ options$syncAnalysisBox <- TRUE
 options$eventSequence <- "orderOnly"
 options$regularization <- ""
 
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(difference = TRUE, value = "gender")
 )
 options$specifiedExogenousEffects <- list(
@@ -345,9 +353,11 @@ options$actorDataList <- list(list(actorData = testthat::test_path("team4_attrib
 options$dyadDataList <- list(list(dyadData = testthat::test_path("team4_social_dyadic.csv"), value = "#"))
 
 options$syncAnalysisBox <- TRUE
-options$exogenousEffectsTable <- list(
-  list(average = FALSE, difference = TRUE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = FALSE, value = "age"),
-  list(average = FALSE, difference = FALSE, event = FALSE, maximum = FALSE, minimum = FALSE, receive = FALSE, same = FALSE, send = FALSE, tie = TRUE, value = "social")
+options$exogenousEffectsTableActors <- list(
+  list(difference = TRUE, value = "age")
+)
+options$exogenousEffectsTableDyads <- list(
+  list(tie = TRUE, value = "social")
 )
 options$specifiedExogenousEffects <- list(
   list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none", value = "difference('age')"),
@@ -359,7 +369,7 @@ options$endogenousEffects <- list(list(value = "inertia", translatedName = "Iner
                                        endogenousEffectsConsiderType = "no"))
 
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
 )
 options$timepointInputUpper <- "Inf"
 options$eventHistory <- "full"
@@ -440,7 +450,7 @@ options$regularizationIterations <- 1000
 options$regularizationSetSeed <- TRUE
 options$regularizationSeed <- 1234
 
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(average = TRUE, value = "age"),
   list(difference = TRUE, value = "age")
 )
@@ -469,100 +479,99 @@ options$endogenousEffectsSender <- list(list(value = "indegreeSender", translate
                                             endogenousEffectsConsiderTypeSender = "no")
                                        )
 options$interactionEffects <- list(
-  list(includeInteractionEffect = TRUE, value = "average('age') * Inertia"),
-  list(includeInteractionEffect = TRUE, value = "difference('age') * Inertia")
+  list(includeInteractionEffect = TRUE, value = "average('age') : Inertia"),
+  list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
 )
 options$interactionEffectsSender <- list(
-  list(includeInteractionEffectSender = TRUE, value = "send('extraversion') * Indegree sender")
+  list(includeInteractionEffectSender = TRUE, value = "send('extraversion') : Indegree sender")
 )
 
 options$actorDataList <- list(list(actorData = testthat::test_path("history_info_actor.csv"), value = "#"))
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = FALSE)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = F)
 
-test_that("Coefficient estimates receiver model table results match", {
+test_that("Coefficient Estimates Receiver Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("Inertia", -0.0957215457734518, 0.877892416806052, 0.371186372200697,
-                                      0.107040750264209, -0.894253315089645, "Average_age", -0.0962082886374941,
-                                      0.899077137112637, 0.542510049117684, 0.157971854062944, -0.609021709646834,
-                                      "Difference_age", -0.649335581452957, 0.674237611033644, 0.0696986307781589,
-                                      0.357984666310104, -1.81386423096253, "Average_age:Inertia",
-                                      -0.0133836559772642, 0.914035365181425, 0.896063825409504, 0.102450540645495,
-                                      -0.130635288920291, "Difference_age:Inertia", -0.0964301418523927,
-                                      0.904569374251566, 0.619327973178754, 0.194101364367049, -0.49680300891673
+                                 list("Inertia", -0.0957215642664434, 0.877892401619444, 0.371186287457273,
+                                      0.107040751981119, -0.894253473511915, "Average_age", -0.0962082753309049,
+                                      0.899077141533991, 0.542510102149272, 0.157971852966924, -0.609021629638342,
+                                      "Difference_age", -0.649335634931579, 0.674237554917298, 0.0696986090874485,
+                                      0.357984667994287, -1.81386437181701, "Average_age:Inertia",
+                                      -0.0133837060290562, 0.914035360319271, 0.896063450679119, 0.102450552304395,
+                                      -0.130635762599809, "Difference_age:Inertia", -0.0964302037038356,
+                                      0.90456936218298, 0.619327774712083, 0.194101378918122, -0.49680329032857
                                  ))
 })
 
-test_that("Coefficient estimates sender model table results match", {
+test_that("Coefficient Estimates Sender Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTableSender"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -8.18014042071102, 4.57533968411268e-265, 0, 0.233997956829992,
-                                      -34.9581702828892, "Indegree sender", 0.0158870237167222, 0.859492136284046,
-                                      0.289321560099512, 0.0149932590030345, 1.05961110346368, "Outdegree sender",
-                                      1.38135802157882, 0.852568294397778, 0.266406733321369, 1.2429264125482,
-                                      1.11137554696164, "Send_sex", 0.582721603768429, 0.498133063191506,
-                                      0.0291307872578681, 0.267093721240829, 2.1817121011355, "Send_extraversion",
-                                      -0.246614172404979, 0.837918576291459, 0.227043454994804, 0.204149132181351,
-                                      -1.2080098983027, "Send_extraversion:Indegree sender", 0.0202109445565804,
-                                      0.851583936917184, 0.263404485101041, 0.0180716161634362, 1.11838057945656
+                                 list("baseline", -8.1798138638532, 4.85428266522845e-268, 0, 0.232688249930558,
+                                      -35.1535321026924, "Indegree sender", 0.0147522810237776, 0.869568375479053,
+                                      0.329557342157186, 0.0151304533567232, 0.975005882240961, "Outdegree sender",
+                                      1.42884305466272, 0.84305762993606, 0.239655568941801, 1.2151595232938,
+                                      1.17584813127227, "Send_sex", 0.587979904353113, 0.491254964324703,
+                                      0.0282147161456476, 0.267959320444268, 2.19428793661016, "Send_extraversion",
+                                      -0.242033657565874, 0.840730520864494, 0.233801313644987, 0.20328307104546,
+                                      -1.19062377561066, "Send_extraversion:Indegree sender", 0.0226893068623272,
+                                      0.822814640002037, 0.195741907398593, 0.017537240841064, 1.29377859766854
                                  ))
 })
 
-test_that("Model fit receiver model table results match", {
+test_that("Model Fit Receiver Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list(115, 4.39444915467244, "Null deviance", "", 110, 493.732984145276,
+                                 list(115, 4.39444915467244, "Null deviance", "", 110, 493.732984145275,
                                       "Residual deviance", "", 5, -489.338534990603, "Chi^2", 1, "",
-                                      503.732984145276, "AIC", "", "", 504.283442860872, "AICC", "",
+                                      503.732984145275, "AIC", "", "", 504.283442860872, "AICC", "",
                                       "", 517.457644787092, "BIC", ""))
 })
 
-test_that("Model fit sender model table results match", {
+test_that("Model Fit Sender Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTableSender"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list(115, 2023.9350663387, "Null deviance", "", 109, 2013.14898442893,
-                                      "Residual deviance", "", 6, 10.7860819097721, "Chi^2", 0.0952171386617836,
-                                      "", 2025.14898442893, "AIC", "", "", 2025.9267622067, "AICC",
-                                      "", "", 2041.61857719911, "BIC", ""))
+                                 list(115, 2023.9350663387, "Null deviance", "", 109, 2012.95385403721,
+                                      "Residual deviance", "", 6, 10.9812123014881, "Chi^2", 0.0889588273440796,
+                                      "", 2024.95385403721, "AIC", "", "", 2025.73163181498, "AICC",
+                                      "", "", 2041.42344680739, "BIC", ""))
 })
 
-test_that("Regularization results receiver model table results match", {
+test_that("Regularization Results Receiver Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_regContainer"]][["collection"]][["mainContainer_regContainer_regTableReceiver"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("Inertia", -0.0957215642664435, "FALSE", -0.224579668670249, -0.04035636665249,
-                                      -0.04035636665249, -0.00416152747171972, 0.0903751561913496,
-                                      "Average_age", -0.0962082753309048, "FALSE", -0.327688367620373,
-                                      -0.0745376492806992, -0.0745376492806992, -0.00783625042911096,
-                                      0.0877219491953565, "Difference_age", -0.64933563493158, "FALSE",
-                                      -1.01603606009306, -0.283773726185557, -0.283773726185557, -0.019629829062412,
-                                      0.104391134876248, "Average_age:Inertia", -0.0133837060290562,
-                                      "FALSE", -0.141675915592962, -0.00653747901853143, -0.00653747901853143,
-                                      -0.000183198903951354, 0.119658871471872, "Difference_age:Inertia",
-                                      -0.0964302037038354, "FALSE", -0.400348387522549, -0.0907860320348991,
-                                      -0.0907860320348991, -0.00678565631124306, 0.102066790269654
+                                 list("Inertia", -0.0957215642664434, "FALSE", -0.224579668670249, -0.04035636665249,
+                                      -0.04035636665249, -0.00416152747171972, 0.09037515619135, "Average_age",
+                                      -0.0962082753309049, "FALSE", -0.327688367620372, -0.0745376492806999,
+                                      -0.0745376492806999, -0.00783625042911029, 0.0877219491953564,
+                                      "Difference_age", -0.649335634931579, "FALSE", -1.01603606009306,
+                                      -0.283773726185557, -0.283773726185557, -0.0196298290624105,
+                                      0.104391134876241, "Average_age:Inertia", -0.0133837060290562,
+                                      "FALSE", -0.141675915592962, -0.00653747901853176, -0.00653747901853176,
+                                      -0.000183198903951316, 0.119658871471872, "Difference_age:Inertia",
+                                      -0.0964302037038356, "FALSE", -0.400348387522549, -0.0907860320348994,
+                                      -0.0907860320348994, -0.00678565631124418, 0.102066790269673
                                  ))
 })
 
-test_that("Regularization results sender model table results match", {
+test_that("Regularization Results Sender Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_regContainer"]][["collection"]][["mainContainer_regContainer_regTableSender"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -8.18014042071102, "TRUE", -8.43376324961643, -7.96430571459135,
-                                      -7.96430571459135, -7.86511876070782, -7.61381727954624, "Indegree sender",
-                                      0.0158870237167221, "FALSE", -0.0175760303948435, 0.00770943151060249,
-                                      0.00770943151060249, 0.00163175135945118, 0.0405988635082699,
-                                      "Outdegree sender", 1.38135802157882, "FALSE", -0.585167024899356,
-                                      0.577075575511302, 0.577075575511302, 0.036690476042835, 2.83997016188058,
-                                      "Send_sex", 0.582721603768429, "FALSE", -0.0726138857381782,
-                                      0.324084834252686, 0.324084834252686, 0.0327131662209897, 0.953412168176907,
-                                      "Send_extraversion", -0.246614172404979, "FALSE", -0.553954082025001,
-                                      -0.179642395154242, -0.179642395154242, -0.0192255900712305,
-                                      0.0633166204776167, "Send_extraversion:Indegree sender", 0.0202109445565805,
-                                      "FALSE", -0.0103666425445991, 0.0138446490788342, 0.0138446490788342,
-                                      0.0125407074706353, 0.0449437254427987))
+                                 list("baseline", -8.1798138638532, "TRUE", -8.44195567747698, -7.96244374889441,
+                                      -7.96244374889441, -7.86305776662492, -7.60307064535268, "Indegree sender",
+                                      0.0147522810237776, "FALSE", -0.0186109097351843, 0.00681053742738997,
+                                      0.00681053742738997, 0.00140931065003133, 0.0399329083450789,
+                                      "Outdegree sender", 1.42884305466272, "FALSE", -0.515876375075361,
+                                      0.603002709641844, 0.603002709641844, 0.0346983648140132, 2.88892214555355,
+                                      "Send_sex", 0.587979904353113, "FALSE", -0.0732321706186625,
+                                      0.327478934744132, 0.327478934744132, 0.0355508799587188, 0.958911430974557,
+                                      "Send_extraversion", -0.242033657565874, "FALSE", -0.547738467696973,
+                                      -0.172931697797102, -0.172931697797102, -0.0148009337897842,
+                                      0.0681210268128113, "Send_extraversion:Indegree sender", 0.0226893068623272,
+                                      "FALSE", -0.00662229891650218, 0.0166965715241437, 0.0166965715241437,
+                                      0.0153348092300569, 0.0476481278239918))
 })
-
 
 
 # actor model, risket active, simultaneous events split
@@ -570,9 +579,9 @@ test_that("Regularization results sender model table results match", {
 options$riskset <- "active"
 options$simultaneousEvents <- "split"
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = F)
 
-test_that("Model fit receiver model table results match", {
+test_that("Model Fit Receiver Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
                                  list(115, 277.974918588083, "Null deviance", "", 110, 240.22772188864,
@@ -581,13 +590,13 @@ test_that("Model fit receiver model table results match", {
                                       "", "", 263.952382530456, "BIC", ""))
 })
 
-test_that("Model fit sender model table results match", {
+test_that("Model Fit Sender Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTableSender"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list(115, 2023.93506633869, "Null deviance", "", 109, 2013.14898442893,
-                                      "Residual deviance", "", 6, 10.7860819097682, "Chi^2", 0.0952171386619114,
-                                      "", 2025.14898442893, "AIC", "", "", 2025.9267622067, "AICC",
-                                      "", "", 2041.61857719911, "BIC", ""))
+                                 list(115, 2023.9350663387, "Null deviance", "", 109, 2012.95385403721,
+                                      "Residual deviance", "", 6, 10.9812123014881, "Chi^2", 0.0889588273440796,
+                                      "", 2024.95385403721, "AIC", "", "", 2025.73163181498, "AICC",
+                                      "", "", 2041.42344680739, "BIC", ""))
 })
 
 
@@ -603,7 +612,7 @@ options$syncAnalysisBox <- TRUE
 options$eventSequence <- "orderOnly"
 options$regularization <- ""
 
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(difference = TRUE, value = "age")
 )
 options$specifiedExogenousEffects <- list(
@@ -674,9 +683,10 @@ options$actorDataList <- list(list(actorData = testthat::test_path("history_info
 options$dyadDataList <- list(list(dyadData = testthat::test_path("history_wide_dyadic.csv"), value = "#"),
                              list(dyadData = testthat::test_path("history_long_dyadic1.csv"), value = "#2"),
                              list(dyadData = testthat::test_path("history_long_dyadic2.csv"), value = "#4"))
-options$exogenousEffectsTable <- list(
+options$exogenousEffectsTableActors <- list(
   list(difference = TRUE, value = "age"),
-  list(average = TRUE, value = "extraversion"),
+  list(average = TRUE, value = "extraversion"))
+options$exogenousEffectsTableDyads <- list(
   list(tie = TRUE, value = "dy1")
 )
 options$specifiedExogenousEffects <- list(list(exogenousEffectsAbsolute = TRUE, exogenousEffectsScaling = "none",
@@ -687,26 +697,26 @@ options$specifiedExogenousEffects <- list(list(exogenousEffectsAbsolute = TRUE, 
                                                value = "tie('dy1')"))
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = F)
 
-test_that("Coefficient estimates tie model table results match", {
+test_that("Coefficient Estimates Tie Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -9.79803048708652, 0, 0, 0.117105319895939, -83.6685344081137,
-                                      "Difference_age", -0.642779091893944, 0.356352068570571, 0.0149072417032137,
-                                      0.264015676794453, -2.43462471508604, "Average_extraversion",
-                                      -0.0766459056664178, 0.884397621070177, 0.411164261337275, 0.0932606089633795,
-                                      -0.821846506454984, "Tie_dy1", -0.17196305136877, 0.784490110995608,
-                                      0.141563800062397, 0.116982268793839, -1.46999244536644))
+                                 list("baseline", -9.79753342876852, 0, 0, 0.117242482943909, -83.5664102529785,
+                                      "Difference_age", -0.642620457277501, 0.359563709448936, 0.0151456250041615,
+                                      0.264575017499634, -2.42887806774269, "Average_extraversion",
+                                      -0.0691502776164443, 0.8913117364744, 0.46388217030698, 0.0944070652757011,
+                                      -0.732469306343775, "Tie_dy1", -0.173130178357087, 0.78239546669586,
+                                      0.139309465706688, 0.117109034013645, -1.47836740192832))
 })
 
-test_that("Model fit tie model table results match", {
+test_that("Model Fit Tie Model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list(115, 2529.29671912602, "Null deviance", "", 111, 2522.80475785775,
-                                      "Residual deviance", "", 4, 6.49196126827746, "Chi^2", 0.165297593633206,
-                                      "", 2530.80475785775, "AIC", "", "", 2531.16839422138, "AICC",
-                                      "", "", 2541.7844863712, "BIC", ""))
+                                 list(115, 2529.29671912602, "Null deviance", "", 111, 2522.9399589589,
+                                      "Residual deviance", "", 4, 6.35676016712205, "Chi^2", 0.174042378999372,
+                                      "", 2530.9399589589, "AIC", "", "", 2531.30359532254, "AICC",
+                                      "", "", 2541.91968747236, "BIC", ""))
 })
 
 
@@ -719,7 +729,8 @@ options$actorVariableReceiver <- "actor2"
 options$syncAnalysisBox <- TRUE
 options$timepointInputUpper <- "Inf"
 options$regularization <- ""
-options$exogenousEffectsTable <- list(
+
+options$exogenousEffectsTableActors <- list(
   list(difference = TRUE, value = "age")
 )
 options$specifiedExogenousEffects <- list(
@@ -788,7 +799,7 @@ test_that("Inertia plot matches", {
 test_that("Waiting times fit plot matches", {
   plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_waitingTimePlot"]][["data"]]
   testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
-  jaspTools::expect_equal_plots(testPlot, "waiting-times-fit")
+  jaspTools::expect_equal_plots(testPlot, "waiting-times-fit-tie")
 })
 
 
@@ -823,8 +834,37 @@ options$residualPlotSelect <- list(list(includePlotEffect = TRUE, value = "Indeg
                                    list(includePlotEffect = TRUE, value = "Outdegree sender"))
 
 set.seed(1)
-results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("team4_events.csv"), options)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("team4_events.csv"), options, makeTests = FALSE)
 
+test_that("titleless-plot-4 matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainerReceiver"]][["collection"]][["mainContainer_plotContainer_residualsContainerReceiver_indegreeReceiver"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "titleless-plot-4")
+})
+
+test_that("titleless-plot-5 matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainerReceiver"]][["collection"]][["mainContainer_plotContainer_residualsContainerReceiver_inertia"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "titleless-plot-5")
+})
+
+test_that("titleless-plot-6 matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainerSender"]][["collection"]][["mainContainer_plotContainer_residualsContainerSender_indegreeSender"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "titleless-plot-6")
+})
+
+test_that("titleless-plot-7 matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_residualsContainerSender"]][["collection"]][["mainContainer_plotContainer_residualsContainerSender_outdegreeSender"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "titleless-plot-7")
+})
+
+test_that("Waiting Times Fit plot matches", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_waitingTimePlot"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "waiting-times-fit-actor")
+})
 
 
 # regularization and manual riskset

@@ -20,14 +20,15 @@
 
 relationalEventModeling <- function(jaspResults, dataset, options) {
 
-  # sink("~/Downloads/log.txt")
-  # on.exit(sink(NULL))
-
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
   .remUploadDyadExcludeData(jaspResults, options)
 
-  .feedbackExoTableVariables(jaspResults, options)
+  # fill the qml componentsLists
+  .feedbackExoTableVariablesEvents(jaspResults, options)
+  .feedbackExoTableVariablesActors(jaspResults, options)
+  .feedbackExoTableVariablesDyads(jaspResults, options)
+
   # process the exo effects from the table
   .exoEffectsSpecified(jaspResults, options)
 
@@ -49,6 +50,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (ready && options[["syncAnalysisBox"]]) {
 
     dataset <- .remHandleData(jaspResults, dataset, options)
+
+    # # for debugging
+    # saveRDS(dataset, "~/Downloads/dataset.rds")
+    # saveRDS(options, "~/Downloads/options.rds")
 
     .remErrorHandling(jaspResults, dataset, options)
 
@@ -77,7 +82,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                            "interactionEffects", "endogenousEffectsSender", "exogenousEffectsSender",
                            "interactionEffectsSender", "eventHistory", "eventHistorySingleInput",
                            "eventHistoryIntervalInputLower", "eventHistoryIntervalInputUpper", "timepointInputLower",
-                           "timepointInputUpper", "simultaneousEvents"))
+                           "timepointInputUpper", "simultaneousEvents", "dyadExclude"))
   jaspResults[["mainContainer"]] <- mainContainer
 
   return()
@@ -196,15 +201,25 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 # -------- Effects preparation and handling ----------
 
-.feedbackExoTableVariables <- function(jaspResults, options) {
+.feedbackExoTableVariablesEvents <- function(jaspResults, options) {
 
-  if (!is.null(jaspResults[["exoTableVariablesR"]])) return()
+  if (!is.null(jaspResults[["exoTableVariablesEventsFromR"]])) return()
 
   vars <- jaspBase::decodeColNames(options[["allVariablesHidden"]])
-  vars <- vars[!grepl("weight", vars)]
-  vars <- vars[!grepl("type", vars)]
   vars <- as.list(vars)
 
+  src <- createJaspQmlSource("exoTableVariablesEventsFromR", vars)
+  src$dependOn("allVariablesHidden")
+  jaspResults[["exoTableVariablesEventsFromR"]] <- src
+
+  return()
+}
+
+.feedbackExoTableVariablesActors <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["exoTableVariablesActorsFromR"]])) return()
+
+  vars <- list()
   if (!is.null(jaspResults[["actorDataState"]])) {
     actorDataList <- jaspResults[["actorDataState"]]$object
     for (i in 1:length(actorDataList)) {
@@ -214,6 +229,19 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       vars <- append(vars, actnms)
     }
   }
+
+  src <- createJaspQmlSource("exoTableVariablesActorsFromR", vars)
+  src$dependOn("actorDataList")
+  jaspResults[["exoTableVariablesActorsFromR"]] <- src
+
+  return()
+}
+
+.feedbackExoTableVariablesDyads <- function(jaspResults, options) {
+
+  if (!is.null(jaspResults[["exoTableVariablesDyadsFromR"]])) return()
+
+  vars <- list()
 
   if (!is.null(jaspResults[["dyadDataState"]])) {
     dyadDataList <- jaspResults[["dyadDataState"]]$object
@@ -237,12 +265,13 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     jaspResults[["dyadFindState"]] <- dyadFindState
   }
 
-  src <- createJaspQmlSource("exoTableVariablesR", vars)
-  src$dependOn(c("allVariablesHidden", "actorDataList", "dyadDataList"))
-  jaspResults[["exoTableVariablesR"]] <- src
+  src <- createJaspQmlSource("exoTableVariablesDyadsFromR", vars)
+  src$dependOn("dyadDataList")
+  jaspResults[["exoTableVariablesDyadsFromR"]] <- src
 
   return()
 }
+
 
 .feedbackInteractionEffects <- function(jaspResults, options) {
 
@@ -312,7 +341,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if ((length(outExoList) + length(outEndoListX)) >= 2) {
     combList <- c(unlist(outEndoListX), unlist(outExoList))
     interTmp <- combn(combList, m = 2)
-    inters <- as.list(paste0(interTmp[1, ], " * ", interTmp[2, ]))
+    inters <- as.list(paste0(interTmp[1, ], " : ", interTmp[2, ]))
 
     possibleInteractionEffectsFromR <- createJaspQmlSource("possibleInteractionEffectsFromR", inters)
     possibleInteractionEffectsFromR$dependOn(c("endogenousEffects", "specifiedExogenousEffects"))
@@ -347,7 +376,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
       combListSender <- c(unlist(outEndoListXSender), unlist(outExoListSender))
       interTmpSender <- combn(combListSender, m = 2)
-      intersSender <- as.list(paste0(interTmpSender[1, ], " * ", interTmpSender[2, ]))
+      intersSender <- as.list(paste0(interTmpSender[1, ], " : ", interTmpSender[2, ]))
 
       possibleInteractionEffectsFromRSender <- createJaspQmlSource("possibleInteractionEffectsFromRSender", intersSender)
       possibleInteractionEffectsFromRSender$dependOn(c("endogenousEffectsSender", "specifiedExogenousEffectsSender"))
@@ -412,8 +441,40 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     return()
   }
 
-  exoOut <- .exogenousEffectsHelper(options[["exogenousEffectsTable"]])
-  specExoEffects <- exoOut$specifiedEffects
+  exoEventsOut <- .exogenousEffectsHelper(options[["exogenousEffectsTableEvents"]])
+  exoActorsOut <- .exogenousEffectsHelper(options[["exogenousEffectsTableActors"]])
+  exoDyadsOut <- .exogenousEffectsHelper(options[["exogenousEffectsTableDyads"]])
+
+  # Merge the specifiedEffects$variableNames
+  mergedVariableNames <- c(
+    exoEventsOut$specifiedEffects$variableNames,
+    exoActorsOut$specifiedEffects$variableNames,
+    exoDyadsOut$specifiedEffects$variableNames
+  )
+
+  # Merge the specifiedEffects$list elements
+  mergedList <- c(
+    exoEventsOut$specifiedEffects$list,
+    exoActorsOut$specifiedEffects$list,
+    exoDyadsOut$specifiedEffects$list
+  )
+
+  # Merge the qmlNames vectors
+  mergedQmlNames <- c(
+    exoEventsOut$qmlNames,
+    exoActorsOut$qmlNames,
+    exoDyadsOut$qmlNames
+  )
+
+  # Combine everything into a new merged list
+  exoMerged <- list(
+    specifiedEffects = list(
+      variableNames = mergedVariableNames,
+      list = mergedList
+    ),
+    qmlNames = mergedQmlNames
+  )
+  specExoEffects <- exoMerged$specifiedEffects
 
   if (options[["orientation"]] == "actor") {
 
@@ -426,9 +487,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   }
 
-  exoEffectsState <- createJaspState(specExoEffects)
-  exoEffectsState$dependOn(c("exogenousEffectsTable", "exogenousEffectsTableSender"))
-  jaspResults[["exoEffectsState"]] <- exoEffectsState
+  if (length(specExoEffects) > 0) {
+    exoEffectsState <- createJaspState(specExoEffects)
+    exoEffectsState$dependOn(c("exogenousEffectsTableEvents",
+                               "exogenousEffectsTableActors",
+                               "exogenousEffectsTableDyads",
+                               "exogenousEffectsTableSender"))
+    jaspResults[["exoEffectsState"]] <- exoEffectsState
+  }
 
   return()
 
@@ -518,7 +584,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
   }
 
-  # first three variables should be time actors and maybe weight
 }
 
 
@@ -581,7 +646,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   remifyResultState$dependOn(c("eventDirection", "eventSequence",
                                "orientation", "riskset", "naAction", "weightVariable",
                                "timeVariable", "actorVariableSender", "actorVariableReceiver", "weightVariable",
-                               "typeVariable", "syncAnalysisBox"))
+                               "typeVariable", "syncAnalysisBox", "dyadExclude"))
 
   jaspResults[["remifyResultState"]] <- remifyResultState
 
@@ -609,7 +674,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         .quitAnalysis(gettextf("The actor attributes data file %1$s does not contain all actor names",
                                names(actorDataList)[i]))
       }
-      orderedActorDataList[[i]] <- actorDataList[[i]][match(actorNames, nameVar), ]
+      # keep the actors in the covariates object that are in the rehObject, aka, the event data
+      actorsToKeep <- nameVar %in% actorNames
+      orderedActorDataList[[i]] <- actorDataList[[i]][actorsToKeep, ]
     }
     names(orderedActorDataList) <- names(actorDataList)
   }
@@ -652,7 +719,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   # prepare the data for remstats, aka, assign the attributes to objects so they are present for remstats
   .prepareCovariateData(jaspResults, dataset, options)
 
-
   # prepare some more options for remstats
   memoryValues <- switch(options[["eventHistory"]],
                          "window" = options[["eventHistorySingleInput"]],
@@ -675,6 +741,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
 
     # in the first round both states are created
+
     statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties, sender_effects = senders,
                                           receiver_effects = receivers,
                                           memory = options[["eventHistory"]], memory_value = memoryValues,
@@ -912,7 +979,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   jaspResults[["mainContainer"]][["modelFitContainer"]] <- modelFitContainer
 
   modelFitTable <- .createEmptyModelFitTable(options)
-  modelFitTable$title <- gettext("Model fit table")
+  modelFitTable$title <- gettext("Model Fit Table")
   modelFitTable$position <- 1
 
   modelFitContainer[["modelFitTable"]] <- modelFitTable
@@ -925,19 +992,19 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
       res <- summary(remResults)
 
-      modelFitTable$title <- gettext("Model fit tie model")
+      modelFitTable$title <- gettext("Model Fit Tie Model")
 
     } else { # actor model
 
       resTmp <- summary(remResults)
       res <- resTmp[["receiver_model"]]
-      modelFitTable$title <- gettext("Model fit receiver model")
+      modelFitTable$title <- gettext("Model Fit Receiver Model")
 
       resSend <- resTmp[["sender_model"]]
       if (!is.null(resSend)) {
 
         modelFitTableSender <- .createEmptyModelFitTable(options)
-        modelFitTableSender$title <- gettext("Model fit sender model")
+        modelFitTableSender$title <- gettext("Model Fit Sender Model")
         modelFitTableSender$position <- 1.1
         modelFitContainer[["modelFitTableSender"]] <- modelFitTableSender
 
@@ -987,6 +1054,34 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   }
 
+
+  # add model options to footnote
+  eventSeq <- switch(options[["eventSequence"]],
+                     "orderOnly" = gettext("ordered only"),
+                     "timeSensitive" = gettext("time-sensitive"))
+  if (options[["orientation"]] == "tie") {
+    modelFitTable$addFootnote(gettextf("The model is %1$s-oriented %2$s with %3$s riskset. The event sequence is %4$s.",
+                                       options[["orientation"]], options[["eventDirection"]], options[["riskset"]], eventSeq))
+  } else {
+    modelFitTable$addFootnote(gettextf("The model is %1$s-oriented with %2$s riskset. The event sequence is %3$s.",
+                                       options[["orientation"]], options[["riskset"]], eventSeq))
+  }
+
+
+  # add statistics options in footnote
+  simEvents <- switch(options[["simultaneousEvents"]],
+                      "join" = "joined",
+                      options[["simultaneousEvents"]])
+  eventHistory <- switch(options[["eventHistory"]],
+                         "window" = gettextf("a window with %s time units", options[["eventHistorySingleInput"]]),
+                         "interval" = gettextf("an interval from %1$s to %2$s",
+                                               options[["eventHistoryIntervalInputLower"]],
+                                               options[["eventHistoryIntervalInputUpper"]]),
+                         "decay" = gettextf("decaying with half-life time of %s", options[["eventHistorySingleInput"]]),
+                         options[["eventHistory"]])
+  modelFitTable$addFootnote(gettextf("Simultaneous events are %1$s. Event history is considered as %2$s.",
+                                     simEvents, eventHistory))
+
   return()
 }
 
@@ -1000,7 +1095,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   jaspResults[["mainContainer"]][["coefficientsContainer"]] <- coefficientsContainer
 
   coefficientsTable <- .createEmptyCoefficientsTable(options)
-  coefficientsTable$title <- gettext("Coefficient estimates")
+  coefficientsTable$title <- gettext("Coefficient Estimates")
 
   coefficientsTable$position <- 2
   coefficientsContainer[["coefficientsTable"]] <- coefficientsTable
@@ -1012,19 +1107,19 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     if (options[["orientation"]] == "tie") {
 
-      coefficientsTable$title <- gettext("Coefficient estimates tie model")
+      coefficientsTable$title <- gettext("Coefficient Estimates Tie Model")
 
     } else {
 
       ctabSend <- ctab[["sender_model"]]
       ctab <- ctab[["receiver_model"]]
 
-      coefficientsTable$title <- gettext("Coefficient estimates receiver model")
+      coefficientsTable$title <- gettext("Coefficient Estimates Receiver Model")
 
       if (!is.null(ctabSend)) {
 
         coefficientsTableSender <- .createEmptyCoefficientsTable(options)
-        coefficientsTableSender$title <- gettext("Coefficient estimates sender model")
+        coefficientsTableSender$title <- gettext("Coefficient Estimates Sender Model")
         coefficientsTableSender$position <- 3
         coefficientsContainer[["coefficientsTableSender"]] <- coefficientsTableSender
 
@@ -1094,7 +1189,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       regContainer$setError(gettext("Regularization failed"))
       return()
     }
-    regTable$title <- gettext("Regularization results tie model")
+    regTable$title <- gettext("Regularization Results Tie Model")
     dt <- regResults$estimates
     rwnames <- rownames(dt)
     dt$coef <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "")
@@ -1109,7 +1204,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         return()
       }
       regTableReceiver <- .createRegularizationTable(ci)
-      regTableReceiver$title <- gettext("Regularization results receiver model")
+      regTableReceiver$title <- gettext("Regularization Results Receiver Model")
       regTableReceiver$position <- 2.4
       dtRec <- regResults$recReg$estimates
       rwnames <- rownames(dtRec)
@@ -1125,7 +1220,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     regTableSender <- regTable
     regTableSender$position <- 2.5
-    regTableSender$title <- gettext("Regularization results sender model")
+    regTableSender$title <- gettext("Regularization Results Sender Model")
     dtSend <- regResults$sendReg$estimates
     rwnames <- rownames(dtSend)
     dtSend$coef <- .transformCoefficientNames(rwnames, options, jaspResults, sender = "Sender")
@@ -1170,20 +1265,20 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
         plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 1, effects = NULL,
                                   send_effects = NULL, rec_effects = NULL)
-        waitPlot <- createJaspPlot(plot = NULL, title = gettext("Waiting times fit"),
+        waitPlot <- createJaspPlot(plot = NULL, title = gettext("Waiting Times Fit"),
                                    height = 400, width = 500)
         waitPlot$dependOn("diagnosticPlotWaitTime")
         waitPlot$position <- 1
         plotContainer[["waitingTimePlot"]] <- waitPlot
         if (isTryError(plotObj)) {
-          waitPlot$setError(gettextf("Waiting time diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+          waitPlot$setError(gettextf("Waiting time diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
         } else {
           waitPlot$plotObject <- plotObj
         }
       }
 
       if (length(selected) > 0) {
-        residualsPlotContainer <- createJaspContainer(gettext("Schoenfeld's residuals fit"))
+        residualsPlotContainer <- createJaspContainer(gettext("Schoenfeld's Residuals Fit"))
         residualsPlotContainer$dependOn("residualPlotSelect")
         jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainer"]] <- residualsPlotContainer
 
@@ -1198,7 +1293,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
             residualsPlotContainer[[toPlotTie[pp]]] <- residualsPlot
 
             if (isTryError(plotObj)) {
-              residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+              residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
             } else {
               residualsPlot$plotObject <- plotObj
             }
@@ -1206,7 +1301,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
         } else {
           ##### TODO: the proper titles
-          residualsPlotContainerReceiver <- createJaspContainer(gettext("Schoenfeld's residuals fit receiver model"))
+          residualsPlotContainerReceiver <- createJaspContainer(gettext("Schoenfeld's Residuals Fit Receiver Model"))
           residualsPlotContainerReceiver$dependOn("residualPlotSelect")
           jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainerReceiver"]] <- residualsPlotContainerReceiver
 
@@ -1221,14 +1316,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
               residualsPlotContainerReceiver[[toPlotReceiver[pp]]] <- residualsPlot
 
               if (isTryError(plotObj)) {
-                residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+                residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
               } else {
                 residualsPlot$plotObject <- plotObj
               }
             }
           }
 
-          residualsPlotContainerSender <- createJaspContainer(gettext("Schoenfeld's residuals fit sender model"))
+          residualsPlotContainerSender <- createJaspContainer(gettext("Schoenfeld's Residuals Fit Sender Model"))
           residualsPlotContainerSender$dependOn("residualPlotSelect")
           jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainerSender"]] <- residualsPlotContainerSender
 
@@ -1244,7 +1339,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
               residualsPlotContainerSender[[toPlotSender[pp]]] <- residualsPlot
 
               if (isTryError(plotObj)) {
-                residualsPlot$setError(gettextf("Residual diagnostics plot failed with errror: %1$s", .extractErrorMessage(plotObj)))
+                residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
               } else {
                 residualsPlot$plotObject <- plotObj
               }
@@ -1406,7 +1501,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         for (iii in 1:length(dyInds)) {
           if (length(dyInds[[iii]]) > 0) {# because there are some integer(0) elements sometimes
             # seems like remstats needs as.matrix()
-            assign(dyadFileNames[[iii]], as.matrix(jaspResults[["dyadDataState"]][["object"]][[dyadFileNames[[iii]]]]), pos = 1)
+            dtObj <- jaspResults[["dyadDataState"]][["object"]][[dyadFileNames[[iii]]]]
+            if (ncol(dtObj) == nrow(dtObj)) dtObj <- as.matrix(dtObj) # for wide format we need to transform into matrix
+            assign(dyadFileNames[[iii]], dtObj, pos = 1)
           }
         }
       }
@@ -1414,6 +1511,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
     # the actor attributes data
     if (!is.null(jaspResults[["actorDataStateNew"]]$object)) {
+
       actorDataList <- jaspResults[["actorDataStateNew"]]$object
 
       actorVarNames <- lapply(actorDataList, colnames)
@@ -1706,8 +1804,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   # work the endo effects
   if (length(endoObj$rNames) > 0) {
-    interTmps <- strsplit(interEffects, " * ", fixed = TRUE)
-    interDimsTmps <- strsplit(interDims, " * ", fixed = TRUE)
+    interTmps <- strsplit(interEffects, " : ", fixed = TRUE)
+    interDimsTmps <- strsplit(interDims, " : ", fixed = TRUE)
     for (ii in 1:length(interTmps)) {
       for (ee in 1:length(endoObj$rNames)) {
         ind <- which(endoObj$jaspNames[ee] == interTmps[[ii]])
@@ -1717,8 +1815,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         }
       }
     }
-    interEffects <- sapply(interTmps, function(x) paste0(x, collapse = " * "))
-    interDims <- sapply(interDimsTmps, function(x) paste0(x, collapse = " * "))
+    interEffects <- sapply(interTmps, function(x) paste0(x, collapse = " : "))
+    interDims <- sapply(interDimsTmps, function(x) paste0(x, collapse = " : "))
   }
 
   # work the exo effects
@@ -1732,10 +1830,10 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
   }
 
-  interEffects <- gsub(" * ", ":", interEffects, fixed = TRUE)
+  interEffects <- gsub(" : ", ":", interEffects, fixed = TRUE)
   interEffects <- paste0(interEffects, collapse = " + ")
 
-  interDims <- gsub(" * ", ":", interDims, fixed = TRUE)
+  interDims <- gsub(" : ", ":", interDims, fixed = TRUE)
 
   return(list(effects = interEffects, dims = interDims))
 
@@ -1821,9 +1919,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   regTable <- createJaspTable()
   regTable$addColumnInfo(name = "coef", title = gettext("Coefficient"), type = "string")
   regTable$addColumnInfo(name = "est", title = gettext("Estimate"), type = "number")
-  regTable$addColumnInfo(name = "shrunk.mean", title = gettext("Shrunk mean"), type = "number")
-  regTable$addColumnInfo(name = "shrunk.median", title = gettext("Shrunk median"), type = "number")
-  regTable$addColumnInfo(name = "shrunk.mode", title = gettext("Shrunk mode"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.mean", title = gettext("Shrunk Mean"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.median", title = gettext("Shrunk Median"), type = "number")
+  regTable$addColumnInfo(name = "shrunk.mode", title = gettext("Shrunk Mode"), type = "number")
   regTable$addColumnInfo(name = "shrunk.lower", title = gettext("Lower"),
                          type = "number", overtitle = gettextf("Shrunk %s%% CI", ci))
   regTable$addColumnInfo(name = "shrunk.upper", title = gettext("Upper"),
@@ -1852,7 +1950,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   # align the jaspNames to match them with rnames
   jNames <- gsub("('", "_", jaspNames, fixed = TRUE)
   jNames <- gsub("')", "", jNames, fixed = TRUE)
-  jNames <- gsub(" * ", ":", jNames, fixed = TRUE)
+  jNames <- gsub(" : ", ":", jNames, fixed = TRUE)
   # because the "of" is not part of the remstimate outputted names
   jNames <- gsub(" of ", "", jNames, fixed = TRUE)
   jNames <- gsub(" ", "", jNames, fixed = TRUE)
