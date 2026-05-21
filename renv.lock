@@ -1,7 +1,7 @@
 {
   "R": {
     "Version": "4.5.2",
-    "Repositories": [
+    "Repositories": [ 
       {
         "Name": "RSPM",
         "URL": "https://packagemanager.posit.co/cran/2026-04-22"
