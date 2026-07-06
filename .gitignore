@@ -58,3 +58,8 @@ Thumbs.db
 # RStudio files
 .Rproj.user
 .positai
+
+# Claude Code / agent tooling
+.claude/
+.mcp.json
+.vscode/mcp.json

@@ -624,19 +624,40 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["dyadExcludeState"]][["object"]])) {
     dtExclude <- jaspResults[["dyadExcludeState"]][["object"]]
     dtExclude <- lapply(dtExclude, as.character)
-    dtExclude$type <- NA
 
-    omitDyad <- list(list(time = c(NA,NA), dyad = dtExclude))
+    # remify >= 4.0 replaced omit_dyad with manual.riskset, a data.frame listing the
+    # dyads that remain at risk over the entire sequence; build it as all possible
+    # dyads minus the excluded ones, where NA in the exclusion file acts as a wildcard
+    # note: remify automatically adds observed dyads back into the riskset
+    actors <- unique(c(as.character(dataset[, 2]), as.character(dataset[, 3])))
+    manualRiskset <- expand.grid(actor1 = actors, actor2 = actors,
+                                 stringsAsFactors = FALSE, KEEP.OUT.ATTRS = FALSE)
+    manualRiskset <- manualRiskset[manualRiskset[["actor1"]] != manualRiskset[["actor2"]], ]
+
+    for (i in seq_along(dtExclude[["actor1"]])) {
+      drop <- rep(TRUE, nrow(manualRiskset))
+      if (!is.na(dtExclude[["actor1"]][i]))
+        drop <- drop & manualRiskset[["actor1"]] == dtExclude[["actor1"]][i]
+      if (!is.na(dtExclude[["actor2"]][i]))
+        drop <- drop & manualRiskset[["actor2"]] == dtExclude[["actor2"]][i]
+      manualRiskset <- manualRiskset[!drop, ]
+    }
   } else {
-    omitDyad <- NULL
+    manualRiskset <- NULL
   }
+
+  # a manual riskset without exclusions is equivalent to the full one,
+  # but remify errors on riskset = "manual" without a manual.riskset data.frame
+  risksetType <- options[["riskset"]]
+  if (risksetType == "manual" && is.null(manualRiskset))
+    risksetType <- "full"
 
   rehObject <- try(remify::remify(edgelist = dataset,
                                   directed = directed,
                                   ordinal = options[["eventSequence"]] == "orderOnly",
                                   model = options[["orientation"]],
-                                  riskset = options[["riskset"]],
-                                  omit_dyad = omitDyad))
+                                  riskset = risksetType,
+                                  manual.riskset = manualRiskset))
 
   if (isTryError(rehObject)) {
     jaspResults[["mainContainer"]]$setError(gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(rehObject)))
@@ -667,7 +688,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   rehObject <- jaspResults[["remifyResultState"]]$object
 
   if ((length(actorDataList) > 0) && !isTryError(rehObject)) {
-    actorNames <- attr(rehObject, "dictionary")[["actors"]][["actorName"]]
+    actorNames <- rehObject[["meta"]][["dictionary"]][["actors"]][["actorName"]]
     for (i in 1:length(actorDataList)) {
       nameVar <- actorDataList[[i]][, "name"]
       if (!all(actorNames %in% nameVar)) {
@@ -726,8 +747,8 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                          "full" = NULL,
                          "decay" = options[["eventHistorySingleInput"]])
 
-  # how to treat simultaenous events:
-  simMethod <- ifelse(options[["simultaneousEvents"]] == "join", "pt", "pe")
+  # remstats >= 4.0 no longer has a method argument for treating simultaneous events;
+  # statistics are always computed per unique time point (the former "join"/"pt" behavior)
 
   # check if there is already a statsObject in storage, if null we are in the first round of calculations
   # or maybe the user did not choose to save the samples
@@ -746,8 +767,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                           receiver_effects = receivers,
                                           memory = options[["eventHistory"]], memory_value = memoryValues,
                                           start = options[["timepointInputLower"]],
-                                          stop = as.numeric(options[["timepointInputUpper"]]),
-                                          method = simMethod))
+                                          stop = as.numeric(options[["timepointInputUpper"]])))
 
     if (isTryError(statsObject)) {
       jaspResults[["mainContainer"]]$setError(gettextf("Remstats failed. Internal error message: %s",
@@ -794,8 +814,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         statsObject <- try(remstats::remstats(reh = rehObject, tie_effects = ties,
                                               memory = options[["eventHistory"]], memory_value = memoryValues,
                                               start = options[["timepointInputLower"]],
-                                              stop = options[["timepointInputUpper"]],
-                                              method = simMethod))
+                                              stop = options[["timepointInputUpper"]]))
 
         # add the jasp-detailed dimnames to the whole thing.
         if (isTryError(statsObject)) {
@@ -844,8 +863,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                               sender_effects = sendersNew,
                                               memory = options[["eventHistory"]], memory_value = memoryValues,
                                               start = options[["timepointInputLower"]],
-                                              stop = options[["timepointInputUpper"]],
-                                              method = simMethod))
+                                              stop = options[["timepointInputUpper"]]))
 
         # add the jasp-detailed dimnames to the whole thing.
         if (isTryError(statsObject)) {
@@ -1405,8 +1423,12 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     }
   }
 
-  # receiver model has no baseline, as does the model when ordinal=TRUE
-  if (receiver || (options[["orientation"]] == "tie" && options[["eventSequence"]] == "orderOnly")) {
+  # the receiver (choice) model never has a baseline; the tie and sender (rate)
+  # models have no baseline when the model is ordinal (remstats >= 4.0 ordinal
+  # stats objects omit the baseline slice entirely)
+  recText <- if (receiver) "receiver" else tolower(sender)
+  pos     <- if (receiver) 0.1 else 0.2
+  if (receiver || options[["eventSequence"]] == "orderOnly") {
     effects <- sub("1 + ", "", effects, fixed = TRUE)
     if (effects == "~ 1") {
       effects <- NULL
@@ -1414,13 +1436,9 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       effects <- eval(parse(text = effects))
     }
     dimNms <- c(endoObj$dims, exoObj$dims, interObj$dims)
-    recText <- ifelse(receiver, "receiver", "")
-    pos <- 0.1
   } else {
     effects <- eval(parse(text = effects))
     dimNms <- c("baseline", endoObj$dims, exoObj$dims, interObj$dims)
-    recText <- tolower(sender)
-    pos <- 0.2
   }
 
   # print the effects text in the output window:
