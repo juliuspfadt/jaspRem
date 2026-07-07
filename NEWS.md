@@ -1,4 +1,4 @@
-# jaspDistributions Changelog
+# jaspRem Changelog
 
 > **HOW TO READ AND UPDATE THIS CHANGELOG:**
 > 
@@ -14,9 +14,25 @@
 
 ---
 
-# jaspDistributions (development version)
+# jaspRem (development version)
 
+## Added
+* "Active (saturated)" risk set option (remify `active_saturated`), which also adds the reverse dyads and, with a type variable, the other event types.
+* "Extend risk set by type" option (`extend_riskset_by_type`), available when a type variable is assigned.
+* "Consider type" now offers "Interact" (one effect per ordered pair of event types), in addition to "Ignore" and "Separate", for both receiver and sender endogenous effects.
 
+## Changed
+* Updated to remify 4.0.0, remstats 4.0.0 and remstimate 3.0.0.
+* Manual risk set now specifies the dyads to **include** (the uploaded file becomes the risk set; observed dyads are added automatically), rather than dyads to exclude, matching remify 4.0.
+* Endogenous "Consider type" is now Ignore / Separate / Interact (previously Yes / No / Both). Effects separated or interacted by event type now report one coefficient per type (or per type pair), e.g. "Inertia (social)" and "Inertia (work)".
+
+## Fixed
+* Fixed a crash in actor-oriented models with an ordinal event sequence.
+* "Consider type" now works with more than one event type (previously crashed for multi-type data).
+* Legacy analyses using the (now unsupported) BSIR estimation method show a clear message instead of crashing.
+
+## Removed
+* Removed the "Simultaneous events" option (remstats 4.0 no longer supports a per-event method).
 
 ---
 
