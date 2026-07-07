@@ -440,10 +440,12 @@ Form
 					DropDown {
 						visible: typeVar.count > 0
 						name: "endogenousEffectsConsiderType"
-						Layout.preferredWidth: 70
-						values: [{ label: qsTr("No"), value : "no"}, { label: qsTr("Yes"), value : "yes" }, { label: qsTr("Both"), value : "both" }]
+						Layout.preferredWidth: 90
+						values: extendByType.checked
+							? [{ label: qsTr("Ignore"), value: "ignore" }, { label: qsTr("Separate"), value: "separate" }, { label: qsTr("Interact"), value: "interact" }]
+							: [{ label: qsTr("Ignore"), value: "ignore" }, { label: qsTr("Separate"), value: "separate" }]
 						enabled: inclEndoEff.checked
-						info: qsTr("For multi-type event models: specify whether the effect should be computed per event type, across types, or both.")
+						info: qsTr("How to handle event types for this effect: 'Ignore' pools all types, 'Separate' computes one effect per type, and 'Interact' computes one per ordered pair of types (requires 'Extend risk set by type').")
 					}
 					CheckBox {
 						name: "endogenousEffectsUnique"
@@ -470,8 +472,8 @@ Form
 				name: "endogenousEffectsSender"
 				id: endogenousEffectsSender
 				info: qsTr("For the sender in actor-oriented models, choose which endogenous effects to include. Effects reflect sender-based network dynamics.")
-				source: [{ values: effects.varsActorSender }] 
-				headerLabels: [qsTr("Include"), qsTr("Scaling"), qsTr("Consider type")]
+				source: [{ values: effects.varsActorSender }]
+				headerLabels: typeVar.count > 0 ? [qsTr("Include"), qsTr("Scaling"), qsTr("Consider type")] : [qsTr("Include"), qsTr("Scaling")]
 				rowComponent: RowLayout {
 					Text { Layout.preferredWidth: 200; text: effects.translated[rowValue] }
 					TextField { name: "translatedNameSender"; value: effects.translated[rowValue]; visible: false; info: qsTr("Internal use: Translated effect label for R backend.") }
@@ -483,12 +485,15 @@ Form
 						enabled: !effects.varsScalingNone.includes(rowValue) & inclEndoEffSend.checked
 						info: qsTr("Select the scaling method for this sender effect: 'none', 'proportion', or 'standardized'.")
 					}
-					CheckBox {
+					DropDown {
+						visible: typeVar.count > 0 && !effects.varsNotConsiderType.includes(rowValue)
 						name: "endogenousEffectsConsiderTypeSender"
-						Layout.preferredWidth: 80
-						visible: !effects.varsNotConsiderType.includes(rowValue)
+						Layout.preferredWidth: 90
+						values: extendByType.checked
+							? [{ label: qsTr("Ignore"), value: "ignore" }, { label: qsTr("Separate"), value: "separate" }, { label: qsTr("Interact"), value: "interact" }]
+							: [{ label: qsTr("Ignore"), value: "ignore" }, { label: qsTr("Separate"), value: "separate" }]
 						enabled: inclEndoEffSend.checked
-						info: qsTr("Specify whether this effect should be computed per event type (if multiple types are modeled).")
+						info: qsTr("How to handle event types for this sender effect: 'Ignore' pools all types, 'Separate' computes one per type, and 'Interact' one per ordered pair of types (requires 'Extend risk set by type').")
 					}
 					CheckBox {
 						name: "endogenousEffectsUniqueSender"

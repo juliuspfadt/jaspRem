@@ -71,13 +71,13 @@ options$specifiedExogenousEffects <- list(
 
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "prop",
-                                       endogenousEffectsConsiderType = "yes"),
+                                       endogenousEffectsConsiderType = "separate"),
                                   list(value = "isp", translatedName = "Incoming shared partners", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "yes"),
+                                       endogenousEffectsConsiderType = "separate"),
                                   list(value = "otp", translatedName = "Outgoing two-path", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = TRUE, endogenousEffectsScaling = "std",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 
 options$interactionEffects <- list(
   list(includeInteractionEffect = TRUE, value = "minimum('gender') : Incoming shared partners(type)"),
@@ -186,7 +186,7 @@ options$specifiedExogenousEffects <- list(
 
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 
 options$interactionEffects <- list(
   list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
@@ -247,7 +247,7 @@ options$specifiedExogenousEffects <- list(
 
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 
 options$interactionEffects <- list(
   list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
@@ -301,13 +301,13 @@ options$specifiedExogenousEffects <- list(
 )
 options$endogenousEffects <- list(list(value = "indegreeSender", translatedName = "Indegree sender", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"),
+                                       endogenousEffectsConsiderType = "ignore"),
                                   list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "std",
-                                       endogenousEffectsConsiderType = "no"),
+                                       endogenousEffectsConsiderType = "ignore"),
                                   list(value = "osp", translatedName = "Outgoing shared partners", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = TRUE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no")
+                                       endogenousEffectsConsiderType = "ignore")
                                   )
 
 options$actorDataList <- list(list(actorData = testthat::test_path("team4_attributes_actor1.csv"), value = "#"))
@@ -366,7 +366,7 @@ options$specifiedExogenousEffects <- list(
 
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 
 options$interactionEffects <- list(
   list(includeInteractionEffect = TRUE, value = "difference('age') : Inertia")
@@ -470,13 +470,13 @@ options$specifiedExogenousEffectsSender <- list(
 
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 options$endogenousEffectsSender <- list(list(value = "indegreeSender", translatedNameSender = "Indegree sender", includeEndoEffectSender = TRUE,
                                              endogenousEffectsUniqueSender = FALSE, endogenousEffectsScalingSender = "none",
-                                             endogenousEffectsConsiderTypeSender = "no"),
+                                             endogenousEffectsConsiderTypeSender = "ignore"),
                                         list(value = "outdegreeSender", translatedNameSender = "Outdegree sender", includeEndoEffectSender = TRUE,
                                             endogenousEffectsUniqueSender = FALSE, endogenousEffectsScalingSender = "prop",
-                                            endogenousEffectsConsiderTypeSender = "no")
+                                            endogenousEffectsConsiderTypeSender = "ignore")
                                        )
 options$interactionEffects <- list(
   list(includeInteractionEffect = TRUE, value = "average('age') : Inertia"),
@@ -627,10 +627,10 @@ options$specifiedExogenousEffectsSender <- list(
 
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 options$endogenousEffectsSender <- list(list(value = "indegreeSender", translatedNameSender = "Indegree sender", includeEndoEffectSender = TRUE,
                                              endogenousEffectsUniqueSender = FALSE, endogenousEffectsScalingSender = "none",
-                                             endogenousEffectsConsiderTypeSender = "no")
+                                             endogenousEffectsConsiderTypeSender = "ignore")
 )
 
 options$actorDataList <- list(list(actorData = testthat::test_path("team4_attributes_actor2.csv"), value = "#"))
@@ -769,10 +769,10 @@ options$timepointInputUpper <- "Inf"
 options$regularization <- ""
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"),
+                                       endogenousEffectsConsiderType = "ignore"),
                                   list(value = "indegreeSender", translatedName = "Indegree sender", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 options$diagnosticPlots <- TRUE
 options$diagnosticPlotWaitTime <- TRUE
 options$residualPlotSelect <- list(list(includePlotEffect = TRUE, value = "Indegree sender"),
@@ -813,17 +813,17 @@ options$timepointInputUpper <- "Inf"
 options$regularization <- ""
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"),
+                                       endogenousEffectsConsiderType = "ignore"),
                                   list(value = "indegreeReceiver", translatedName = "Indegree receiver", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 
 options$endogenousEffectsSender <- list(list(value = "indegreeSender", translatedNameSender = "Indegree sender", includeEndoEffectSender = TRUE,
                                        endogenousEffectsUniqueSender = FALSE, endogenousEffectsScalingSender = "none",
-                                       endogenousEffectsConsiderTypeSender = "no"),
+                                       endogenousEffectsConsiderTypeSender = "ignore"),
                                   list(value = "outdegreeSender", translatedNameSender = "Outdegree sender", includeEndoEffectSender = TRUE,
                                        endogenousEffectsUniqueSender = FALSE, endogenousEffectsScalingSender = "none",
-                                       endogenousEffectsConsiderTypeSender = "no"))
+                                       endogenousEffectsConsiderTypeSender = "ignore"))
 options$diagnosticPlots <- TRUE
 options$diagnosticPlotWaitTime <- TRUE
 options$residualPlotSelect <- list(list(includePlotEffect = TRUE, value = "Indegree receiver"),
@@ -875,10 +875,10 @@ options$timepointInputUpper <- "Inf"
 options$orientation <- "tie"
 options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"),
+                                       endogenousEffectsConsiderType = "ignore"),
                                   list(value = "indegreeSender", translatedName = "Indegree sender", includeEndoEffect = TRUE,
                                        endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
-                                       endogenousEffectsConsiderType = "no"))
+                                       endogenousEffectsConsiderType = "ignore"))
 options$regularization <- "horseshoe"
 options$regularizationSetSeed <- TRUE
 options$regularizationSeed <- 1234
@@ -911,5 +911,72 @@ test_that("Coefficient estimates tie model table results match", {
                                        0.139059668033307, -3.18555937167482, "Indegree sender", 0.0451393465306908,
                                        0.65310164177024, 0.0621323756978551, 0.0241988629908562, 1.86534989465195
                                       ))
+})
+
+
+# ---- consider type: multi-type (two event types via 'setting') ----
+# separate: one effect per event type
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$typeVariable <- "setting"
+options$syncAnalysisBox <- TRUE
+options$timepointInputUpper <- "Inf"
+options$regularization <- ""
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "separate"))
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options)
+
+test_that("Coefficient estimates separate-type tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("baseline", -9.97893579737077, 0, 0, 0.11551250194071, -86.388361689999,
+                                      "Inertia (social)", -0.153329585070714, 0.892117138660213, 0.470914515249404,
+                                      0.212664789869332, -0.720991872537642, "Inertia (work)", 0.0132105985163431,
+                                      0.914280624323822, 0.917173939743568, 0.127032052358938, 0.103994214617706
+                                     ))
+})
+
+test_that("Model fit separate-type tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(115, 2531.23125275603, "Null deviance", "", 112, 2530.6599389521,
+                                      "Residual deviance", "", 3, 0.571313803935936, "Chi^2", 0.902966853362967,
+                                      "", 2536.6599389521, "AIC", "", "", 2536.87615516832, "AICC",
+                                      "", "", 2544.89473533719, "BIC", ""))
+})
+
+# interact: one effect per ordered pair of event types (requires extend_riskset_by_type)
+options$extendRisksetByType <- TRUE
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "interact"))
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options)
+
+test_that("Coefficient estimates interact-type tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("baseline", -10.6639999561698, 0, 0, 0.11523010954758, -92.5452557325429,
+                                      "Inertia (social <unicode> social)", -0.366677753813364, 0.857286907861853,
+                                      0.281660703777655, 0.340589865258787, -1.07659619740815, "Inertia (social <unicode> work)",
+                                      -0.00707314952076183, 0.914673761994604, 0.977988964325004,
+                                      0.25636416952414, -0.0275902421695314, "Inertia (work <unicode> social)",
+                                      -0.29178856338359, 0.823859252741176, 0.197670918116351, 0.226505998026553,
+                                      -1.28821561426989, "Inertia (work <unicode> work)", 0.186070968698152,
+                                      0.817041037172964, 0.185615806753885, 0.14057302611895, 1.3236605473706
+                                     ))
+})
+
+test_that("Model fit interact-type tie model table results match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_modelFitContainer"]][["collection"]][["mainContainer_modelFitContainer_modelFitTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list(115, 2690.65510428483, "Null deviance", "", 110, 2684.6742781525,
+                                      "Residual deviance", "", 5, 5.98082613232782, "Chi^2", 0.308089093032634,
+                                      "", 2694.6742781525, "AIC", "", "", 2695.2247368681, "AICC",
+                                      "", "", 2708.39893879432, "BIC", ""))
 })
 

@@ -316,26 +316,15 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   })
   specEndos <- which(!sapply(endosSave, is.null))
   outEndoList <- lapply(endos[specEndos], function(x) x[["translatedName"]])
-  # does any endo effect have type = both
+  # type-considered effects (separate/interact) are offered as a single "(type)" term
   endoType <- sapply(endos[specEndos], function(x) {
     x[["endogenousEffectsConsiderType"]]
   })
-  # first add the "type" string to all the type-yes instances
-  indYes <- which(endoType == "yes")
-  if (length(indYes) > 0)
-    outEndoList[indYes] <- paste0(outEndoList[indYes], "(type)")
+  indType <- which(endoType %in% c("separate", "interact"))
+  if (length(indType) > 0)
+    outEndoList[indType] <- paste0(outEndoList[indType], "(type)")
 
   outEndoListX <- outEndoList
-  # now take care of the type-both instances
-  indBoth <- which(endoType == "both")
-  if (length(indBoth) > 0) {
-    newInd <- sort(c(indBoth + seq_len(length(indBoth)), indBoth + seq_len(length(indBoth)) - 1))
-    outEndoListX <- vector("character", length = length(outEndoList) + length(indBoth))
-    tmp <- rep(outEndoList[indBoth], each = 2)
-    tmp[seq(2, length(newInd), by = 2)] <- paste0(tmp[seq(2, length(newInd), by = 2)], "(type)")
-    outEndoListX[newInd] <- tmp
-    outEndoListX[-newInd] <- outEndoList[-indBoth]
-  }
 
   combList <- combListSender <- NULL
   if ((length(outExoList) + length(outEndoListX)) >= 2) {
@@ -357,20 +346,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     })
     specEndosSender <- which(!sapply(endosSaveSender, is.null))
     outEndoListSender <- lapply(endosSender[specEndosSender], function(x) x[["translatedNameSender"]])
-    outEndoListXSender <- outEndoListSender
-    # does any endo effect have type = both
+    # type-considered sender effects (separate/interact) are offered as a single "(type)" term
     endoTypeSender <- sapply(endosSender[specEndosSender], function(x) {
       x[["endogenousEffectsConsiderTypeSender"]]
     })
-    indBothSender <- which(endoTypeSender == "both")
-    if (length(indBothSender) > 0) {
-      newIndSender <- sort(c(indBothSender + seq_len(length(indBothSender)), indBothSender + seq_len(length(indBothSender)) - 1))
-      outEndoListXSender <- vector("character", length = length(outEndoListSender) + length(indBothSender))
-      tmpSender <- rep(outEndoListSender[indBothSender], each = 2)
-      tmpSender[seq(2, length(newIndSender), by = 2)] <- paste0(tmpSender[seq(2, length(newIndSender), by = 2)], "(type)")
-      outEndoListXSender[newIndSender] <- tmpSender
-      outEndoListXSender[-newIndSender] <- outEndoListSender[-indBothSender]
-    }
+    indTypeSender <- which(endoTypeSender %in% c("separate", "interact"))
+    if (length(indTypeSender) > 0)
+      outEndoListSender[indTypeSender] <- paste0(outEndoListSender[indTypeSender], "(type)")
+    outEndoListXSender <- outEndoListSender
 
     if ((length(outExoListSender) + length(outEndoListXSender)) >= 2) {
 
@@ -1373,6 +1356,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 # the following code processes the model effects
 .translateEffects <- function(jaspResults, options, sender = "", receiver = FALSE) {
 
+  # event types (in the order remify/remstats use them) drive how consider_type effects
+  # expand; interact is only possible with extend_riskset_by_type on
+  reh <- jaspResults[["remifyResultState"]]$object
+  typeLevels <- character(0)
+  if (!isTryError(reh) && !is.null(reh[["meta"]][["dictionary"]][["types"]]))
+    typeLevels <- reh[["meta"]][["dictionary"]][["types"]][["typeName"]]
+  canInteract <- isTRUE(options[["extendRisksetByType"]]) && options[["typeVariable"]] != ""
+
   effects <- "~ 1"
   # endogenous effects:
   endos <- options[[paste0("endogenousEffects", sender)]]
@@ -1383,7 +1374,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   endoObj <- NULL
   if (length(specEndos) > 0) {
-    endoObj <- .processEndoEffects(endos[specEndos], sender)
+    endoObj <- .processEndoEffects(endos[specEndos], sender, typeLevels, canInteract)
     effects <- paste(effects, "+", endoObj$effects)
 
     # we need the R and translated jasp names of the endo effects in the coefficients table later
@@ -1638,89 +1629,78 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
-.processEndoEffects <- function(endos, sender = "") {
+.processEndoEffects <- function(endos, sender = "", typeLevels = character(0), canInteract = FALSE) {
 
-  endoDims <- c() # also save the dimnames to later assign to the statsObject slices
-  endosR <- sapply(endos, function(x) x[["value"]])
-  endosJasp <- sapply(endos, function(x) {
-    x[[paste0("translatedName", sender)]]
-  })
-  endoScaling <- sapply(endos, function(x) {
-    x[[paste0("endogenousEffectsScaling", sender)]]
-  })
-  endoUnique <- sapply(endos, function(x) {
-    x[[paste0("endogenousEffectsUnique", sender)]]
-  })
-  endoType <- sapply(endos, function(x) {
-    x[[paste0("endogenousEffectsConsiderType", sender)]]
-  })
-  endosX <- endosR
-  endoScalingX <- endoScaling
-  endoUniqueX <- endoUnique
-  endoTypeX <- endoType
-  endosJaspX <- endosJasp
+  # consider_type values (remstats >= 4.0): "ignore", "separate" (one stat per event
+  # type) and "interact" (one stat per ordered pair of types, needs extend_riskset_by_type).
+  # remstats collapses separate/interact to ignore when there are < 2 event types and
+  # interact to separate without extend_riskset_by_type, so we mirror that when building
+  # the dimnames/labels, expanding an effect into as many slices as remstats returns.
+  nL <- length(typeLevels)
 
-  # see if the consider_type argument is somewhere specified as "both"
-  # because then we need a longer effects vector since we semi-duplicate one effect
-  indBoth <- which(endoType == "both")
+  endoEffects <- character(0)   # remstats formula terms (one per effect)
+  endoDims    <- character(0)   # dimnames assigned to the stats slices (expanded by type)
+  endoR       <- character(0)   # r-side names, aligned with endoDims
+  endoJasp    <- character(0)   # display names, aligned with endoDims
+  endoSave    <- character(0)   # per-slice copy of the formula term (for interactions)
 
-  if (length(indBoth) > 0) {
-    # create vectors that fit the duplicated effects for the "both" consider type arg
-    endosX <- vector("character", length = length(endosR) + length(indBoth))
-    newInd <- sort(c(indBoth + seq_len(length(indBoth)), indBoth + seq_len(length(indBoth)) - 1))
-    endosX[newInd] <- rep(endosR[indBoth], each = 2)
-    endosX[-newInd] <- endosR[-indBoth]
+  for (i in seq_along(endos)) {
+    base  <- endos[[i]][["value"]]
+    jbase <- endos[[i]][[paste0("translatedName", sender)]]
+    scal  <- endos[[i]][[paste0("endogenousEffectsScaling", sender)]]
+    uniq  <- endos[[i]][[paste0("endogenousEffectsUnique", sender)]]
+    ctype <- endos[[i]][[paste0("endogenousEffectsConsiderType", sender)]]
 
-    endoScalingX <- vector("character", length = length(endoScaling) + length(indBoth))
-    endoScalingX[newInd] <- rep(endoScaling[indBoth], each = 2)
-    endoScalingX[-newInd] <- endoScaling[-indBoth]
+    stem <- base
+    args <- character(0)
+    if (!(scal %in% c("none", ""))) {
+      args <- c(args, paste0("scaling = '", scal, "'"))
+      stem <- paste0(stem, ".", scal)
+    }
+    if (isTRUE(uniq)) {
+      args <- c(args, "unique = TRUE")
+      stem <- paste0(stem, ".unique")
+    }
 
-    endoUniqueX <- vector("character", length = length(endoUnique) + length(indBoth))
-    endoUniqueX[newInd] <- rep(endoUnique[indBoth], each = 2)
-    endoUniqueX[-newInd] <- endoUnique[-indBoth]
+    # resolve the effective consider_type; interact needs extend_riskset_by_type and >1 type
+    effType <- "ignore"
+    if (ctype %in% c("separate", "interact"))
+      effType <- if (ctype == "interact" && canInteract && nL > 1) "interact" else "separate"
+    if (effType != "ignore")
+      args <- c(args, paste0("consider_type = '", effType, "'"))
 
-    endoTypeX <- vector("character", length = length(endoType) + length(indBoth))
-    endoTypeX[newInd] <- c("no", "yes")
-    endoTypeX[-newInd] <- endoType[-indBoth]
+    term <- paste0(base, "(", paste(args, collapse = ", "), ")")
+    endoEffects <- c(endoEffects, term)
 
-    endosJaspX <- vector("character", length = length(endosJasp) + length(indBoth))
-    endosJaspX[newInd] <- rep(endosJasp[indBoth], each = 2)
-    endosJaspX[-newInd] <- endosJasp[-indBoth]
+    if (effType == "separate" && nL > 1) {
+      d <- paste0(stem, ".", typeLevels)
+      j <- paste0(jbase, " (", typeLevels, ")")
+      r <- d
+    } else if (effType == "interact" && nL > 1) {
+      g <- expand.grid(inner = typeLevels, outer = typeLevels, stringsAsFactors = FALSE)
+      d <- paste0(stem, ".", g$outer, ".", g$inner)
+      j <- paste0(jbase, " (", g$outer, " × ", g$inner, ")")
+      r <- d
+    } else if (effType != "ignore") {
+      # a single event type: remstats returns one collapsed slice, keep the legacy label
+      d <- paste0(stem, ".type")
+      j <- paste0(jbase, "(type)")
+      r <- paste0(base, ".type")
+    } else {
+      d <- stem
+      j <- jbase
+      r <- base
+    }
+    endoDims <- c(endoDims, d)
+    endoR    <- c(endoR, r)
+    endoJasp <- c(endoJasp, j)
+    endoSave <- c(endoSave, rep(term, length(d)))
   }
 
-  endoEffects <- paste0(endosX, "(")
+  endoEffectsStr <- paste(endoEffects, collapse = " + ")
 
-  for (i in 1:length(endosX)) {
-    # create the proper dimname
-    dimstmp <- endosX[i]
-
-    if (!(endoScalingX[i] %in% c("none", ""))) {
-      endoEffects[i] <- paste0(endoEffects[i], "scaling = '", endoScalingX[i], "', ")
-      dimstmp <- paste0(dimstmp, ".", endoScalingX[i])
-    }
-    if (endoUniqueX[i]) {
-      endoEffects[i] <- paste0(endoEffects[i], "unique = ", endoUniqueX[i], ", ")
-      dimstmp <- paste0(dimstmp, ".unique")
-    }
-
-    # consider type is a bit special given we can also have an endo effect with consider type and one without
-    if (endoTypeX[i] == "yes") {
-      endoEffects[i] <- paste0(endoEffects[i], "consider_type = TRUE, ")
-      dimstmp <- paste0(dimstmp, ".type")
-      endosJaspX[i] <- paste0(endosJaspX[i], "(type)")
-      endosX[i] <- paste0(endosX[i], ".type")
-    }
-    endoDims <- append(endoDims, dimstmp)
-  }
-
-  endoEffects <- paste0(endoEffects, ")")
-  endoEffects <- gsub(", )", ")", endoEffects)
-  endoEffectsSave <- endoEffects
-
-  endoEffects <- paste(endoEffects, collapse = " + ")
-
-  return(list(effects = endoEffects, effectsSave = endoEffectsSave, dims = endoDims,
-              jaspNames = endosJaspX, rNames = endosX))
+  return(list(effects = endoEffectsStr, effectsSave = endoSave, dims = endoDims,
+              jaspNames = endoJasp, rNames = endoR))
 }
 
 
