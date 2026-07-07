@@ -925,6 +925,15 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   if (jaspResults[["mainContainer"]]$getError()) return()
 
+  # remstimate 3.0 only supports MLE (the method group is hidden in the UI so
+  # this is always MLE); guard legacy .jasp files that still carry method = "BSIR"
+  # so they fail with a clear message instead of crashing inside remstimate
+  if (options[["method"]] != "MLE") {
+    jaspResults[["mainContainer"]]$setError(gettextf("The estimation method '%s' is not currently available. Please use maximum likelihood estimation (MLE).",
+                                                     options[["method"]]))
+    return()
+  }
+
   fit <- try(remstimate::remstimate(reh = rehObject, stats = statsObject, method = options[["method"]]))
 
   if (isTryError(fit)) { # try error
