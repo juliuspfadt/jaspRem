@@ -22,7 +22,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
   .remUploadActorData(jaspResults, options)
   .remUploadDyadData(jaspResults, options)
-  .remUploadDyadExcludeData(jaspResults, options)
+  .remUploadDyadIncludeData(jaspResults, options)
 
   # fill the qml componentsLists
   .feedbackExoTableVariablesEvents(jaspResults, options)
@@ -82,7 +82,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                            "interactionEffects", "endogenousEffectsSender", "exogenousEffectsSender",
                            "interactionEffectsSender", "eventHistory", "eventHistorySingleInput",
                            "eventHistoryIntervalInputLower", "eventHistoryIntervalInputUpper", "timepointInputLower",
-                           "timepointInputUpper", "simultaneousEvents", "dyadExclude"))
+                           "timepointInputUpper", "dyadInclude", "extendRisksetByType"))
   jaspResults[["mainContainer"]] <- mainContainer
 
   return()
@@ -168,32 +168,32 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
-.remUploadDyadExcludeData <- function(jaspResults, options) {
+.remUploadDyadIncludeData <- function(jaspResults, options) {
 
-  if (!is.null(jaspResults[["dyadExcludeState"]]$object) || options[["riskset"]] != "manual" ||
-      is.null(options[["dyadExclude"]])) return()
+  if (!is.null(jaspResults[["dyadIncludeState"]]$object) || options[["riskset"]] != "manual" ||
+      is.null(options[["dyadInclude"]])) return()
 
-  if (options[["dyadExclude"]] == "") return()
+  if (options[["dyadInclude"]] == "") return()
 
-  bsName <- basename(options[["dyadExclude"]])
+  bsName <- basename(options[["dyadInclude"]])
   attrName <- gsub("\\..*","", bsName)
   ending <- sub(".*(\\..*)", "\\1", bsName)
 
   if (ending == ".csv") {
-    dyadDt <- read.csv(options[["dyadExclude"]], row.names = NULL, check.names = FALSE)
+    dyadDt <- read.csv(options[["dyadInclude"]], row.names = NULL, check.names = FALSE)
   } else if (ending == ".txt") {
-    dyadDt <- read.delim(options[["dyadExclude"]], row.names = NULL, check.names = FALSE)
+    dyadDt <- read.delim(options[["dyadInclude"]], row.names = NULL, check.names = FALSE)
   }
 
   cnames <- colnames(dyadDt)
   if (!all(c("actor1", "actor2") %in% cnames)) {
-    .quitAnalysis(gettext("The columns in the dyad exclude data file should be named 'actor1' and 'actor2'"))
+    .quitAnalysis(gettext("The columns in the dyads-to-include data file should be named 'actor1' and 'actor2'"))
   }
 
   dyadDt <- dyadDt[, c("actor1", "actor2")]
-  dyadExcludeState <- createJaspState(dyadDt)
-  dyadExcludeState$dependOn(c("riskset", "dyadExclude"))
-  jaspResults[["dyadExcludeState"]] <- dyadExcludeState
+  dyadIncludeState <- createJaspState(dyadDt)
+  dyadIncludeState$dependOn(c("riskset", "dyadInclude"))
+  jaspResults[["dyadIncludeState"]] <- dyadIncludeState
 
   return()
 }
@@ -621,43 +621,32 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     directed <- TRUE
   }
 
-  if (!is.null(jaspResults[["dyadExcludeState"]][["object"]])) {
-    dtExclude <- jaspResults[["dyadExcludeState"]][["object"]]
-    dtExclude <- lapply(dtExclude, as.character)
-
-    # remify >= 4.0 replaced omit_dyad with manual.riskset, a data.frame listing the
-    # dyads that remain at risk over the entire sequence; build it as all possible
-    # dyads minus the excluded ones, where NA in the exclusion file acts as a wildcard
-    # note: remify automatically adds observed dyads back into the riskset
-    actors <- unique(c(as.character(dataset[, 2]), as.character(dataset[, 3])))
-    manualRiskset <- expand.grid(actor1 = actors, actor2 = actors,
-                                 stringsAsFactors = FALSE, KEEP.OUT.ATTRS = FALSE)
-    manualRiskset <- manualRiskset[manualRiskset[["actor1"]] != manualRiskset[["actor2"]], ]
-
-    for (i in seq_along(dtExclude[["actor1"]])) {
-      drop <- rep(TRUE, nrow(manualRiskset))
-      if (!is.na(dtExclude[["actor1"]][i]))
-        drop <- drop & manualRiskset[["actor1"]] == dtExclude[["actor1"]][i]
-      if (!is.na(dtExclude[["actor2"]][i]))
-        drop <- drop & manualRiskset[["actor2"]] == dtExclude[["actor2"]][i]
-      manualRiskset <- manualRiskset[!drop, ]
-    }
+  if (!is.null(jaspResults[["dyadIncludeState"]][["object"]])) {
+    # remify >= 4.0's manual.riskset is the data.frame of dyads that make up the risk
+    # set over the whole sequence, so the uploaded file *is* the risk set (NA acts as a
+    # wildcard for any actor). remify additionally re-adds all observed dyads.
+    manualRiskset <- jaspResults[["dyadIncludeState"]][["object"]]
+    manualRiskset <- data.frame(lapply(manualRiskset, as.character), stringsAsFactors = FALSE)
   } else {
     manualRiskset <- NULL
   }
 
-  # a manual riskset without exclusions is equivalent to the full one,
+  # a manual riskset without an uploaded include file is equivalent to the full one,
   # but remify errors on riskset = "manual" without a manual.riskset data.frame
   risksetType <- options[["riskset"]]
   if (risksetType == "manual" && is.null(manualRiskset))
     risksetType <- "full"
+
+  # extend_riskset_by_type only applies when a type variable is present
+  extendByType <- options[["extendRisksetByType"]] && options[["typeVariable"]] != ""
 
   rehObject <- try(remify::remify(edgelist = dataset,
                                   directed = directed,
                                   ordinal = options[["eventSequence"]] == "orderOnly",
                                   model = options[["orientation"]],
                                   riskset = risksetType,
-                                  manual.riskset = manualRiskset))
+                                  manual.riskset = manualRiskset,
+                                  extend_riskset_by_type = extendByType))
 
   if (isTryError(rehObject)) {
     jaspResults[["mainContainer"]]$setError(gettextf("Remify failed. Internal error message: %s", .extractErrorMessage(rehObject)))
@@ -667,7 +656,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   remifyResultState$dependOn(c("eventDirection", "eventSequence",
                                "orientation", "riskset", "naAction", "weightVariable",
                                "timeVariable", "actorVariableSender", "actorVariableReceiver", "weightVariable",
-                               "typeVariable", "syncAnalysisBox", "dyadExclude"))
+                               "typeVariable", "syncAnalysisBox", "dyadInclude", "extendRisksetByType"))
 
   jaspResults[["remifyResultState"]] <- remifyResultState
 
@@ -1096,9 +1085,6 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 
 
   # add statistics options in footnote
-  simEvents <- switch(options[["simultaneousEvents"]],
-                      "join" = "joined",
-                      options[["simultaneousEvents"]])
   eventHistory <- switch(options[["eventHistory"]],
                          "window" = gettextf("a window with %s time units", options[["eventHistorySingleInput"]]),
                          "interval" = gettextf("an interval from %1$s to %2$s",
@@ -1106,8 +1092,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                                options[["eventHistoryIntervalInputUpper"]]),
                          "decay" = gettextf("decaying with half-life time of %s", options[["eventHistorySingleInput"]]),
                          options[["eventHistory"]])
-  modelFitTable$addFootnote(gettextf("Simultaneous events are %1$s. Event history is considered as %2$s.",
-                                     simEvents, eventHistory))
+  modelFitTable$addFootnote(gettextf("Event history is considered as %1$s.", eventHistory))
 
   return()
 }

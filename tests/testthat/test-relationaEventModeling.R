@@ -574,10 +574,9 @@ test_that("Regularization Results Sender Model table results match", {
 })
 
 
-# actor model, risket active, simultaneous events split
+# actor model, riskset active
 # just use the same effects as before, plus:
 options$riskset <- "active"
-options$simultaneousEvents <- "split"
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = F)
 
@@ -886,7 +885,7 @@ options$regularizationSeed <- 1234
 options$regularizationIterations <- 2000
 options$regularizationCiLevel <- .95
 options$riskset <- "manual"
-options$dyadExclude <- testthat::test_path("history_dyads_exclude.csv")
+options$dyadInclude <- testthat::test_path("history_dyads_include.csv")
 
 set.seed(1)
 results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options, makeTests = FALSE)
@@ -895,22 +894,22 @@ results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path
 test_that("Regularization results tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_regContainer"]][["collection"]][["mainContainer_regContainer_regTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -10.0414967533405, "TRUE", -10.3466444743103, -10.0218523434971,
-                                       -10.0218523434971, -9.99243243440296, -9.71200972837774, "Inertia",
-                                       -0.10430614783501, "FALSE", -0.314704950213094, -0.0756411748973929,
-                                       -0.0756411748973929, -0.00720552597994455, 0.132863995864512,
-                                       "Indegree sender", 0.0233443436371193, "FALSE", -0.0248414627068577,
-                                       0.0172281161853238, 0.0172281161853238, 0.00547294531529529,
-                                       0.0614184609536507))
+                                 list("baseline", -9.67583859984656, "TRUE", -9.98776926182345, -9.65620210633855,
+                                       -9.65620210633855, -9.62948612385336, -9.33463168412604, "Inertia",
+                                       -0.44298282872549, "TRUE", -0.688850578286723, -0.41213588057346,
+                                       -0.41213588057346, -0.432874683011014, -0.124678272718658, "Indegree sender",
+                                       0.0451393465306908, "FALSE", -0.00754935842943428, 0.0387752239776134,
+                                       0.0387752239776134, 0.0422761730886128, 0.0858987073187812
+                                      ))
 })
 
 test_that("Coefficient estimates tie model table results match", {
   table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
   jaspTools::expect_equal_tables(table,
-                                 list("baseline", -10.0414967533405, 0, 0, 0.163523423201926, -61.4070850323427,
-                                       "Inertia", -0.10430614783501, 0.882170358453617, 0.396589888696021,
-                                       0.123042108488384, -0.847727246521116, "Indegree sender", 0.0233443436371193,
-                                       0.869023505646079, 0.327129558483129, 0.0238228979869976, 0.979912001044562
+                                 list("baseline", -9.67583859984656, 0, 0, 0.162084239763709, -59.6963567460492,
+                                       "Inertia", -0.44298282872549, 0.0628891343520153, 0.0014447445583865,
+                                       0.139059668033307, -3.18555937167482, "Indegree sender", 0.0451393465306908,
+                                       0.65310164177024, 0.0621323756978551, 0.0241988629908562, 1.86534989465195
                                       ))
 })
 

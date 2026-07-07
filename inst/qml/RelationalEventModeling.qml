@@ -234,7 +234,7 @@ Form
 			title: qsTr("Riskset")
 			radioButtonsOnSameRow: false
 			id: riskset
-			info: qsTr("Specifies which dyads or actors are considered at risk for an event at each time point. 'Full' includes all possible pairs, 'Active' only current ones, 'Manual' allows custom exclusions.")
+			info: qsTr("Specifies which dyads or actors are considered at risk for an event at each time point. 'Full' includes all possible pairs, 'Active' only currently active ones, 'Active (saturated)' also adds the reverse dyads and other event types, and 'Manual' lets you supply the risk set from a file.")
 
 			RadioButton
 			{
@@ -251,28 +251,44 @@ Form
 			}
 			RadioButton
 			{
+				value: "active_saturated"
+				label: qsTr("Active (saturated)")
+				info: qsTr("Like 'Active', but also adds the reverse dyads: if A can send to B, then B can send to A. When a type variable is present, it likewise adds the other event types for observed sender-receiver pairs.")
+			}
+			RadioButton
+			{
 				value: "manual"
 				label: qsTr("Manual")
-				info: qsTr("Manually specify which dyads or actors are excluded from the risk set at each time point using a file.")
+				info: qsTr("Manually specify which dyads are at risk by uploading a file; observed dyads are always added to the risk set automatically.")
 
 				Label {
-					text: qsTr("Upload dyads to exclude:")
+					text: qsTr("Dyads to include:")
 					visible: riskset.value == "manual"
 				}
 
 				FileSelector
 				{
-					id: dyadExclude
-					name: "dyadExclude"
+					id: dyadInclude
+					name: "dyadInclude"
 					label: ""
-					placeholderText: qsTr("e.g., home/Data/dyadExclude.csv")
+					placeholderText: qsTr("e.g., home/Data/dyadInclude.csv")
 					filter: "*.csv *.txt"
 					save: false
 					fieldWidth: 180 * preferencesModel.uiScale
 					visible: riskset.value == "manual"
-					info: qsTr(" Becomes visible when risket is chosen to be manual: Upload a CSV or TXT file listing dyads to be excluded from the risk set at any time point.")
+					info: qsTr("Becomes visible when riskset is set to manual: upload a CSV or TXT file listing the dyads that form the risk set (columns named 'actor1' and 'actor2'). Observed dyads are added automatically.")
 				}
 			}
+		}
+
+		CheckBox
+		{
+			name: "extendRisksetByType"
+			label: qsTr("Extend risk set by type")
+			id: extendByType
+			checked: false
+			enabled: typeVar.count > 0
+			info: qsTr("Only available when a type variable is set. When enabled, the risk set includes every event type for each dyad at risk, so effects can distinguish between event types (needed for the 'interact' consider-type option).")
 		}
 	}
 
@@ -738,16 +754,6 @@ Form
 		{
 			title: qsTr("Statistics Options")
 			info: qsTr("Configure how event statistics are calculated, including how to handle simultaneous events, the portion of the event history to use, and which time intervals to analyze.")
-
-			RadioButtonGroup
-			{
-				name: "simultaneousEvents"
-				title: qsTr("Simultaneous events")
-				radioButtonsOnSameRow: true
-				info: qsTr("Choose how to handle multiple events that occur at exactly the same time: join them into a single event ('Join') or treat each event separately ('Split').")
-				RadioButton { label: qsTr("Join"); value: "join"; checked: true }
-				RadioButton { label: qsTr("Split"); value: "split" }
-			}
 
 			DropDown {
 				id: eventHistory
