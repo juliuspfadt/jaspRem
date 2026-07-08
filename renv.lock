@@ -2612,7 +2612,7 @@
       "RemoteUsername": "jasp-stats",
       "RemoteRepo": "jaspBase",
       "RemoteRef": "master",
-      "RemoteSha": "244c661b7a4cdcc9aca0aacbf5555881d90c0985",
+      "RemoteSha": "f1944101ee749e3fcd605defca2e014ade4b3534",
       "Remotes": "jasp-stats/jaspGraphs"
     },
     "jaspGraphs": {
@@ -2651,7 +2651,7 @@
       "RemoteUsername": "jasp-stats",
       "RemoteRepo": "jaspGraphs",
       "RemoteRef": "master",
-      "RemoteSha": "6357a3c192c97a0bd00881d0098d93a899e3e869"
+      "RemoteSha": "aebeafe01da55d32d8ebd9cfe8a6241247d0a3b1"
     },
     "jaspTools": {
       "Package": "jaspTools",
@@ -2693,7 +2693,7 @@
       "RemoteUsername": "jasp-stats",
       "RemoteRepo": "jaspTools",
       "RemoteRef": "master",
-      "RemoteSha": "4de898283e3817fdb072733f642ba5711897a592"
+      "RemoteSha": "55ab6bcd2e3828fc923a9bdf513c50a06da3d6ad"
     },
     "jquerylib": {
       "Package": "jquerylib",
