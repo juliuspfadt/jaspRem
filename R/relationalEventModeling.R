@@ -1293,7 +1293,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         for (rc in recallList) {
           if (is.null(rc$recall) || is.null(rc$recall$per_event)) next
 
-          plotObj <- .plotRecallHelper(rc$recall, rc$role)
+          plotObj <- try(.plotRecallHelper(rc$recall, rc$role))
           recallPlot <- createJaspPlot(plot = NULL, title = rc$title, height = 400, width = 500)
           recallPlot$position <- pos
           pos <- pos + 1
@@ -1983,64 +1983,74 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
-# base-R plot of the predictive recall of observed events (remstimate::diagnostics()$recall):
+# ggplot2 plot of the predictive recall of observed events (remstimate::diagnostics()$recall):
 # the relative rank the model assigns each observed event over time, 0 = bottom, 1 = top
 .plotRecallHelper <- function(recall, role = "") {
 
-  plotFun <- function() {
-    pe <- recall$per_event
-    if (is.null(pe) || nrow(pe) == 0L) {
-      plot.new()
-      title(main = gettext("Recall (no data)"))
-      return(invisible())
-    }
-
-    hasTime <- "time" %in% names(pe) && any(is.finite(pe$time))
-    op <- par(mar = c(4, 4, if (hasTime) 5 else 4, 2) + 0.1)
-    on.exit(par(op))
-
-    plot(pe$event, pe$rel_rank, xaxt = "n",
-         xlab = gettext("Event"), ylab = gettext("Relative rank (0 = bottom, 1 = top)"),
-         main = "", ylim = c(0, 1), pch = 16, cex = 0.6,
-         col = grDevices::rgb(0, 0, 0, 0.35))
-
-    ticks <- pretty(pe$event)
-    ticks <- ticks[ticks >= min(pe$event) & ticks <= max(pe$event)]
-    axis(1, at = ticks)
-    if (hasTime) {
-      tat <- stats::approx(pe$event, pe$time, xout = ticks, rule = 2)$y
-      axis(3, at = ticks, labels = round(tat, 1))
-      mtext(gettext("Time"), side = 3, line = 2.2, cex = 0.8)
-    }
-
-    med <- stats::median(pe$rel_rank, na.rm = TRUE)
-    abline(h = med, lty = 2, col = "blue", lwd = 1.5)
-
-    ord <- order(pe$event)
-    x <- pe$event[ord]
-    y <- pe$rel_rank[ord]
-    k <- max(3L, min(length(y) - 1L, round(length(y) * 0.1)))
-    if (k %% 2 == 0) k <- k + 1L
-    ym <- tryCatch(stats::runmed(y, k = k), error = function(e) NULL)
-    if (!is.null(ym)) {
-      sm <- tryCatch(stats::smooth.spline(x, ym), error = function(e) NULL)
-      if (!is.null(sm)) lines(sm$x, sm$y, col = "firebrick", lwd = 4)
-      else              lines(x, ym, col = "firebrick", lwd = 4)
-    }
-
-    legend("bottomright", inset = 0.02, bg = "white", cex = 0.8,
-           legend = c(gettext("Rank"), gettext("Median rank"), gettext("Smoothed trend")),
-           lty = c(NA, 2, 1), pch = c(16, NA, NA),
-           col = c(grDevices::rgb(0, 0, 0, 0.35), "blue", "firebrick"), lwd = c(NA, 1.5, 2))
-
-    mainLabel <- if (nzchar(role))
-      gettextf("%1$s: recall (median rank = %2$.3f)", role, med)
-    else
-      gettextf("Recall (median rank = %1$.3f)", med)
-    mtext(mainLabel, side = 3, line = if (hasTime) 3.3 else 1.2, cex = 1.1)
+  pe <- recall$per_event
+  if (is.null(pe) || nrow(pe) == 0L) {
+    return(ggplot2::ggplot() +
+             ggplot2::annotate("text", x = 0, y = 0, label = gettext("Recall (no data)")) +
+             ggplot2::theme_void())
   }
 
-  return(plotFun)
+  hasTime <- "time" %in% names(pe) && any(is.finite(pe$time))
+  med <- stats::median(pe$rel_rank, na.rm = TRUE)
+
+  ord <- order(pe$event)
+  x <- pe$event[ord]
+  y <- pe$rel_rank[ord]
+  k <- max(3L, min(length(y) - 1L, round(length(y) * 0.1)))
+  if (k %% 2 == 0) k <- k + 1L
+  ym <- tryCatch(stats::runmed(y, k = k), error = function(e) NULL)
+  smoothDf <- NULL
+  if (!is.null(ym)) {
+    sm <- tryCatch(stats::smooth.spline(x, ym), error = function(e) NULL)
+    smoothDf <- if (!is.null(sm)) data.frame(x = sm$x, y = sm$y) else data.frame(x = x, y = ym)
+  }
+
+  rankLabel    <- gettext("Rank")
+  medianLabel  <- gettext("Median rank")
+  smoothLabel  <- gettext("Smoothed trend")
+  legendLabels <- c(rankLabel, medianLabel, smoothLabel)
+
+  xRange     <- range(pe$event)
+  xBreaksAll <- jaspGraphs::getPrettyAxisBreaks(pe$event)
+  xBreaks    <- xBreaksAll[xBreaksAll >= xRange[1] & xBreaksAll <= xRange[2]]
+  yBreaks    <- jaspGraphs::getPrettyAxisBreaks(c(0, 1))
+
+  xScale <- if (hasTime) {
+    timeAtBreaks <- round(stats::approx(pe$event, pe$time, xout = xBreaks, rule = 2)$y, 1)
+    ggplot2::scale_x_continuous(name = gettext("Event"), breaks = xBreaks, limits = xRange,
+                                sec.axis = ggplot2::dup_axis(breaks = xBreaks, labels = timeAtBreaks,
+                                                             name = gettext("Time")))
+  } else {
+    ggplot2::scale_x_continuous(name = gettext("Event"), breaks = xBreaks, limits = xRange)
+  }
+
+  mainLabel <- if (nzchar(role))
+    gettextf("%1$s: recall (median rank = %2$.3f)", role, med)
+  else
+    gettextf("Recall (median rank = %1$.3f)", med)
+
+  p <- ggplot2::ggplot(pe, ggplot2::aes(x = event, y = rel_rank)) +
+    ggplot2::geom_point(ggplot2::aes(colour = rankLabel), shape = 16, alpha = 0.35, size = 2) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = med, colour = medianLabel), linetype = "dashed", linewidth = 0.7)
+
+  if (!is.null(smoothDf))
+    p <- p + ggplot2::geom_line(data = smoothDf, ggplot2::aes(x = x, y = y, colour = smoothLabel), linewidth = 1.2)
+
+  p <- p +
+    ggplot2::scale_colour_manual(name = NULL, breaks = legendLabels,
+                                 values = stats::setNames(c("black", "blue", "firebrick"), legendLabels)) +
+    xScale +
+    ggplot2::scale_y_continuous(name = gettext("Relative rank (0 = bottom, 1 = top)"),
+                                breaks = yBreaks, limits = range(yBreaks)) +
+    ggplot2::ggtitle(mainLabel) +
+    jaspGraphs::geom_rangeframe(sides = "bl") +
+    jaspGraphs::themeJaspRaw(legend.position = "bottom", fontsize = 10, legend.cex = 0.85)
+
+  return(p)
 }
 
 
