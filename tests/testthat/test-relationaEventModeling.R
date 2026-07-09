@@ -980,3 +980,111 @@ test_that("Model fit interact-type tie model table results match", {
                                       "", "", 2708.39893879432, "BIC", ""))
 })
 
+
+# ---- interaction with a type-considered (multi-type) endogenous effect ----
+# regression test: interactions with a "separate"/"interact" endo effect used to crash
+# (the interaction picker only ever offers a generic "(type)" placeholder, which the old
+# matching logic couldn't resolve once that effect was expanded into multiple type slices)
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$typeVariable <- "setting"
+options$syncAnalysisBox <- TRUE
+options$timepointInputUpper <- "Inf"
+options$regularization <- ""
+options$extendRisksetByType <- TRUE
+
+options$actorDataList <- list(list(actorData = testthat::test_path("history_info_actor.csv"), value = "#"))
+options$exogenousEffectsTableActors <- list(list(minimum = TRUE, value = "age"))
+options$specifiedExogenousEffects <- list(
+  list(exogenousEffectsAbsolute = FALSE, exogenousEffectsScaling = "none", value = "minimum('age')")
+)
+
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "interact"))
+options$interactionEffects <- list(
+  list(includeInteractionEffect = TRUE, value = "Inertia(type) : minimum('age')")
+)
+
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options)
+
+test_that("Coefficient estimates for an interaction with a multi-type endo effect match", {
+  table <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_coefficientsContainer"]][["collection"]][["mainContainer_coefficientsContainer_coefficientsTable"]][["data"]]
+  jaspTools::expect_equal_tables(table,
+                                 list("baseline", -10.6741550615498, 0, 0, 0.116968023597369, -91.2570353269596,
+                                      "Inertia (social <unicode> social)", -0.362090838756912, 0.859235677102607,
+                                      0.288411940115717, 0.341076491325292, -1.06161183185029, "Inertia (social <unicode> work)",
+                                      -0.00853779966939783, 0.914660873400949, 0.973644613136307,
+                                      0.258426846432008, -0.0330375879568075, "Inertia (work <unicode> social)",
+                                      -0.296736688314293, 0.820042544928502, 0.190770056932616, 0.226810114408695,
+                                      -1.3083044779017, "Inertia (work <unicode> work)", 0.179207674577985,
+                                      0.832372897190527, 0.214639414334858, 0.144416466343242, 1.240908873591,
+                                      "Minimum_age", 0.418812225051769, 0.89405789413007, 0.488795514034,
+                                      0.605022524660841, 0.692225839503319, "Inertia (social <unicode> social):Minimum_age",
+                                      0.0542540407132708, 0.914441034427315, 0.934677064751263, 0.661942750967557,
+                                      0.0819618322490398))
+})
+
+
+# ---- recall diagnostics plot ----
+# tie model
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$syncAnalysisBox <- TRUE
+options$timepointInputUpper <- "Inf"
+options$regularization <- ""
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "ignore"))
+options$diagnosticPlots <- TRUE
+options$diagnosticPlotWaitTime <- FALSE
+options$diagnosticPlotRecall <- TRUE
+
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options)
+
+test_that("Recall plot matches (tie model)", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_recallContainer"]][["collection"]][["mainContainer_plotContainer_recallContainer_tie"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "recall-tie")
+})
+
+# actor model
+options <- jaspTools::analysisOptions("relationalEventModeling")
+options$timeVariable <- "time"
+options$actorVariableSender <- "actor1"
+options$actorVariableReceiver <- "actor2"
+options$orientation <- "actor"
+options$syncAnalysisBox <- TRUE
+options$timepointInputUpper <- "Inf"
+options$regularization <- ""
+options$endogenousEffects <- list(list(value = "inertia", translatedName = "Inertia", includeEndoEffect = TRUE,
+                                       endogenousEffectsUnique = FALSE, endogenousEffectsScaling = "none",
+                                       endogenousEffectsConsiderType = "ignore"))
+options$endogenousEffectsSender <- list(list(value = "indegreeSender", translatedNameSender = "Indegree sender",
+                                             includeEndoEffectSender = TRUE, endogenousEffectsScalingSender = "none",
+                                             endogenousEffectsConsiderTypeSender = "ignore"))
+options$diagnosticPlots <- TRUE
+options$diagnosticPlotWaitTime <- FALSE
+options$diagnosticPlotRecall <- TRUE
+
+set.seed(1)
+results <- jaspTools::runAnalysis("relationalEventModeling", testthat::test_path("history_events.csv"), options)
+
+test_that("Recall plot matches (actor model, sender)", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_recallContainer"]][["collection"]][["mainContainer_plotContainer_recallContainer_sender"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "recall-sender")
+})
+
+test_that("Recall plot matches (actor model, receiver)", {
+  plotName <- results[["results"]][["mainContainer"]][["collection"]][["mainContainer_plotContainer"]][["collection"]][["mainContainer_plotContainer_recallContainer"]][["collection"]][["mainContainer_plotContainer_recallContainer_receiver"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "recall-receiver")
+})
+

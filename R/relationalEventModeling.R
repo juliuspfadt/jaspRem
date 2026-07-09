@@ -1272,6 +1272,41 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         }
       }
 
+      if (isTRUE(options[["diagnosticPlotRecall"]])) {
+
+        recallList <- if (options[["orientation"]] == "tie") {
+          list(list(recall = diagnos$recall, role = "", key = "tie", title = gettext("Recall")))
+        } else {
+          list(
+            list(recall = diagnos$sender_model$recall, role = gettext("Sender"),
+                 key = "sender", title = gettext("Recall (Sender Model)")),
+            list(recall = diagnos$receiver_model$recall, role = gettext("Receiver"),
+                 key = "receiver", title = gettext("Recall (Receiver Model)"))
+          )
+        }
+
+        recallContainer <- createJaspContainer(gettext("Recall Diagnostics"))
+        recallContainer$dependOn("diagnosticPlotRecall")
+        plotContainer[["recallContainer"]] <- recallContainer
+
+        pos <- 1
+        for (rc in recallList) {
+          if (is.null(rc$recall) || is.null(rc$recall$per_event)) next
+
+          plotObj <- .plotRecallHelper(rc$recall, rc$role)
+          recallPlot <- createJaspPlot(plot = NULL, title = rc$title, height = 400, width = 500)
+          recallPlot$position <- pos
+          pos <- pos + 1
+          recallContainer[[rc$key]] <- recallPlot
+
+          if (isTryError(plotObj)) {
+            recallPlot$setError(gettextf("Recall diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
+          } else {
+            recallPlot$plotObject <- plotObj
+          }
+        }
+      }
+
       if (length(selected) > 0) {
         residualsPlotContainer <- createJaspContainer(gettext("Schoenfeld's Residuals Fit"))
         residualsPlotContainer$dependOn("residualPlotSelect")
@@ -1280,12 +1315,12 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
         if (options[["orientation"]] == "tie") {
 
           toPlotTie <- .matchJaspPlotEffects(selected, attr(remstimateObject$coefficients, "name"))
-          for (pp in seq_len(length(toPlotTie))) {
-            plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 2, effects = toPlotTie[pp],
+          for (pp in seq_len(length(toPlotTie$coef))) {
+            plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 2, effects = toPlotTie$coef[pp],
                                       send_effects = NULL, rec_effects = NULL)
-            residualsPlot <- createJaspPlot(plot = NULL, title = selected[pp], height = 400)
+            residualsPlot <- createJaspPlot(plot = NULL, title = toPlotTie$label[pp], height = 400)
             residualsPlot$position <- pp
-            residualsPlotContainer[[toPlotTie[pp]]] <- residualsPlot
+            residualsPlotContainer[[toPlotTie$coef[pp]]] <- residualsPlot
 
             if (isTryError(plotObj)) {
               residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
@@ -1301,14 +1336,13 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
           jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainerReceiver"]] <- residualsPlotContainerReceiver
 
           toPlotReceiver <- .matchJaspPlotEffects(selected, attr(remstimateObject$receiver_model$coefficients, "name"))
-          toPlotReceiver<- toPlotReceiver[!is.na(toPlotReceiver)]
-          if (length(toPlotReceiver) > 0) {
-            for (pp in seq_len(length(toPlotReceiver))) {
+          if (length(toPlotReceiver$coef) > 0) {
+            for (pp in seq_len(length(toPlotReceiver$coef))) {
               plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 2, effects = NULL,
-                                        send_effects = NULL, rec_effects = toPlotReceiver[[pp]])
+                                        send_effects = NULL, rec_effects = toPlotReceiver$coef[pp])
               residualsPlot <- createJaspPlot(plot = NULL, title = "", height = 400)
               residualsPlot$position <- pp
-              residualsPlotContainerReceiver[[toPlotReceiver[pp]]] <- residualsPlot
+              residualsPlotContainerReceiver[[toPlotReceiver$coef[pp]]] <- residualsPlot
 
               if (isTryError(plotObj)) {
                 residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
@@ -1323,15 +1357,14 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
           jaspResults[["mainContainer"]][["plotContainer"]][["residualsContainerSender"]] <- residualsPlotContainerSender
 
           toPlotSender <- .matchJaspPlotEffects(selected, attr(remstimateObject$sender_model$coefficients, "name"))
-          toPlotSender <- toPlotSender[!is.na(toPlotSender)]
 
-          if (length(toPlotSender) > 0) {
-            for (pp in seq_len(length(toPlotSender))) {
+          if (length(toPlotSender$coef) > 0) {
+            for (pp in seq_len(length(toPlotSender$coef))) {
               plotObj <- .plotFunHelper(remstimateObject, rehObject, diagnos, wh = 2, effects = NULL,
-                                        send_effects = toPlotSender[pp], rec_effects = NULL)
+                                        send_effects = toPlotSender$coef[pp], rec_effects = NULL)
               residualsPlot <- createJaspPlot(plot = NULL, title = "", height = 400)
               residualsPlot$position <- pp
-              residualsPlotContainerSender[[toPlotSender[pp]]] <- residualsPlot
+              residualsPlotContainerSender[[toPlotSender$coef[pp]]] <- residualsPlot
 
               if (isTryError(plotObj)) {
                 residualsPlot$setError(gettextf("Residual diagnostics plot failed with error: %1$s", .extractErrorMessage(plotObj)))
@@ -1644,6 +1677,13 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   endoJasp    <- character(0)   # display names, aligned with endoDims
   endoSave    <- character(0)   # per-slice copy of the formula term (for interactions)
 
+  # one entry per effect (not expanded by slice): matches the generic "(type)" placeholder
+  # the interaction picker offers (.feedbackInteractionEffects); remstats always collapses a
+  # type-considered effect used in an interaction to a single slice, regardless of type count
+  endoGeneric     <- character(0)
+  endoGenericTerm <- character(0)
+  endoGenericDim  <- character(0)
+
   for (i in seq_along(endos)) {
     base  <- endos[[i]][["value"]]
     jbase <- endos[[i]][[paste0("translatedName", sender)]]
@@ -1695,12 +1735,18 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
     endoR    <- c(endoR, r)
     endoJasp <- c(endoJasp, j)
     endoSave <- c(endoSave, rep(term, length(d)))
+
+    generic <- if (effType != "ignore") paste0(jbase, "(type)") else jbase
+    endoGeneric     <- c(endoGeneric, generic)
+    endoGenericTerm <- c(endoGenericTerm, term)
+    endoGenericDim  <- c(endoGenericDim, d[1])
   }
 
   endoEffectsStr <- paste(endoEffects, collapse = " + ")
 
   return(list(effects = endoEffectsStr, effectsSave = endoSave, dims = endoDims,
-              jaspNames = endoJasp, rNames = endoR))
+              jaspNames = endoJasp, rNames = endoR,
+              generic = endoGeneric, genericTerm = endoGenericTerm, genericDim = endoGenericDim))
 }
 
 
@@ -1794,16 +1840,19 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   interEffects <- unlist(interEffects)
   interDims[1:length(interEffects)] <- interEffects
 
-  # work the endo effects
-  if (length(endoObj$rNames) > 0) {
+  # work the endo effects: match against the generic "(type)" placeholder the interaction
+  # picker offers (.feedbackInteractionEffects) rather than the (possibly type-expanded)
+  # per-slice jaspNames -- remstats collapses a type-considered effect used in an interaction
+  # to a single slice regardless of how many event types it has
+  if (length(endoObj$generic) > 0) {
     interTmps <- strsplit(interEffects, " : ", fixed = TRUE)
     interDimsTmps <- strsplit(interDims, " : ", fixed = TRUE)
     for (ii in 1:length(interTmps)) {
-      for (ee in 1:length(endoObj$rNames)) {
-        ind <- which(endoObj$jaspNames[ee] == interTmps[[ii]])
+      for (ee in 1:length(endoObj$generic)) {
+        ind <- which(endoObj$generic[ee] == interTmps[[ii]])
         if (length(ind) > 0) {
-          interTmps[[ii]][ind] <- gsub(endoObj$jaspNames[ee], endoObj$effectsSave[ee], interTmps[[ii]][ind], fixed = TRUE)
-          interDimsTmps[[ii]][ind] <- gsub(endoObj$jaspNames[ee], endoObj$dims[ee], interDimsTmps[[ii]][ind], fixed = TRUE)
+          interTmps[[ii]][ind] <- gsub(endoObj$generic[ee], endoObj$genericTerm[ee], interTmps[[ii]][ind], fixed = TRUE)
+          interDimsTmps[[ii]][ind] <- gsub(endoObj$generic[ee], endoObj$genericDim[ee], interDimsTmps[[ii]][ind], fixed = TRUE)
         }
       }
     }
@@ -1934,6 +1983,67 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
 }
 
 
+# base-R plot of the predictive recall of observed events (remstimate::diagnostics()$recall):
+# the relative rank the model assigns each observed event over time, 0 = bottom, 1 = top
+.plotRecallHelper <- function(recall, role = "") {
+
+  plotFun <- function() {
+    pe <- recall$per_event
+    if (is.null(pe) || nrow(pe) == 0L) {
+      plot.new()
+      title(main = gettext("Recall (no data)"))
+      return(invisible())
+    }
+
+    hasTime <- "time" %in% names(pe) && any(is.finite(pe$time))
+    op <- par(mar = c(4, 4, if (hasTime) 5 else 4, 2) + 0.1)
+    on.exit(par(op))
+
+    plot(pe$event, pe$rel_rank, xaxt = "n",
+         xlab = gettext("Event"), ylab = gettext("Relative rank (0 = bottom, 1 = top)"),
+         main = "", ylim = c(0, 1), pch = 16, cex = 0.6,
+         col = grDevices::rgb(0, 0, 0, 0.35))
+
+    ticks <- pretty(pe$event)
+    ticks <- ticks[ticks >= min(pe$event) & ticks <= max(pe$event)]
+    axis(1, at = ticks)
+    if (hasTime) {
+      tat <- stats::approx(pe$event, pe$time, xout = ticks, rule = 2)$y
+      axis(3, at = ticks, labels = round(tat, 1))
+      mtext(gettext("Time"), side = 3, line = 2.2, cex = 0.8)
+    }
+
+    med <- stats::median(pe$rel_rank, na.rm = TRUE)
+    abline(h = med, lty = 2, col = "blue", lwd = 1.5)
+
+    ord <- order(pe$event)
+    x <- pe$event[ord]
+    y <- pe$rel_rank[ord]
+    k <- max(3L, min(length(y) - 1L, round(length(y) * 0.1)))
+    if (k %% 2 == 0) k <- k + 1L
+    ym <- tryCatch(stats::runmed(y, k = k), error = function(e) NULL)
+    if (!is.null(ym)) {
+      sm <- tryCatch(stats::smooth.spline(x, ym), error = function(e) NULL)
+      if (!is.null(sm)) lines(sm$x, sm$y, col = "firebrick", lwd = 4)
+      else              lines(x, ym, col = "firebrick", lwd = 4)
+    }
+
+    legend("bottomright", inset = 0.02, bg = "white", cex = 0.8,
+           legend = c(gettext("Rank"), gettext("Median rank"), gettext("Smoothed trend")),
+           lty = c(NA, 2, 1), pch = c(16, NA, NA),
+           col = c(grDevices::rgb(0, 0, 0, 0.35), "blue", "firebrick"), lwd = c(NA, 1.5, 2))
+
+    mainLabel <- if (nzchar(role))
+      gettextf("%1$s: recall (median rank = %2$.3f)", role, med)
+    else
+      gettextf("Recall (median rank = %1$.3f)", med)
+    mtext(mainLabel, side = 3, line = if (hasTime) 3.3 else 1.2, cex = 1.1)
+  }
+
+  return(plotFun)
+}
+
+
 
 
 
@@ -1957,31 +2067,43 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   indsIA <- grep(":", rNames)
   splitlist <- strsplit(rNames[indsIA], ":")
   rNames[indsIA] <- sapply(splitlist, function(x) {
-    x <- gsub(".std", "", x)
-    x <- gsub(".absolute", "", x)
+    x <- gsub(".std", "", x, fixed = TRUE)
+    x <- gsub(".absolute", "", x, fixed = TRUE)
+    x <- gsub(".prop", "", x, fixed = TRUE)
     paste0(x, collapse = ":")
   })
-  # now remove the period in the remaining effects
-  rNames <- gsub(".std", "", rNames)
-  rNames <- gsub(".absolute", "", rNames)
+  # now remove the scaling suffixes from the remaining effects
+  rNames <- gsub(".std", "", rNames, fixed = TRUE)
+  rNames <- gsub(".absolute", "", rNames, fixed = TRUE)
+  rNames <- gsub(".prop", "", rNames, fixed = TRUE)
   rNames <- tolower(rNames)
 
-  indVec <- c()
+  # a type-considered effect (consider_type = separate/interact) is offered as a single
+  # "(type)" picker entry, but remstats expands it into one slice per type (or type pair);
+  # match every remstimate slice that shares its stem instead of a single exact name
+  coefOut  <- character(0)
+  labelOut <- character(0)
   for (j in seq_len(length(jNames))) {
     ind <- match(jNames[j], rNames)
     # there should always be a match, however, sometimes for interactions,
     # the order is switched, so check that
-    if (is.na(ind)) {
-      if (grepl(":", jNames[j])) {
-        splitted <- unlist(strsplit(jNames[j], ":"))
-        jNames[j] <- paste0(splitted[2], ":", splitted[1])
-        ind <- grep(jNames[j], rNames)
-      }
+    if (is.na(ind) && grepl(":", jNames[j], fixed = TRUE)) {
+      splitted <- unlist(strsplit(jNames[j], ":", fixed = TRUE))
+      ind <- match(paste0(splitted[2], ":", splitted[1]), rNames)
     }
-    indVec <- c(indVec, ind)
+
+    if (!is.na(ind)) {
+      coefOut  <- c(coefOut, remstimateNames[ind])
+      labelOut <- c(labelOut, jaspNames[j])
+    } else if (endsWith(jNames[j], ".type")) {
+      stem <- sub("\\.type$", "", jNames[j])
+      inds <- which(rNames == stem | startsWith(rNames, paste0(stem, ".")))
+      coefOut  <- c(coefOut, remstimateNames[inds])
+      labelOut <- c(labelOut, remstimateNames[inds])
+    }
   }
 
-  return(remstimateNames[indVec])
+  return(list(coef = coefOut, label = labelOut))
 }
 
 

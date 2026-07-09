@@ -911,6 +911,15 @@ Form
 					info: qsTr("Show a plot comparing observed and expected waiting times under the model.")
 				}
 
+				CheckBox
+				{
+					name: "diagnosticPlotRecall"
+					label: qsTr("Recall")
+					enabled: diagPlots.checked
+					checked: false
+					info: qsTr("Show a plot of the predictive recall of observed events under the model: the relative rank the model assigns to each observed event (0 = bottom, 1 = top) over time.")
+				}
+
 				Text
 				{
 					text: qsTr("Residuals plot")
@@ -925,8 +934,8 @@ Form
 					implicitWidth: 250 * preferencesModel.uiScale
 					rSource: "effectsForPlot"
 					info: qsTr("Select endogenous effects for which to plot model residuals.")
-					rowComponent: RowLayout { 
-						Text { Layout.preferredWidth: 300; text: rowValue }
+					rowComponent: RowLayout {
+						Text { Layout.preferredWidth: 200; text: rowValue }
 						CheckBox { Layout.preferredWidth: 40; name: "includePlotEffect"; info: qsTr("Tick to include a residual plot for this effect.") }
 					}
 				}
