@@ -1240,6 +1240,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (ready && options[["syncAnalysisBox"]] && !jaspResults[["mainContainer"]]$getError()
       && options[["diagnosticPlots"]]) {
 
+    selected <- character(0)
     if (length(options[["residualPlotSelect"]]) > 0) {
       selected <- lapply(options[["residualPlotSelect"]], function(x) {
         if (x[["includePlotEffect"]]) x[["value"]] else NULL
@@ -1247,7 +1248,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
       selected <- unlist(selected[which(!sapply(selected, is.null))])
     }
 
-    if (options[["diagnosticPlotWaitTime"]] || length(selected) > 0) {
+    if (options[["diagnosticPlotWaitTime"]] || length(selected) > 0 || isTRUE(options[["diagnosticPlotRecall"]])) {
 
       rehObject <- jaspResults[["remifyResultState"]]$object
       statsObject <- jaspResults[["mainContainer"]][["remstatsResultState"]]$object
@@ -1294,7 +1295,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
           if (is.null(rc$recall) || is.null(rc$recall$per_event)) next
 
           plotObj <- try(.plotRecallHelper(rc$recall, rc$role))
-          recallPlot <- createJaspPlot(plot = NULL, title = rc$title, height = 400, width = 500)
+          recallPlot <- createJaspPlot(plot = NULL, title = rc$title, height = 500, width = 700)
           recallPlot$position <- pos
           pos <- pos + 1
           recallContainer[[rc$key]] <- recallPlot
@@ -2048,7 +2049,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
                                 breaks = yBreaks, limits = range(yBreaks)) +
     ggplot2::ggtitle(mainLabel) +
     jaspGraphs::geom_rangeframe(sides = "bl") +
-    jaspGraphs::themeJaspRaw(legend.position = "bottom", fontsize = 10, legend.cex = 0.85)
+    jaspGraphs::themeJaspRaw(legend.position = "bottom")
 
   return(p)
 }
