@@ -1126,7 +1126,7 @@ relationalEventModeling <- function(jaspResults, dataset, options) {
   if (!is.null(jaspResults[["mainContainer"]][["plotContainer"]])) return()
 
   plotContainer <- createJaspContainer()
-  plotContainer$dependOn(c("method", "diagnosticPlots", "diagnosticPlotWaitTime", "residualPlotSelect"))
+  plotContainer$dependOn(c("method", "diagnosticPlots", "diagnosticPlotWaitTime", "diagnosticPlotRecall", "residualPlotSelect"))
   jaspResults[["mainContainer"]][["plotContainer"]] <- plotContainer
 
 
