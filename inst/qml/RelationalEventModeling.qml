@@ -808,15 +808,15 @@ Form
 
 			RowLayout
 			{
-				Label { text: qsTr("Compute statistics from timepoint") }
+				Label { text: qsTr("Fit model to events") }
 				IntegerField
 				{
 					name: "timepointInputLower"
 					label: ""
-					min: 1
-					defaultValue: 1
+					min: 2
+					defaultValue: 2
 					fieldWidth: 40
-					info: qsTr("First and last time point to include in the computation of event statistics (use 'Inf' for all available data).")
+					info: qsTr("First and last event to include when fitting the model. The first event has no history and is only used to initialise the event statistics, so fitting starts at event 2 (use 'Inf' for the last event).")
 				}
 				Label { text: qsTr("to") }
 				TextField
@@ -939,22 +939,6 @@ Form
 						CheckBox { Layout.preferredWidth: 40; name: "includePlotEffect"; info: qsTr("Tick to include a residual plot for this effect.") }
 					}
 				}
-			}
-		}
-
-		RowLayout 
-		{
-			CheckBox
-			{
-				name: "oldEffectsSaved"
-				label: qsTr("Save old effects")
-				checked: false
-				info: qsTr("If checked, previously estimated effects will be saved internally to speed up computation. However, this can lead to memory issues with large models.")
-			}
-			HelpButton
-			{
-				toolTip: qsTr("Click for more information")
-				helpPage: "forQml/tooltipSaveEffects"
 			}
 		}
 	}

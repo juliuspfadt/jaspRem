@@ -4084,7 +4084,7 @@
     },
     "remify": {
       "Package": "remify",
-      "Version": "4.0.0",
+      "Version": "4.1.0",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Processing and Transforming Relational Event History Data",
@@ -4170,7 +4170,7 @@
     },
     "remstats": {
       "Package": "remstats",
-      "Version": "4.0.0",
+      "Version": "4.1.0",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Computes Statistics for Relational Event History Data",
@@ -4212,7 +4212,7 @@
     },
     "remstimate": {
       "Package": "remstimate",
-      "Version": "3.0.0",
+      "Version": "3.1.0",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Optimization Frameworks for Tie-Oriented and Actor-Oriented Relational Event Models",
